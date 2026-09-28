@@ -1,0 +1,51 @@
+.github/workflows/ci.yml
+  s_a0cbf6c120c4f8::t_21d7f41c46bb0f 15,20-21,88-89
+README.md
+  s_a0cbf6c120c4f8::t_9b57683a8448fa 3
+packages/devmachine-skills/skills/create-devmachine-package/SKILL.md
+  s_a0cbf6c120c4f8::t_2ef45eba8776f0 54-55
+packages/devmachine-skills/skills/create-devmachine-package/references/concepts/packages.md
+  s_a0cbf6c120c4f8::t_4e35f3425ba922 8,46,57
+packages/devmachine-skills/skills/create-devmachine-package/references/package-format.md
+  s_a0cbf6c120c4f8::t_c96eac537c515b 112,158
+packages/devmachine-skills/skills/use-devmachine/SKILL.md
+  s_a0cbf6c120c4f8::t_4b708976d40b42 55-56
+packages/devmachine-skills/skills/use-devmachine/references/commands.md
+  s_a0cbf6c120c4f8::t_1174caf32265e6 36,62,131,326,370,459,492
+packages/devmachine-skills/skills/use-devmachine/references/concepts/agent-skills.md
+  s_a0cbf6c120c4f8::t_7a1b6de5a9870d 58
+packages/devmachine-skills/skills/use-devmachine/references/concepts/configuration.md
+  s_a0cbf6c120c4f8::t_fd6596595c95af 125
+packages/devmachine-skills/skills/use-devmachine/references/concepts/credentials.md
+  s_a0cbf6c120c4f8::t_c93a8c5f7234ac 19,56
+packages/devmachine-skills/skills/use-devmachine/references/concepts/dns.md
+  s_a0cbf6c120c4f8::t_23ed37b088d95e 43
+packages/devmachine-skills/skills/use-devmachine/references/concepts/machines-and-workspaces.md
+  s_a0cbf6c120c4f8::t_41a7a7f3c9fc12 28
+packages/devmachine-skills/skills/use-devmachine/references/concepts/packages.md
+  s_a0cbf6c120c4f8::t_3a1dc07987cd34 8,55,57
+packages/devmachine-skills/skills/use-devmachine/references/concepts/publishing.md
+  s_a0cbf6c120c4f8::t_9d1f62228a8f9a 33
+packages/devmachine-skills/skills/use-devmachine/references/troubleshooting.md
+  s_a0cbf6c120c4f8::t_6d0f1bd996fb36 21,52,170,266,432
+scripts/lib/render_references.py
+  s_a0cbf6c120c4f8::t_71dfda36987e91 12
+scripts/validate.sh
+  s_a0cbf6c120c4f8::t_5626b5989d89bd 8
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "2a000314e89659bd69b938eb76319883e16e24bd",
+  "prompts": {},
+  "sessions": {
+    "s_a0cbf6c120c4f8": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f7d54e1b-857f-44e4-a7a9-0ca76ea55bb2",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Djalma Araujo <djalma@nossomos.cc>"
+    }
+  }
+}
