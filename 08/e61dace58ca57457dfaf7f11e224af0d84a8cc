@@ -1,0 +1,45 @@
+packages/devmachine-skills/skills/create-devmachine-package/SKILL.md
+  s_a0cbf6c120c4f8::t_f9da7737dd873e 54-55
+packages/devmachine-skills/skills/create-devmachine-package/references/concepts/packages.md
+  s_a0cbf6c120c4f8::t_2a3b4f235dc2c3 46,57
+packages/devmachine-skills/skills/create-devmachine-package/references/package-format.md
+  s_a0cbf6c120c4f8::t_b30d54cc3ad005 112,158
+packages/devmachine-skills/skills/use-devmachine/SKILL.md
+  s_a0cbf6c120c4f8::t_ad0166033eacb5 55-56
+packages/devmachine-skills/skills/use-devmachine/references/commands.md
+  s_a0cbf6c120c4f8::t_9ea8e3057b6e19 36,62,131,326,370,459,492
+packages/devmachine-skills/skills/use-devmachine/references/concepts/agent-skills.md
+  s_a0cbf6c120c4f8::t_09a8329d4268e8 58
+packages/devmachine-skills/skills/use-devmachine/references/concepts/configuration.md
+  s_a0cbf6c120c4f8::t_085a1115216c6f 125
+packages/devmachine-skills/skills/use-devmachine/references/concepts/credentials.md
+  s_a0cbf6c120c4f8::t_25d866fc450b33 19,56
+packages/devmachine-skills/skills/use-devmachine/references/concepts/dns.md
+  s_a0cbf6c120c4f8::t_cfd9fca084d93f 43
+packages/devmachine-skills/skills/use-devmachine/references/concepts/machines-and-workspaces.md
+  s_a0cbf6c120c4f8::t_391d9a2732b474 28
+packages/devmachine-skills/skills/use-devmachine/references/concepts/packages.md
+  s_a0cbf6c120c4f8::t_6150614969ad30 55,57
+packages/devmachine-skills/skills/use-devmachine/references/concepts/publishing.md
+  s_a0cbf6c120c4f8::t_7fd48d9bd4bc95 33
+packages/devmachine-skills/skills/use-devmachine/references/troubleshooting.md
+  s_a0cbf6c120c4f8::t_3bcc1f3bdda197 21,52,170,266,432
+scripts/lib/render_references.py
+  s_a0cbf6c120c4f8::t_7801b71cb27abd 12
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "08e61dace58ca57457dfaf7f11e224af0d84a8cc",
+  "prompts": {},
+  "sessions": {
+    "s_a0cbf6c120c4f8": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f7d54e1b-857f-44e4-a7a9-0ca76ea55bb2",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Djalma Araujo <djalma@nossomos.cc>"
+    }
+  }
+}
