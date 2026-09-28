@@ -1,0 +1,21 @@
+.github/workflows/ci.yml
+  s_a0cbf6c120c4f8::t_b0f25d01e4a0bb 94
+scripts/sync-skill-references.sh
+  s_a0cbf6c120c4f8::t_4d47eeb3632b0c 46
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "9ec3c6fb7df6dd18a21a6482ae317a98b55ae14e",
+  "prompts": {},
+  "sessions": {
+    "s_a0cbf6c120c4f8": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f7d54e1b-857f-44e4-a7a9-0ca76ea55bb2",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Djalma Araujo <djalma@nossomos.cc>"
+    }
+  }
+}
