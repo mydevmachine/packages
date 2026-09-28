@@ -1,0 +1,41 @@
+packages/devmachine-skills/skills/create-devmachine-package/references/concepts/packages.md
+  s_a0cbf6c120c4f8::t_b1d83072572cc2 3-4,6-9,11,14,17-19,21,23-26,29-30,33,35,37-38,41,44-46,48,50-52,54-58
+packages/devmachine-skills/skills/create-devmachine-package/references/dns-provider-contract.md
+  s_a0cbf6c120c4f8::t_1531027a13f035 3-5,8-9,17-18,27-29,35-37,49-50,62-63,81,92-93,98-100,104-106,108,110-116,120-124,126-127,131-133
+packages/devmachine-skills/skills/create-devmachine-package/references/package-format.md
+  s_a0cbf6c120c4f8::t_d1410c24349c13 3-5,7-8,20-22,28-30,34-35,39-42,46,50-55,59,65-67,71-72,81,88-93,106-109,111-114,116-118,122-125,131,142,145-158,162,166,173-176,178-180,184,192-198,200-201,227-228,232-234
+packages/devmachine-skills/skills/use-devmachine/references/commands.md
+  s_a0cbf6c120c4f8::t_952e057c73abcb 12-13,21-39,43,46-51,59-63,65-69,73-74,76-77,85,87-90,92-94,103-104,110,112,120-157,170-171,173-174,176-179,181-183,185-190,192-193,195-196,198-201,203-204,215-219,221-222,224-225,234,256-259,261-266,268-269,277-278,287-288,290-292,301-303,305-309,311-312,325-348,352-353,361-380,388-390,392-394,401-403,412-413,415-417,419-421,432-435,437-439,447-449,451-456,458-459,468-471,473-476,491-492,494-495,497-499,501-506,514-515,517-520,524,526,528-529,531-533,535-536,547-548,555-556,558-559
+packages/devmachine-skills/skills/use-devmachine/references/concepts/agent-skills.md
+  s_a0cbf6c120c4f8::t_02b4bb421e7fb1 3-4,6-7,10-14,23,30-31,35-36,43-45,47,49,56-59
+packages/devmachine-skills/skills/use-devmachine/references/concepts/configuration.md
+  s_a0cbf6c120c4f8::t_e2db1ba0627054 3-8,12,26,49,68,76,80-81,85-87,98-99,101-103,107-109,122-126,130-131,136,138-139,144-148,152-153,161-162
+packages/devmachine-skills/skills/use-devmachine/references/concepts/credentials.md
+  s_a0cbf6c120c4f8::t_3e4e9f9aa40ab1 3-4,6-7,10,12-16,18-19,30,32,34-37,39,41-44,46-48,50-54,56-59,61-65,67-68
+packages/devmachine-skills/skills/use-devmachine/references/concepts/dns.md
+  s_a0cbf6c120c4f8::t_3a08d9796addf6 3-4,6-8,10,12-13,15-18,22-23,29-30,32,34-35,39-43,47-50,52-53,57-60,62-64
+packages/devmachine-skills/skills/use-devmachine/references/concepts/machines-and-workspaces.md
+  s_a0cbf6c120c4f8::t_363fce7c51d744 3-5,7-10,14-17,25-27,29,31-32,34,36,59-61,65-67,76,84-87,93-95,97,104-105,116-119
+packages/devmachine-skills/skills/use-devmachine/references/concepts/packages.md
+  s_a0cbf6c120c4f8::t_997bf1959fe840 3-4,6-9,11,14,17-19,21,23-26,29-30,33,35,37-38,41,44-46,48,50-52,54-58
+packages/devmachine-skills/skills/use-devmachine/references/concepts/publishing.md
+  s_a0cbf6c120c4f8::t_04781a2b58b464 3-5,7-10,12,19-21,23-27,31-32,35,37-40
+packages/devmachine-skills/skills/use-devmachine/references/troubleshooting.md
+  s_a0cbf6c120c4f8::t_48eb12421ad8b8 5-9,13-16,18,20,25-26,28-32,36-39,43-45,47-49,51,56-61,65-70,74-79,83-85,87-88,90,92-95,97,103-105,109-112,116-118,124-125,129-133,137-144,148-149,153-155,157-159,161,163-170,174-176,178-183,185-189,193-199,207-208,210-213,215-216,220-222,224-226,230-231,233-234,238-242,250-253,259-261,265-269,271-272,278,286-287,294-296,298-301,305-309,313-315,317-318,322-325,327-329,333-340,342-344,348-352,356-360,364-369,373-382,386-392,396-401,405-409,413-415,417-421,424-431,436-440,444-450,454-458,462-469,473-483,487-496,498,502-505,507,513-515,519-525
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "25ccf0825298f3b7d96aa526b95608e7d2f64a2c",
+  "prompts": {},
+  "sessions": {
+    "s_a0cbf6c120c4f8": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f7d54e1b-857f-44e4-a7a9-0ca76ea55bb2",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Djalma Araujo <djalma@nossomos.cc>"
+    }
+  }
+}
