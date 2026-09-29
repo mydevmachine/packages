@@ -1,0 +1,33 @@
+packages/devmachine-app/test/test_devmachine_caddy_logs.py
+  s_a0cbf6c120c4f8::t_62e79be35fc380 1-71
+packages/devmachine-app/README.md
+  s_a0cbf6c120c4f8::t_e90a3cd1fabf4d 29-95
+packages/devmachine-app/bin/devmachine-app
+  s_a0cbf6c120c4f8::t_b3b675d80adb98 6-10
+packages/devmachine-app/files/devmachine-caddy-logs
+  s_a0cbf6c120c4f8::t_649b9decc471c6 1-49
+packages/devmachine-app/files/devmachine-stats
+  s_a0cbf6c120c4f8::t_810c30da8cd95b 1-125,129-134,136-352
+  s_a0cbf6c120c4f8::t_d4532df5c7bf5e 126-128,135
+packages/devmachine-app/package.yml
+  s_a0cbf6c120c4f8::t_3cc136e2ef6b6a 19
+packages/devmachine-app/test/test_devmachine_stats.py
+  s_a0cbf6c120c4f8::t_5099a20eaf741a 72-73
+  s_a0cbf6c120c4f8::t_947b87193857df 1-71,74-197
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "d1b6e25e564c6f1f357fbf2380e88d0f876800a9",
+  "prompts": {},
+  "sessions": {
+    "s_a0cbf6c120c4f8": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f7d54e1b-857f-44e4-a7a9-0ca76ea55bb2",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Djalma Araujo <djalma@nossomos.cc>"
+    }
+  }
+}
