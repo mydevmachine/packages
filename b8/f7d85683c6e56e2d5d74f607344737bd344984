@@ -1,0 +1,24 @@
+packages/hostinger/test/test_provider.py
+  s_a0cbf6c120c4f8::t_9e274222aa1f7d 174-209
+packages/hostinger/README.md
+  s_a0cbf6c120c4f8::t_69be710cf3d979 42-47
+packages/hostinger/bin/provider
+  s_a0cbf6c120c4f8::t_e38a3e716c6d7c 145-150,155,160
+  s_a0cbf6c120c4f8::t_efda23a16a7a67 12-17
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "b8f7d85683c6e56e2d5d74f607344737bd344984",
+  "prompts": {},
+  "sessions": {
+    "s_a0cbf6c120c4f8": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f7d54e1b-857f-44e4-a7a9-0ca76ea55bb2",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Djalma Araujo <djalma@nossomos.cc>"
+    }
+  }
+}
