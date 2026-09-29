@@ -1,0 +1,69 @@
+packages/firewall/README.md
+  s_a0cbf6c120c4f8::t_3164889db4cf46 1-43
+packages/cloudflare/README.md
+  s_a0cbf6c120c4f8::t_0be26dac03ed7e 1-43
+packages/ssh_hardening/README.md
+  s_a0cbf6c120c4f8::t_9533776e22142c 1-39
+packages/fail2ban/README.md
+  s_a0cbf6c120c4f8::t_89f39ec53c340c 1-37
+packages/zsh/README.md
+  s_a0cbf6c120c4f8::t_e970b36efec65a 1-38
+packages/mise/README.md
+  s_a0cbf6c120c4f8::t_986349696143d9 1-35
+packages/glab/README.md
+  s_a0cbf6c120c4f8::t_4af7f2654a1728 1-38
+packages/caddy/README.md
+  s_a0cbf6c120c4f8::t_fa34d6b11f756c 1-57
+packages/sentry/README.md
+  s_a0cbf6c120c4f8::t_6e413862d163b2 1-38
+packages/git/README.md
+  s_a0cbf6c120c4f8::t_4db1d092db5f0e 1-28
+packages/claude-code/README.md
+  s_a0cbf6c120c4f8::t_4a32b3e8ce7aca 1-46
+packages/docker/README.md
+  s_a0cbf6c120c4f8::t_f45b83bfc4eab9 1-36
+packages/dev/README.md
+  s_a0cbf6c120c4f8::t_02292abba45040 1-47
+packages/claude-plugins/README.md
+  s_a0cbf6c120c4f8::t_cd75795546c417 1-45
+packages/base/README.md
+  s_a0cbf6c120c4f8::t_6a59d177e92c54 1-43
+packages/workspace/README.md
+  s_a0cbf6c120c4f8::t_1c91543e718086 1-49
+packages/git-key/README.md
+  s_a0cbf6c120c4f8::t_7fcd80722a201b 1-45
+packages/tailscale/README.md
+  s_a0cbf6c120c4f8::t_3442c6b8dedb2c 1-36
+packages/hostinger/README.md
+  s_a0cbf6c120c4f8::t_332916203ad2c1 1-47
+packages/claude-remote-control/README.md
+  s_a0cbf6c120c4f8::t_52199999a9160d 1-40
+packages/devmachine-app/README.md
+  s_a0cbf6c120c4f8::t_c7772b2c63ac4c 1-36
+packages/devmachine-skills/README.md
+  s_a0cbf6c120c4f8::t_66df69300888d5 1-39
+packages/mac-mise/README.md
+  s_a0cbf6c120c4f8::t_1207ba2e17f71f 1-37
+packages/essentials/README.md
+  s_a0cbf6c120c4f8::t_475918e6be1926 1-47
+packages/mac-brew/README.md
+  s_a0cbf6c120c4f8::t_a2b89ef3902904 1-44
+README.md
+  s_a0cbf6c120c4f8::t_eca3917b2ab75b 28-52
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "043d9aa7117a923ce7ec127dd307af752114fe8c",
+  "prompts": {},
+  "sessions": {
+    "s_a0cbf6c120c4f8": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f7d54e1b-857f-44e4-a7a9-0ca76ea55bb2",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Djalma Araujo <djalma@nossomos.cc>"
+    }
+  }
+}
