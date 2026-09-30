@@ -1,0 +1,33 @@
+README.md
+  s_a0cbf6c120c4f8::t_a4227527fccd95 36,102-126
+packages/tailscale/README.md
+  s_a0cbf6c120c4f8::t_a60c25b754cec3 14,22-53,60-69,76
+packages/tailscale/bin/join
+  s_a0cbf6c120c4f8::t_b0370ef7a3e822 1-73
+packages/tailscale/bin/resolve
+  s_a0cbf6c120c4f8::t_1bafdefc2d5254 1-80
+packages/tailscale/bin/self-name
+  s_a0cbf6c120c4f8::t_93236aa9276dc7 1-37
+packages/tailscale/defaults/main.yml
+  s_a0cbf6c120c4f8::t_48f0826cce474c 5-6
+packages/tailscale/package.yml
+  s_a0cbf6c120c4f8::t_cef38bae050f15 17-25
+packages/tailscale/test/test_network.py
+  s_a0cbf6c120c4f8::t_38eefba0274719 1-203
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "16a471ac69674fce140e4b548a583d899461d1ed",
+  "prompts": {},
+  "sessions": {
+    "s_a0cbf6c120c4f8": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f7d54e1b-857f-44e4-a7a9-0ca76ea55bb2",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Djalma Araujo <djalma@nossomos.cc>"
+    }
+  }
+}
