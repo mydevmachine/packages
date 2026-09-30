@@ -1,0 +1,14 @@
+README.md
+  h_0e71f0b33c1b87 56,158-159,162
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "fae81963b80913e90d392fac5e068113f252997f",
+  "prompts": {},
+  "humans": {
+    "h_0e71f0b33c1b87": {
+      "author": "Djalma Araujo <djalma@nossomos.cc>"
+    }
+  }
+}
