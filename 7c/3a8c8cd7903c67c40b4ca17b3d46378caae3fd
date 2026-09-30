@@ -1,0 +1,25 @@
+packages/base/tasks/main.yml
+  s_a0cbf6c120c4f8::t_6d3440925b9e75 53-59
+packages/zsh/README.md
+  s_a0cbf6c120c4f8::t_301382f5a41f25 35-38
+packages/zsh/files/tmux.conf
+  s_a0cbf6c120c4f8::t_39f0f1f9834da8 5-9,11-17,22,24-25,27-30
+packages/zsh/test/test_tmux_conf.py
+  s_a0cbf6c120c4f8::t_a848cefb4cbdb8 1-94
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "7c3a8c8cd7903c67c40b4ca17b3d46378caae3fd",
+  "prompts": {},
+  "sessions": {
+    "s_a0cbf6c120c4f8": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f7d54e1b-857f-44e4-a7a9-0ca76ea55bb2",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Djalma Araujo <djalma@nossomos.cc>"
+    }
+  }
+}
