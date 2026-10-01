@@ -1,0 +1,25 @@
+README.md
+  s_a0cbf6c120c4f8::t_4f87b9e9e33bfc 28
+packages/devmachine-app/README.md
+  s_a0cbf6c120c4f8::t_143af66f187ec9 22-25
+packages/essentials/README.md
+  s_a0cbf6c120c4f8::t_d23c8fa9bf1335 4-5,10,41-45
+packages/essentials/package.yml
+  s_a0cbf6c120c4f8::t_ea40acd7926d9b 7-9,12,14
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "0ebd3bb8d6bf1d7231a927098214db3bb35cf454",
+  "prompts": {},
+  "sessions": {
+    "s_a0cbf6c120c4f8": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f7d54e1b-857f-44e4-a7a9-0ca76ea55bb2",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Djalma Araujo <djalma@nossomos.cc>"
+    }
+  }
+}
