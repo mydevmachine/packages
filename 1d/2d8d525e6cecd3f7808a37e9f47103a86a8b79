@@ -1,0 +1,14 @@
+packages/devmachine-app/README.md
+  h_0e71f0b33c1b87 98-100
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "1d2d8d525e6cecd3f7808a37e9f47103a86a8b79",
+  "prompts": {},
+  "humans": {
+    "h_0e71f0b33c1b87": {
+      "author": "Djalma Araujo <djalma@nossomos.cc>"
+    }
+  }
+}
