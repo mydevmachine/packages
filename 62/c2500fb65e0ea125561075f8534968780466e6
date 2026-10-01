@@ -1,0 +1,19 @@
+packages/ssh_hardening/tasks/main.yml
+  s_785cced9544d71::t_5d3b1ceab63a4d 29-41
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "62c2500fb65e0ea125561075f8534968780466e6",
+  "prompts": {},
+  "sessions": {
+    "s_785cced9544d71": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3b7bd2d5-bc77-494b-80af-2421eac35fbf",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Djalma Araujo <djalma@nossomos.cc>"
+    }
+  }
+}
