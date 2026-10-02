@@ -1,0 +1,66 @@
+packages/devmachine-app/files/devmachine-infer
+  s_bd193e2d2e6bb0::t_cb1b8c2415eb2b 254-454,457-473
+  s_bd193e2d2e6bb0::t_280e45adf4b562 488-546
+  s_bd193e2d2e6bb0::t_d4511a0e5beaf6 2,7-11
+  s_bd193e2d2e6bb0::t_074c1dc15f14e3 1678,1688-1691,1694-1695,1697-1698,1704-1711
+  s_bd193e2d2e6bb0::t_b2a59cbac5c127 1111-1118,1122-1157
+  s_bd193e2d2e6bb0::t_8679bd7261fee3 1630-1633,1641
+  s_bd193e2d2e6bb0::t_722ada2df040d0 1587-1607,1620-1622
+  s_bd193e2d2e6bb0::t_b07c41dd0ce8aa 455-456
+  s_bd193e2d2e6bb0::t_c916e6df9d0d99 22,27,32,37,40-47
+  s_bd193e2d2e6bb0::t_b4f181339dc017 1669-1670
+  s_bd193e2d2e6bb0::t_e8b138d0cf59e1 703-704
+  s_bd193e2d2e6bb0::t_6ba9840166a7a5 1725,1730
+  s_bd193e2d2e6bb0::t_8ab69fe614b6c8 1284-1293,1297-1350,1353-1358
+  s_bd193e2d2e6bb0::t_41ae2cb53040b7 1351-1352
+  s_bd193e2d2e6bb0::t_e221f8a49c1599 660-702,705-782,785-791
+  s_bd193e2d2e6bb0::t_50ed987701973b 783-784
+  s_bd193e2d2e6bb0::t_10f119091e7088 38-39
+  s_bd193e2d2e6bb0::t_1a0b9ade88e045 474-475
+  s_bd193e2d2e6bb0::t_436c77c72362ab 547-548
+  s_bd193e2d2e6bb0::t_d36865da5cb72e 1158-1159
+  s_bd193e2d2e6bb0::t_a085c22585d3e5 1359-1360
+packages/devmachine-app/test/fixtures/opencode/schema.sql
+  s_bd193e2d2e6bb0::t_fc1463baf876c5 1-80
+packages/devmachine-app/test/fixtures/cline/schema.sql
+  s_bd193e2d2e6bb0::t_40d77746a16744 1-40
+packages/devmachine-app/test/test_devmachine_infer.py
+  s_bd193e2d2e6bb0::t_80cd7382871a49 1709-1738
+  s_bd193e2d2e6bb0::t_4145d33ad7e59b 1520-1708,1739-2061
+  s_bd193e2d2e6bb0::t_b5498c36f6e3b4 1,4-5,10
+  s_bd193e2d2e6bb0::t_010023122ffe5e 11
+packages/devmachine-app/test/fixtures/antigravity/.gemini/antigravity-cli/brain/3f2a9c1e-7b4d-4e8a-9c21-5d6e7f8a9b0c/.system_generated/logs/transcript_full.jsonl
+  s_bd193e2d2e6bb0::t_faf9c87bc1ace9 1-5
+packages/devmachine-app/test/fixtures/antigravity/.gemini/antigravity-cli/history.jsonl
+  s_bd193e2d2e6bb0::t_74bfe993f2ca3d 1-2
+packages/devmachine-app/test/fixtures/cline/.cline/data/sessions/1790863200000_k3x9q/1790863200000_k3x9q.json
+  s_bd193e2d2e6bb0::t_91aa13135fd1db 1-25
+packages/devmachine-app/test/fixtures/cline/.cline/data/sessions/1790863200000_k3x9q/1790863200000_k3x9q.messages.json
+  s_bd193e2d2e6bb0::t_b529bb0767faf5 1-99
+packages/devmachine-app/test/fixtures/kimi/.kimi-code/session_index.jsonl
+  s_bd193e2d2e6bb0::t_b4c030c8d23776 1
+packages/devmachine-app/test/fixtures/kimi/.kimi-code/sessions/wd_widgets_7b506ce63f89/session_3f6c1a52-8d1e-4b7a-9c2e-5a1b7d9e0f42/agents/main/wire.jsonl
+  s_bd193e2d2e6bb0::t_ddf6f865b3b4a5 1-23
+packages/devmachine-app/test/fixtures/kimi/.kimi-code/sessions/wd_widgets_7b506ce63f89/session_3f6c1a52-8d1e-4b7a-9c2e-5a1b7d9e0f42/state.json
+  s_bd193e2d2e6bb0::t_d799b2130d1572 1
+packages/devmachine-app/test/fixtures/kimi/.kimi-code/workspaces.json
+  s_bd193e2d2e6bb0::t_da6dce9cba3b74 1
+packages/devmachine-app/test/fixtures/opencode/seed.sql
+  s_bd193e2d2e6bb0::t_132daf72932598 1-48
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "949d1353c3d696a2d3d2a0807a562d8d713a58c4",
+  "prompts": {},
+  "sessions": {
+    "s_bd193e2d2e6bb0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "12d751aa-cf31-4b28-ba1c-670b2a613d1c",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Djalma Araujo <djalma@nossomos.cc>"
+    }
+  }
+}
