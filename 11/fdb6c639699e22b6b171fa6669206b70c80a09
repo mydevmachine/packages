@@ -1,0 +1,39 @@
+packages/base/package.yml
+  s_e501c321413d86::t_8d81cdb9800e16 4
+packages/caddy/package.yml
+  s_e501c321413d86::t_6d6fbbe185a8fc 4
+packages/docker/package.yml
+  s_e501c321413d86::t_849ed3b9f45e44 4
+packages/essentials/package.yml
+  s_e501c321413d86::t_303d7e24fd66cb 4
+packages/fail2ban/package.yml
+  s_e501c321413d86::t_98ae67cc62ce2a 4
+packages/firewall/package.yml
+  s_e501c321413d86::t_bd94223ebf11d4 4
+packages/hostinger/package.yml
+  s_e501c321413d86::t_d3b93c6ab144ae 4
+packages/mac-brew/package.yml
+  s_e501c321413d86::t_4eb6bf74b093bf 4
+packages/mac-mise/package.yml
+  s_e501c321413d86::t_dc05d9e66630c4 4
+packages/ssh_hardening/package.yml
+  s_e501c321413d86::t_baaa6f1cc531a2 4
+packages/tailscale/package.yml
+  s_e501c321413d86::t_816d4b505d016b 4
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "11fdb6c639699e22b6b171fa6669206b70c80a09",
+  "prompts": {},
+  "sessions": {
+    "s_e501c321413d86": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "c1c8a0b3-c0c2-4808-a1ec-80e4f419df68",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Djalma Araujo <djalma@nossomos.cc>"
+    }
+  }
+}
