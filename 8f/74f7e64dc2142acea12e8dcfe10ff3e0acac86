@@ -1,0 +1,70 @@
+packages/pi/README.md
+  s_bd193e2d2e6bb0::t_7f53a96b79e525 1-47
+packages/cline/README.md
+  s_bd193e2d2e6bb0::t_45650465584b70 28-30
+  s_bd193e2d2e6bb0::t_8a3f15495a0c5f 1-27,31-49
+packages/opencode/defaults/main.yml
+  s_bd193e2d2e6bb0::t_26a8eb25de3ac8 1-2
+README.md
+  s_bd193e2d2e6bb0::t_9a8a2cb40d1223 52-56
+packages/opencode/vars/Debian.yml
+  s_bd193e2d2e6bb0::t_23471427b1392b 1-5
+packages/pi/package.yml
+  s_bd193e2d2e6bb0::t_45849d7b480904 1-29
+packages/antigravity/tasks/main.yml
+  s_bd193e2d2e6bb0::t_854a15691f52f4 1-39
+packages/opencode/tasks/main.yml
+  s_bd193e2d2e6bb0::t_c6da01259f7b36 1-37
+packages/kimi-code/README.md
+  s_bd193e2d2e6bb0::t_236fee1d5f10af 1-47
+packages/kimi-code/tasks/main.yml
+  s_bd193e2d2e6bb0::t_cfa7b012bbe05d 1-38
+packages/kimi-code/vars/Debian.yml
+  s_bd193e2d2e6bb0::t_2e69091cd4133e 1-4
+packages/cline/tasks/main.yml
+  s_bd193e2d2e6bb0::t_31f6b876266839 1-32
+packages/antigravity/defaults/main.yml
+  s_bd193e2d2e6bb0::t_8a83ccde96613d 1-2
+packages/opencode/README.md
+  s_bd193e2d2e6bb0::t_500b301f166c18 1-46
+packages/antigravity/package.yml
+  s_bd193e2d2e6bb0::t_b25b698a7a158e 1-15,19-29
+  s_bd193e2d2e6bb0::t_0304174fb65d8b 16-18
+packages/pi/defaults/main.yml
+  s_bd193e2d2e6bb0::t_4a1cd80fd0e157 1-2
+packages/pi/vars/Debian.yml
+  s_bd193e2d2e6bb0::t_c7947ad60a76dc 1-4
+packages/kimi-code/defaults/main.yml
+  s_bd193e2d2e6bb0::t_1209fb42b4457b 1-2
+packages/antigravity/vars/Debian.yml
+  s_bd193e2d2e6bb0::t_ff6ea5b110083f 1-4
+packages/antigravity/README.md
+  s_bd193e2d2e6bb0::t_4488f7b2d23ba6 27-30
+  s_bd193e2d2e6bb0::t_f027eb370242ea 1-26,31-52
+packages/kimi-code/package.yml
+  s_bd193e2d2e6bb0::t_28758db3f78f63 1-28
+packages/cline/package.yml
+  s_bd193e2d2e6bb0::t_bf51475496f027 1-28
+packages/opencode/package.yml
+  s_bd193e2d2e6bb0::t_079b2522b41eb3 1-29
+packages/pi/tasks/main.yml
+  s_bd193e2d2e6bb0::t_105fb3767c5267 1-51
+packages/cline/defaults/main.yml
+  s_bd193e2d2e6bb0::t_21a455a31925da 1-2
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "8f74f7e64dc2142acea12e8dcfe10ff3e0acac86",
+  "prompts": {},
+  "sessions": {
+    "s_bd193e2d2e6bb0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "12d751aa-cf31-4b28-ba1c-670b2a613d1c",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Djalma Araujo <djalma@nossomos.cc>"
+    }
+  }
+}
