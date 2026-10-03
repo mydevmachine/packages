@@ -1,0 +1,14 @@
+packages/devmachine-skills/skills/use-devmachine/references/commands.md
+  h_0e71f0b33c1b87 249-255,436,452-479,1148-1151,1168-1181
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "3434f95aca87a604482fe2676b552f2872e8a7ef",
+  "prompts": {},
+  "humans": {
+    "h_0e71f0b33c1b87": {
+      "author": "Djalma Araujo <djalma@nossomos.cc>"
+    }
+  }
+}
