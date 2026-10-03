@@ -1,0 +1,23 @@
+packages/devmachine-skills/skills/use-devmachine/references/commands.md
+  s_e501c321413d86::t_62aa2dd9f3fc1c 262,396-403,418,486,501-511
+packages/devmachine-skills/skills/use-devmachine/references/concepts/agent-skills.md
+  s_e501c321413d86::t_ba060d06e50d26 5-6,24-26,29-31,34-36,60-62
+packages/devmachine-skills/skills/use-devmachine/references/troubleshooting.md
+  s_e501c321413d86::t_f8bcd8eec97052 94-104,1017-1020,1023-1024,1027-1053
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "b03da9349962b75b299870f4b685225b72fede08",
+  "prompts": {},
+  "sessions": {
+    "s_e501c321413d86": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "c1c8a0b3-c0c2-4808-a1ec-80e4f419df68",
+        "model": "unknown"
+      },
+      "human_author": "Djalma Araujo <djalma@nossomos.cc>"
+    }
+  }
+}
