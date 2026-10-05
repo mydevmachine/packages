@@ -1,0 +1,19 @@
+packages/git-key/tasks/main.yml
+  s_f4d5eb9a12c0c6::t_123e0d77cb59dc 20
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "420f366a3779eae3fd510c2a7bb0a7be0b2a5a01",
+  "prompts": {},
+  "sessions": {
+    "s_f4d5eb9a12c0c6": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "agent-af1b8cf9d67c6ec7f",
+        "model": "unknown"
+      },
+      "human_author": "Djalma Araujo <djalma@nossomos.cc>"
+    }
+  }
+}
