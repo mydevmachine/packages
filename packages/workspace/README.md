@@ -1,8 +1,7 @@
 # workspace
 
-The Linux account a person works in: a home nobody else can read, a git
-identity and `~/dev`. Almost every other workspace-scoped package needs this
-one first.
+The account a person works in: a home nobody else can read, a git identity
+and `~/dev`. Almost every other workspace-scoped package needs this one first.
 
 - **Scope:** workspace
 - **Category:** Foundation
@@ -12,8 +11,8 @@ one first.
 
 | Setting | Default | What it does |
 | --- | --- | --- |
-| `home` | the account's own home | Where the account's home is. It is read from the account; a new account gets `/home/<the account>` unless this says otherwise. |
-| `admin_home` | `/root` | The home of the account the CLI provisions with. Whatever reaches that account over SSH is what reaches this workspace. |
+| `home` | the account's own home | Where the account's home is. It is read from the account; a new account gets `/home/<the account>` unless this says otherwise. On macOS a new account always gets `/Users/<the account>`. |
+| `admin_home` | `/root` | The home of the account the CLI provisions with. Whatever reaches that account over SSH is what reaches this workspace. On macOS it is the admin login's own home, read from the system. |
 | `groups` | `[]` | Extra Linux groups the account joins. The `docker` group is one of them, and it is effectively root, so nobody joins it by accident. |
 | `shell` | `""` | The login shell. Empty means whatever `useradd` would pick; the package that installs a shell (such as `zsh`) is the one that sets it. |
 | `git_name` | `""` | The name on this workspace's commits. |
@@ -42,6 +41,10 @@ devmachine sync
   workspace that genuinely needs it.
 - `sign_commits` only takes effect once a key exists — pair it with
   [`git-key`](../git-key/README.md) or a key set up by hand.
+- **On macOS** the account is created hidden: it is not on the login window
+  or in System Settings. Its primary group is `staff`, and nothing is
+  installed for it, because git, `ssh-keygen` and `ssh-keyscan` come with the
+  Command Line Tools.
 
 ## Learn more
 

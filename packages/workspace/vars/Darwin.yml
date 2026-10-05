@@ -1,0 +1,5 @@
+---
+# Nothing to install. git, ssh-keygen and ssh-keyscan come with macOS and its
+# Command Line Tools, and Ansible hands its temporary files to the account
+# through macOS's own ACLs (chmod +a), so there is no acl package to add.
+devmachine_workspace_packages: []

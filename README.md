@@ -42,7 +42,7 @@ Codex session can add packages for you.
 | [`essentials`](packages/essentials/README.md) | machine | base, git, firewall, ssh_hardening, caddy and devmachine-app, in one package. |
 | [`base`](packages/base/README.md) | machine | The base tools, a shared tmux config, and the `resume` session picker. |
 | [`git`](packages/git/README.md) | machine | Installs git. |
-| [`workspace`](packages/workspace/README.md) | workspace | The Linux account a person works in. |
+| [`workspace`](packages/workspace/README.md) | workspace | The account a person works in. |
 | [`zsh`](packages/zsh/README.md) | workspace | zsh, Oh My Zsh, and tmux auto-attach over SSH. |
 | [`mise`](packages/mise/README.md) | workspace | The per-project runtime manager, activated for one account. |
 | [`dev`](packages/dev/README.md) | workspace | The GitHub CLI, bun, Node LTS and unzip for one account. |

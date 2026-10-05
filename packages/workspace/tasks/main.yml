@@ -69,6 +69,7 @@
   ansible.builtin.package:
     name: "{{ devmachine_workspace_packages }}"
     state: present
+  when: devmachine_workspace_packages | length > 0
 
 - name: Install the workspace account creator
   ansible.builtin.copy:
@@ -77,6 +78,7 @@
     owner: root
     group: root
     mode: "0755"
+  when: ansible_facts['system'] != 'Darwin'
 
 # Docker Engine uses the host daemon and the docker group. These accounts do
 # not run rootless containers, so allocating a 65,536-ID subordinate range to
@@ -91,7 +93,10 @@
       - "{{ devmachine_workspace_home }}"
   register: devmachine_workspace_created
   changed_when: "'created' in devmachine_workspace_created.stdout_lines"
-  when: not ansible_check_mode
+  when:
+    - not ansible_check_mode
+    # macOS has no useradd and no subordinate IDs: the task below creates it.
+    - ansible_facts['system'] != 'Darwin'
 
 - name: Create the account
   ansible.builtin.user:
@@ -104,6 +109,9 @@
     # tasks would report a change forever.
     shell: "{{ devmachine_workspace_shell | default(omit, true) }}"
     create_home: true
+    # Off the login window and out of System Settings: nobody logs into a
+    # workspace at the Mac's own screen.
+    hidden: "{{ true if ansible_facts['system'] == 'Darwin' else omit }}"
   register: devmachine_account
 
 # This is the whole isolation model: one workspace cannot read another's home.
@@ -124,6 +132,16 @@
     owner: "{{ devmachine_workspace.user }}"
     group: "{{ devmachine_account.group | default(omit) }}"
     mode: "0700"
+
+# On a Mac reached over SSH the admin login is not root: it runs the play
+# through sudo, and sudo names it in SUDO_USER on this side of the connection.
+- name: Read the administrative account's home
+  ansible.builtin.user:
+    name: "{{ lookup('ansible.builtin.env', 'SUDO_USER') | default(ansible_facts['user_id'], true) }}"
+  check_mode: true
+  changed_when: false
+  register: devmachine_workspace_admin_account
+  when: ansible_facts['system'] == 'Darwin'
 
 - name: Look for the keys the administrative account is reached by
   ansible.builtin.stat:

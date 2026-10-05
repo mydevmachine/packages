@@ -3,7 +3,7 @@ name: workspace
 scope: workspace
 category: Foundation
 summary: >-
-  The Linux account a person works in: a home nobody else can read, a git
+  The account a person works in: a home nobody else can read, a git
   identity and ~/dev.
 
 requires:
@@ -13,12 +13,14 @@ variables:
   home:
     summary: >-
       Where the account's home is. It is read from the account; a new account
-      gets /home/<the account> unless this says otherwise.
+      gets /home/<the account> unless this says otherwise. On macOS a new
+      account always gets /Users/<the account>.
     default: <the account's own home>
   admin_home:
     summary: >-
       The home of the account the CLI provisions with. Whatever reaches that
-      account over SSH is what reaches this workspace.
+      account over SSH is what reaches this workspace. On macOS it is the admin
+      login's own home, read from the system.
     default: /root
   groups:
     summary: >-
