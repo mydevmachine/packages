@@ -14,14 +14,18 @@ description: "Use when running, inspecting, or troubleshooting the Devmachine CL
   devmachine command does it. A machine made by hand is invisible to
   devmachine and to the app.
 - A machine on this computer ("a local machine", "a Lima VM"):
-  `devmachine machines create-local <name> --add`. It needs Lima; if
-  `limactl` is missing, install it with `brew install lima`. `--add` gives
+  `devmachine machines create-local <name> --add --location local`. It
+  needs Lima; if `limactl` is missing, install it with `brew install lima`. `--add` gives
   it the essentials (including `devmachine-app`); then run
   `devmachine sync --machine <name> --yes` to apply them.
 - A server: run `devmachine machines scan --address <address>` and show the
   fingerprint to the person to compare with the provider's console. Then
   `devmachine machines add --address <address> --name <name> --fingerprint
-  SHA256:… [--key agent:SHA256:…]`.
+  SHA256:… --location <location> [--key agent:SHA256:…]`.
+- Before adding a machine, ask the person where it is, for example
+  `hostinger`, `home` or `office`, and pass it as `--location`. With no
+  answer, a server is `external` and a Lima VM made here is `local`. Change
+  it later with `devmachine machines edit <name> --location <location>`.
 - Your shell has no terminal, so a command that asks a question waits
   forever. Always pass the non-interactive flags, such as `--yes`, and
   `devmachine skills add --agent <harness> --yes`.
