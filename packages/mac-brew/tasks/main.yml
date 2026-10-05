@@ -16,6 +16,14 @@
       from https://brew.sh, then run `devmachine setup` for this machine.
   when: not devmachine_mac_brew_bin.stat.exists
 
+# Homebrew refuses to run as root. On the operator's own Mac the play already
+# runs as the owner; on a Mac reached over SSH it runs as root, so every brew
+# call becomes the account that installed Homebrew.
+- name: Find who owns Homebrew
+  ansible.builtin.set_fact:
+    devmachine_mac_brew_owner: "{{ devmachine_mac_brew_bin.stat.pw_name }}"
+    devmachine_mac_brew_become: "{{ devmachine_mac_brew_bin.stat.uid != ansible_facts['effective_user_id'] }}"
+
 # Taps come before formulae and casks: without them a cask from an own tap
 # fails with "No available cask with the name ..." on a clean Mac.
 - name: Add the taps
@@ -24,6 +32,8 @@
     state: present
     path: "{{ devmachine_mac_brew_prefix }}/bin"
   when: devmachine_mac_brew_taps | length > 0
+  become: "{{ devmachine_mac_brew_become }}"
+  become_user: "{{ devmachine_mac_brew_owner }}"
 
 - name: Install the formulae
   community.general.homebrew:
@@ -31,13 +41,17 @@
     state: present
     path: "{{ devmachine_mac_brew_prefix }}/bin"
   when: devmachine_mac_brew_formulae | length > 0
+  become: "{{ devmachine_mac_brew_become }}"
+  become_user: "{{ devmachine_mac_brew_owner }}"
 
 - name: Read the trust file
   ansible.builtin.slurp:
-    path: "{{ ansible_facts['env']['HOME'] }}/.homebrew/trust.json"
+    path: ~/.homebrew/trust.json
   register: devmachine_mac_brew_trust_file
   failed_when: false
   changed_when: false
+  become: "{{ devmachine_mac_brew_become }}"
+  become_user: "{{ devmachine_mac_brew_owner }}"
 
 - name: Decode the trust file
   ansible.builtin.set_fact:
@@ -52,11 +66,15 @@
   ansible.builtin.command: "{{ devmachine_mac_brew_prefix }}/bin/brew trust --cask {{ item }}"
   loop: "{{ devmachine_mac_brew_trusted_casks }}"
   when: item not in devmachine_mac_brew_trusted_casks_known
+  become: "{{ devmachine_mac_brew_become }}"
+  become_user: "{{ devmachine_mac_brew_owner }}"
 
 - name: Trust the formulae
   ansible.builtin.command: "{{ devmachine_mac_brew_prefix }}/bin/brew trust --formula {{ item }}"
   loop: "{{ devmachine_mac_brew_trusted_formulae }}"
   when: item not in devmachine_mac_brew_trusted_formulae_known
+  become: "{{ devmachine_mac_brew_become }}"
+  become_user: "{{ devmachine_mac_brew_owner }}"
 
 - name: Install the casks
   community.general.homebrew_cask:
@@ -64,3 +82,5 @@
     state: present
     path: "{{ devmachine_mac_brew_prefix }}/bin"
   when: devmachine_mac_brew_casks | length > 0
+  become: "{{ devmachine_mac_brew_become }}"
+  become_user: "{{ devmachine_mac_brew_owner }}"
