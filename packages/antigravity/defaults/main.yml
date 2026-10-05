@@ -1,2 +1,2 @@
 ---
-devmachine_antigravity_home: "/home/{{ devmachine_workspace.user }}"
+devmachine_antigravity_home: "{{ devmachine_account.home | default('/home/' ~ devmachine_workspace.user) }}"

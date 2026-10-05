@@ -1,8 +1,7 @@
 ---
-# Debian and Ubuntu put a home under /home. Reading it back from the machine
-# would be more exact and less predictable: on a run that has not created the
-# account yet there is nothing to read, and a dry run has to say something.
-devmachine_workspace_home: "/home/{{ devmachine_workspace.user }}"
+# The home the account has. Before it exists — a first run, or a dry run —
+# there is nothing to read, so it is where useradd puts a new one on Linux.
+devmachine_workspace_home: "{{ devmachine_account.home | default('/home/' ~ devmachine_workspace.user) }}"
 
 # Every workspace is reached by whatever reaches the administrative account.
 # There is no second list of keys to keep in step, and no key of the operator's

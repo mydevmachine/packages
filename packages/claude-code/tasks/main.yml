@@ -1,4 +1,13 @@
 ---
+# check_mode makes the user module only read: it never creates the account,
+# and a missing one just leaves no home in the result.
+- name: Read the account's home and group
+  ansible.builtin.user:
+    name: "{{ devmachine_workspace.user }}"
+  check_mode: true
+  changed_when: false
+  register: devmachine_account
+
 - name: Install what the installer downloads with
   ansible.builtin.package:
     name:
@@ -35,7 +44,7 @@
     line: 'export PATH="$HOME/.local/bin:$PATH"'
     create: true
     owner: "{{ devmachine_workspace.user }}"
-    group: "{{ devmachine_workspace.user }}"
+    group: "{{ devmachine_account.group | default(omit) }}"
     mode: "0644"
 
 - name: Create ~/.claude
@@ -43,7 +52,7 @@
     path: "{{ devmachine_claude_code_home }}/.claude"
     state: directory
     owner: "{{ devmachine_workspace.user }}"
-    group: "{{ devmachine_workspace.user }}"
+    group: "{{ devmachine_account.group | default(omit) }}"
     mode: "0755"
 
 - name: Read the settings this account already has
@@ -82,7 +91,7 @@
   ansible.builtin.copy:
     dest: "{{ devmachine_claude_code_home }}/.claude/settings.json"
     owner: "{{ devmachine_workspace.user }}"
-    group: "{{ devmachine_workspace.user }}"
+    group: "{{ devmachine_account.group | default(omit) }}"
     mode: "0644"
     content: "{{ devmachine_claude_code_current | combine(devmachine_claude_code_wanted, recursive=True) | to_nice_json }}\n"
   when:
@@ -122,7 +131,7 @@
   ansible.builtin.copy:
     dest: "{{ devmachine_claude_code_home }}/.claude.json"
     owner: "{{ devmachine_workspace.user }}"
-    group: "{{ devmachine_workspace.user }}"
+    group: "{{ devmachine_account.group | default(omit) }}"
     mode: "0600"
     content: "{{ devmachine_claude_code_current_state | combine(devmachine_claude_code_screen) | to_nice_json }}\n"
   when:

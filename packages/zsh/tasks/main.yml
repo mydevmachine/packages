@@ -17,6 +17,15 @@
         - "{{ role_path }}/vars"
       skip: true
 
+# check_mode makes the user module only read: it never creates the account,
+# and a missing one just leaves no home in the result.
+- name: Read the account's home and group
+  ansible.builtin.user:
+    name: "{{ devmachine_workspace.user }}"
+  check_mode: true
+  changed_when: false
+  register: devmachine_account
+
 - name: Install zsh and what Oh My Zsh's installer needs
   ansible.builtin.package:
     name:
@@ -67,7 +76,7 @@
     marker: "# {mark} devmachine — workspace secrets"
     create: true
     owner: "{{ devmachine_workspace.user }}"
-    group: "{{ devmachine_workspace.user }}"
+    group: "{{ devmachine_account.group | default(omit) }}"
     mode: "0644"
     block: |
       if [ -r "$HOME/.devmachine/env" ]; then
@@ -85,7 +94,7 @@
     marker: "# {mark} devmachine — tmux auto-attach"
     create: true
     owner: "{{ devmachine_workspace.user }}"
-    group: "{{ devmachine_workspace.user }}"
+    group: "{{ devmachine_account.group | default(omit) }}"
     mode: "0644"
     block: |
       if [ -z "$TMUX" ] && [ -n "$SSH_CONNECTION" ]; then
@@ -107,6 +116,6 @@
     src: tmux.conf
     dest: "{{ devmachine_zsh_home }}/.tmux.conf"
     owner: "{{ devmachine_workspace.user }}"
-    group: "{{ devmachine_workspace.user }}"
+    group: "{{ devmachine_account.group | default(omit) }}"
     mode: "0644"
   when: devmachine_zsh_tmux_config | bool

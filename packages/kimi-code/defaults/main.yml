@@ -1,2 +1,2 @@
 ---
-devmachine_kimi_code_home: "/home/{{ devmachine_workspace.user }}"
+devmachine_kimi_code_home: "{{ devmachine_account.home | default('/home/' ~ devmachine_workspace.user) }}"

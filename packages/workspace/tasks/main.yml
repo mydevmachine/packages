@@ -17,6 +17,15 @@
         - "{{ role_path }}/vars"
       skip: true
 
+# check_mode makes the user module only read: it never creates the account,
+# and a missing one just leaves no home in the result.
+- name: Read the account's home and group
+  ansible.builtin.user:
+    name: "{{ devmachine_workspace.user }}"
+  check_mode: true
+  changed_when: false
+  register: devmachine_account
+
 # A dry run on a machine where this account does not exist yet cannot become
 # it: Ansible has no user to hand its temporary files to, and fails saying so.
 # So every task below that runs as the account asks first, and a dry run
@@ -36,7 +45,9 @@
   failed_when:
     - devmachine_workspace_cache.rc != 0
     - devmachine_workspace_cache.stderr_lines | select('match', '^E:') | reject('search', devmachine_package_cache_tolerated) | list | length > 0
-  when: devmachine_workspace_cache_refreshed is not defined
+  when:
+    - devmachine_package_cache_command is defined
+    - devmachine_workspace_cache_refreshed is not defined
 
 - name: Warn that the cache refresh skipped Caddy's repository
   ansible.builtin.debug:
@@ -92,6 +103,7 @@
     # tasks would report a change forever.
     shell: "{{ devmachine_workspace_shell | default(omit, true) }}"
     create_home: true
+  register: devmachine_account
 
 # This is the whole isolation model: one workspace cannot read another's home.
 # It is also why delivering a credential into a home is safe enough — nothing
@@ -101,7 +113,7 @@
     path: "{{ devmachine_workspace_home }}"
     state: directory
     owner: "{{ devmachine_workspace.user }}"
-    group: "{{ devmachine_workspace.user }}"
+    group: "{{ devmachine_account.group | default(omit) }}"
     mode: "0750"
 
 - name: Create ~/.ssh
@@ -109,7 +121,7 @@
     path: "{{ devmachine_workspace_home }}/.ssh"
     state: directory
     owner: "{{ devmachine_workspace.user }}"
-    group: "{{ devmachine_workspace.user }}"
+    group: "{{ devmachine_account.group | default(omit) }}"
     mode: "0700"
 
 - name: Look for the keys the administrative account is reached by
@@ -217,5 +229,5 @@
     path: "{{ devmachine_workspace_home }}/dev"
     state: directory
     owner: "{{ devmachine_workspace.user }}"
-    group: "{{ devmachine_workspace.user }}"
+    group: "{{ devmachine_account.group | default(omit) }}"
     mode: "0755"

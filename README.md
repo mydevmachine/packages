@@ -140,9 +140,15 @@ refused and named.
 ## Rules a recipe keeps
 
 - **No `apt`, `apt_key` or `apt_repository`.** `package:` is what installs
-  things. Whatever differs between families — package names, a repository path,
-  a service name — lives in `vars/<family>.yml`, loaded with
-  `include_vars: "{{ ansible_os_family }}.yml"`.
+  things. A name that is the same everywhere (`curl`, `git`, `tar`) is written
+  inline. Whatever differs between systems — package names, a repository path,
+  a service name — lives in the role's `vars/`, in the first file that exists
+  of `<distribution>.yml`, `<pkg_mgr>.yml`, `<os_family>.yml` and
+  `default.yml`. Every role loads them with the same task, and finding none is
+  not an error.
+- **Home and group come from the account.** A workspace package never writes
+  `/home/<user>` or `group: <user>`: it reads both from the account, because a
+  Mac keeps homes in `/Users` and puts every account in the `staff` group.
 - **`name:` is the directory name.** A package is found by its directory.
 - **`needs:` is written down.** Ordering is declared, never implied by the order
   of a list.

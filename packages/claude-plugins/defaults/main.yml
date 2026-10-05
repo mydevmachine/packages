@@ -1,5 +1,5 @@
 ---
-devmachine_claude_plugins_home: "/home/{{ devmachine_workspace.user }}"
+devmachine_claude_plugins_home: "{{ devmachine_account.home | default('/home/' ~ devmachine_workspace.user) }}"
 
 devmachine_claude_plugins_claude: "{{ devmachine_claude_plugins_home }}/.local/bin/claude"
 

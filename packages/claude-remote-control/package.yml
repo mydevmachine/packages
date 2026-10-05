@@ -15,7 +15,7 @@ requires:
 variables:
   home:
     summary: Where the account's home is.
-    default: /home/<the account>
+    default: <the account's own home>
   session_name:
     summary: >-
       What this session is called in the phone app. Empty means the

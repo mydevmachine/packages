@@ -12,9 +12,9 @@ requires:
 variables:
   home:
     summary: >-
-      Where the account's home is. Debian and Ubuntu put it under /home; a
-      machine whose useradd is configured otherwise says so here.
-    default: /home/<the account>
+      Where the account's home is. It is read from the account; a new account
+      gets /home/<the account> unless this says otherwise.
+    default: <the account's own home>
   admin_home:
     summary: >-
       The home of the account the CLI provisions with. Whatever reaches that

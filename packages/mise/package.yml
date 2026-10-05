@@ -14,4 +14,4 @@ requires:
 variables:
   home:
     summary: Where the account's home is.
-    default: /home/<the account>
+    default: <the account's own home>
