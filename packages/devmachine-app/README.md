@@ -44,6 +44,11 @@ with the machine's health: memory, swap, disk, load, Docker containers, RAM
 by Linux user, and listening ports with their owner. It replaces a shell
 snippet the app used to send over SSH and parse itself.
 
+On a Mac it prints the same document, read from `sysctl` (load, memory size,
+swap), `vm_stat` (memory used, counted as Activity Monitor does), `df` on the
+data volume `/System/Volumes/Data`, and `lsof` (listening ports). Homes are
+under `/Users/` there, so a container's owner comes from that folder.
+
 A part the machine cannot answer — Docker not installed, nothing listening —
 comes back as an empty list rather than a failure. The command only exits
 non-zero when it cannot report anything at all. Partial problems are

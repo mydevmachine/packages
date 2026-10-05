@@ -195,3 +195,155 @@ def test_collect_never_fails_when_every_tool_is_missing(monkeypatch):
     assert doc["ports"] == []
     assert isinstance(doc["errors"], list)
     assert "collected_at" in doc
+
+
+VM_STAT_OUTPUT = (
+    "Mach Virtual Memory Statistics: (page size of 16384 bytes)\n"
+    "Pages free:                                6624.\n"
+    "Pages active:                            484660.\n"
+    "Pages inactive:                          482131.\n"
+    "Pages speculative:                         2284.\n"
+    "Pages throttled:                              0.\n"
+    "Pages wired down:                        268583.\n"
+    "Pages purgeable:                          15582.\n"
+    '"Translation faults":               65678077727.\n'
+    "File-backed pages:                       252182.\n"
+    "Anonymous pages:                         716893.\n"
+    "Pages stored in compressor:             2323554.\n"
+    "Pages occupied by compressor:            286086.\n"
+)
+
+
+def test_owner_from_home_on_macos():
+    m = devmachine_stats
+    assert m.owner_from_home("/Users/alice/compose") == "alice"
+    assert m.owner_from_home("/Users/") is None
+
+
+def test_read_memory_and_swap_darwin(monkeypatch):
+    m = devmachine_stats
+
+    def run_stub(cmd, timeout=10):
+        if cmd == ["sysctl", "-n", "hw.memsize"]:
+            return True, "25769803776\n", None
+        if cmd == ["vm_stat"]:
+            return True, VM_STAT_OUTPUT, None
+        if cmd == ["sysctl", "-n", "vm.swapusage"]:
+            return True, "total = 2048.00M  used = 1024.50M  free = 1023.50M  (encrypted)\n", None
+        raise AssertionError("unexpected command: %r" % cmd)
+
+    monkeypatch.setattr(m, "run", run_stub)
+    errors = []
+    memory, swap = m.read_memory_and_swap_darwin(errors)
+    used = (716893 - 15582 + 268583 + 286086) * 16384
+    assert memory == {
+        "total_bytes": 25769803776,
+        "used_bytes": used,
+        "available_bytes": 25769803776 - used,
+    }
+    assert swap == {"total_bytes": 2048 * 1024**2, "used_bytes": int(1024.5 * 1024**2)}
+    assert errors == []
+
+
+def test_read_memory_darwin_without_anonymous_pages_counts_active(monkeypatch):
+    m = devmachine_stats
+    older = "\n".join(l for l in VM_STAT_OUTPUT.splitlines() if not l.startswith("Anonymous"))
+
+    def run_stub(cmd, timeout=10):
+        if cmd == ["sysctl", "-n", "hw.memsize"]:
+            return True, "25769803776\n", None
+        if cmd == ["vm_stat"]:
+            return True, older, None
+        return True, "total = 0.00M  used = 0.00M  free = 0.00M\n", None
+
+    monkeypatch.setattr(m, "run", run_stub)
+    memory, swap = m.read_memory_and_swap_darwin([])
+    assert memory["used_bytes"] == (484660 + 268583 + 286086) * 16384
+    assert swap == {"total_bytes": 0, "used_bytes": 0}
+
+
+def test_read_memory_and_swap_darwin_missing_tools(monkeypatch):
+    m = devmachine_stats
+    monkeypatch.setattr(m, "run", lambda cmd, timeout=10: (False, "", None))
+    errors = []
+    memory, swap = m.read_memory_and_swap_darwin(errors)
+    assert memory == {"total_bytes": 0, "used_bytes": 0, "available_bytes": 0}
+    assert swap == {"total_bytes": 0, "used_bytes": 0}
+    assert errors == ["sysctl: not found"]
+
+
+def test_read_disk_darwin(monkeypatch):
+    m = devmachine_stats
+    df_output = (
+        "Filesystem   1024-blocks      Used Available Capacity iused      ifree %iused  Mounted on\n"
+        "/dev/disk3s1   482797652 228300500 203498492    53% 3649589 2034984920    0%   /System/Volumes/Data\n"
+    )
+    seen = []
+
+    def run_stub(cmd, timeout=10):
+        seen.append(cmd)
+        return True, df_output, None
+
+    monkeypatch.setattr(m, "run", run_stub)
+    monkeypatch.setattr(m.os.path, "isdir", lambda p: p == "/System/Volumes/Data")
+    disk = m.read_disk_darwin([])
+    assert seen == [["df", "-k", "/System/Volumes/Data"]]
+    assert disk == {
+        "path": "/System/Volumes/Data",
+        "used_bytes": 228300500 * 1024,
+        "available_bytes": 203498492 * 1024,
+        "used_percent": 53,
+    }
+
+
+def test_read_load_darwin(monkeypatch):
+    m = devmachine_stats
+    monkeypatch.setattr(m, "run", fake_run({"sysctl": (True, "{ 2.01 2.74 3.63 }\n", None)}))
+    assert m.read_load_darwin([]) == {"load1": 2.01, "load5": 2.74, "load15": 3.63}
+
+
+def test_read_ports_darwin(monkeypatch):
+    m = devmachine_stats
+    lsof_out = (
+        "p571\nLalice\nf8\nn*:7000\nf9\nn*:7000\n"
+        "p615\nLbob\nf4\nn127.0.0.1:5432\nf5\nn[::1]:5432\n"
+        "p700\nLroot\nf3\nn*:8810\n"
+    )
+
+    def run_stub(cmd, timeout=10):
+        if cmd[:2] == ["docker", "ps"]:
+            return True, "web|/Users/alice/compose|0.0.0.0:8810->80/tcp\n", None
+        if cmd[0] == "lsof":
+            return True, lsof_out, None
+        raise AssertionError("unexpected command: %r" % cmd)
+
+    monkeypatch.setattr(m, "run", run_stub)
+    assert m.read_ports_darwin([]) == [
+        {"port": 5432, "owner": "bob"},
+        {"port": 7000, "owner": "alice"},
+        {"port": 8810, "owner": "alice"},
+    ]
+
+
+def test_read_ports_darwin_nothing_listening(monkeypatch):
+    m = devmachine_stats
+
+    def run_stub(cmd, timeout=10):
+        if cmd[0] == "docker":
+            return False, "", None
+        return False, "", "lsof: exit 1"
+
+    monkeypatch.setattr(m, "run", run_stub)
+    errors = []
+    assert m.read_ports_darwin(errors) == []
+    assert errors == []
+
+
+def test_collect_on_darwin_has_the_linux_shape(monkeypatch):
+    m = devmachine_stats
+    monkeypatch.setattr(m, "run", lambda cmd, timeout=10: (False, "", None))
+    darwin = m.collect("Darwin")
+    linux = m.collect("Linux")
+    assert list(darwin) == list(linux)
+    for key in ("memory", "swap", "disk", "load", "docker"):
+        assert list(darwin[key]) == list(linux[key])
