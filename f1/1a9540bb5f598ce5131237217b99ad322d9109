@@ -1,0 +1,29 @@
+packages/mac-ports/tasks/main.yml
+  s_87d72b62cfc5a1::t_960d1d5056a7d5 1-27
+packages/mac-ports/package.yml
+  s_87d72b62cfc5a1::t_55edb370b37199 1-18
+packages/mac-ports/bin/bootstrap
+  s_87d72b62cfc5a1::t_b6231b98fbafe6 1-153
+packages/mac-ports/README.md
+  s_87d72b62cfc5a1::t_73154951c35679 1-74
+README.md
+  s_87d72b62cfc5a1::t_1688b678e30787 103
+packages/mac-ports/defaults/main.yml
+  s_87d72b62cfc5a1::t_e766b453e8b835 1-4
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f11a9540bb5f598ce5131237217b99ad322d9109",
+  "prompts": {},
+  "sessions": {
+    "s_87d72b62cfc5a1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5e69ca1d-9900-4500-8ba7-104b479b47eb",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Djalma Araujo <djalma@nossomos.cc>"
+    }
+  }
+}
