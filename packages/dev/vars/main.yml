@@ -9,6 +9,8 @@ devmachine_go_architectures:
 devmachine_go_architecture: >-
   {{ devmachine_go_architectures.get(ansible_facts['architecture'], ansible_facts['architecture']) }}
 
+# The macOS build is a zip, and macOS's tar unpacks a zip as well as a tarball.
 devmachine_dev_gh_url: >-
   https://github.com/cli/cli/releases/download/v{{ devmachine_dev_gh_version }}/gh_{{
-  devmachine_dev_gh_version }}_linux_{{ devmachine_go_architecture }}.tar.gz
+  devmachine_dev_gh_version }}_{{ 'macOS' if ansible_facts['system'] == 'Darwin' else 'linux' }}_{{
+  devmachine_go_architecture }}.{{ 'zip' if ansible_facts['system'] == 'Darwin' else 'tar.gz' }}

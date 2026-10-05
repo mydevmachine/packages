@@ -11,5 +11,5 @@ devmachine_go_architecture: >-
 
 devmachine_glab_url: >-
   https://gitlab.com/api/v4/projects/gitlab-org%2Fcli/packages/generic/glab/{{
-  devmachine_glab_version }}/glab_{{ devmachine_glab_version }}_linux_{{
+  devmachine_glab_version }}/glab_{{ devmachine_glab_version }}_{{ ansible_facts['system'] | lower }}_{{
   devmachine_go_architecture }}.tar.gz
