@@ -1,0 +1,19 @@
+packages/devmachine-skills/skills/use-devmachine/SKILL.md
+  s_87d72b62cfc5a1::t_94c8ea53c5679e 24-25,35-65,114-115,149
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "0f8b4e3065bc5f1c89291e94a6fe38e3a57db5e6",
+  "prompts": {},
+  "sessions": {
+    "s_87d72b62cfc5a1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5e69ca1d-9900-4500-8ba7-104b479b47eb",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Djalma Araujo <djalma@nossomos.cc>"
+    }
+  }
+}
