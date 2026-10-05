@@ -35,7 +35,17 @@ rather than added on its own.
 - `upgrade` is off by default so a sync never upgrades packages nobody asked
   for.
 - `swap` only creates the swapfile when a size is given; it never resizes or
-  removes one that already exists.
+  removes one that already exists. On a btrfs root it is made with
+  `btrfs filesystem mkswapfile`, because btrfs refuses to swap on a file
+  `fallocate` made.
+- On Arch Linux the package lists are refreshed only by `upgrade`, as
+  `pacman -Syu`. Refreshing them without upgrading and then installing is a
+  partial upgrade, which Arch does not support; with `upgrade` off, packages
+  come from the lists the machine already has. If pacman cannot download a
+  package (a 404 from the mirror), the lists are older than the mirror: turn
+  `upgrade` on for one sync.
+- On Arch Linux the system locale is also written to `/etc/environment`, so
+  an SSH login has a `LANG` and `mosh` starts.
 
 ## Learn more
 

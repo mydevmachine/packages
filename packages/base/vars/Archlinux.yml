@@ -1,0 +1,44 @@
+---
+# No cache refresh of its own. Installing after `pacman -Sy` without `-u` is a
+# partial upgrade, which Arch does not support and which can leave a program
+# linked against a library the system does not have. So the package lists are
+# refreshed only together with the upgrade, when the operator asks for one;
+# otherwise packages come from the lists the machine already has.
+devmachine_package_upgrade_command: pacman -Syu --noconfirm
+
+devmachine_base_packages:
+  - curl
+  # gcc, make, autoconf, patch and the rest of the build toolchain.
+  - base-devel
+  - ca-certificates
+  - gnupg
+  - zsh
+  - tmux
+  # Resilient SSH for a wobbly link and for roaming. The firewall package can
+  # scope its UDP range to one interface.
+  - mosh
+  # Audio and video processing, available to every workspace on the machine.
+  - ffmpeg
+  # Dependencies for compiling languages from source through mise, ruby-build
+  # and the rest: the Arch names of the headers base installs on Debian. Arch
+  # ships headers inside the library package, so there is no -dev to add.
+  - autoconf
+  - patch
+  - zlib
+  - openssl
+  - libyaml
+  - readline
+  - ncurses
+  - libffi
+  - gdbm
+  - gmp
+  - util-linux-libs
+  - libxml2
+  - libxslt
+  - jemalloc
+  - libvips
+
+# An SSH login on Arch gets no LANG: nothing reads /etc/locale.conf for it, and
+# mosh-server refuses to start without a UTF-8 locale. pam_env reads
+# /etc/environment for every login, so the system locale goes there too.
+devmachine_base_lang_in_environment: true
