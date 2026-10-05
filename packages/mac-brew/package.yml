@@ -8,8 +8,9 @@ summary: >-
   anything.
 
 requires:
-  # The first CLI release that reads `bootstrap`; set at release time.
-  cli: ">= 0.8.0"
+  # An older CLI ignores `bootstrap` and keeps preparing your own Mac its old
+  # way, so raising this would only lock it out of a package it can still run.
+  cli: ">= 0.7.0"
 
 bootstrap: bin/bootstrap
 
