@@ -17,7 +17,7 @@
     src: devmachine-make-git-key
     dest: /usr/local/bin/devmachine-make-git-key
     owner: root
-    group: root
+    group: "{{ 'wheel' if ansible_facts['system'] == 'Darwin' else 'root' }}"
     mode: "0755"
 
 # The CLI copies the private key into this workspace after every workspace
