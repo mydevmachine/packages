@@ -8,12 +8,16 @@ summary: >-
   anything.
 
 requires:
-  cli: ">= 0.7.0"
+  # The first CLI release that reads `bootstrap`; set at release time.
+  cli: ">= 0.8.0"
+
+bootstrap: bin/bootstrap
 
 variables:
   prefix:
     summary: >-
-      Where Homebrew lives. /usr/local on an Intel Mac.
+      Where Homebrew lives. Left unset, /opt/homebrew on Apple Silicon and
+      /usr/local on an Intel Mac.
     default: /opt/homebrew
   taps:
     summary: Homebrew taps to add.
