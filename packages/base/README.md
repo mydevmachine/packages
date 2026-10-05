@@ -13,8 +13,8 @@ The base tools a development machine needs, plus a shared tmux config and a
 | --- | --- | --- |
 | `timezone` | `""` | The machine's timezone, as tzdata spells it. Empty leaves whatever the machine came with. |
 | `hostname` | `""` | The machine's hostname. Empty leaves the one it already has. |
-| `upgrade` | `false` | Upgrade every package already installed. Off, because that is the owner's decision, not a side effect of installing base tools. |
-| `swap` | `""` | Size of a swapfile at `/swapfile`, such as `8G`. Empty leaves the machine alone. |
+| `upgrade` | `false` | Upgrade every package already installed. Off, because that is the owner's decision, not a side effect of installing base tools. Nothing on macOS. |
+| `swap` | `""` | Size of a swapfile at `/swapfile`, such as `8G`. Empty leaves the machine alone. Nothing on macOS, which manages its own swap. |
 
 ## Credentials
 
@@ -46,6 +46,14 @@ rather than added on its own.
   `upgrade` on for one sync.
 - On Arch Linux the system locale is also written to `/etc/environment`, so
   an SSH login has a `LANG` and `mosh` starts.
+- On macOS it installs tmux, mosh and ffmpeg from Homebrew or MacPorts;
+  curl, git, zsh and the build toolchain come with the Command Line Tools. A
+  Mac reached over SSH runs the play as root, so Homebrew installs run as the
+  account that owns Homebrew. `timezone` goes through `systemsetup`. `swap`
+  and `upgrade` do nothing there: macOS manages its own swap, and Software
+  Update, Homebrew or MacPorts upgrade what they installed. `base` writes
+  `/etc/tmux.conf` and `/usr/local/bin/resume`, so on your own Mac (a self
+  machine, which runs without root) it stops before changing anything.
 
 ## Learn more
 
