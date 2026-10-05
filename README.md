@@ -1,9 +1,110 @@
-# packages
+<h1 align="center">devmachine packages</h1>
 
-The recipes the [devmachine CLI](https://github.com/mydevmachine/devmachine) applies to a
-machine. Nothing here is built into the binary: the CLI fetches a release of this
-repository, checks it against the checksum published beside it, and runs what it
-finds.
+<p align="center">
+  <strong>Add a tool with one package, or write your own.</strong><br>
+  The ready-made packages for <a href="https://github.com/mydevmachine/devmachine">devmachine</a>: coding agents, Docker, Caddy, Tailscale, DNS and more.
+</p>
+
+<p align="center">
+  <a href="https://mydevmachine.sh/packages/">Browse the packages</a> ·
+  <a href="https://mydevmachine.sh/concepts/packages/">How packages work</a> ·
+  <a href="https://mydevmachine.sh/reference/package-format/">Package format</a> ·
+  <a href="https://mydevmachine.sh/guides/wuzapi-as-your-own-package/">Write your own</a> ·
+  <a href="https://mydevmachine.sh/">Website</a>
+</p>
+
+devmachine turns any machine you own into your own coding machine, with one
+isolated workspace per project. A package adds one thing to a machine or a
+workspace: a coding agent, Docker, a GitHub login, a reverse proxy.
+
+Nothing here is built into the CLI binary. The CLI fetches a release of this
+repository, checks it against the checksum published beside it, and runs what
+it finds.
+
+## Use a package
+
+```sh
+devmachine packages list                            # what exists
+devmachine packages add docker                      # add one to a machine
+devmachine packages add claude-code --workspace acme  # or to a workspace
+devmachine sync                                     # install it
+```
+
+Or ask your coding agent: after `devmachine skills add`, any Claude Code or
+Codex session can add packages for you.
+
+## What is in this release
+
+### Foundation
+
+| Package | Scope | What it does |
+| --- | --- | --- |
+| [`essentials`](packages/essentials/README.md) | machine | base, git, firewall, ssh_hardening, caddy and devmachine-app, in one package. |
+| [`base`](packages/base/README.md) | machine | The base tools, a shared tmux config, and the `resume` session picker. |
+| [`git`](packages/git/README.md) | machine | Installs git. |
+| [`workspace`](packages/workspace/README.md) | workspace | The Linux account a person works in. |
+| [`zsh`](packages/zsh/README.md) | workspace | zsh, Oh My Zsh, and tmux auto-attach over SSH. |
+| [`mise`](packages/mise/README.md) | workspace | The per-project runtime manager, activated for one account. |
+| [`dev`](packages/dev/README.md) | workspace | The GitHub CLI, bun, Node LTS and unzip for one account. |
+
+### Coding agents
+
+| Package | Scope | What it does |
+| --- | --- | --- |
+| [`claude-code`](packages/claude-code/README.md) | workspace | The Claude Code CLI for one account. |
+| [`claude-plugins`](packages/claude-plugins/README.md) | workspace | Installs and updates Claude Code plugins in one account. |
+| [`claude-remote-control`](packages/claude-remote-control/README.md) | workspace | Keeps one account's Claude Code Remote Control session up. |
+| [`codex`](packages/codex/README.md) | workspace | OpenAI's Codex CLI for one account, without Node. |
+| [`pi`](packages/pi/README.md) | workspace | The Pi coding agent for one account, without Node. |
+| [`opencode`](packages/opencode/README.md) | workspace | The opencode CLI for one account. |
+| [`antigravity`](packages/antigravity/README.md) | workspace | Google's Antigravity CLI (`agy`) for one account. |
+| [`kimi-code`](packages/kimi-code/README.md) | workspace | Moonshot AI's Kimi Code CLI (`kimi`) for one account. |
+| [`cline`](packages/cline/README.md) | workspace | The Cline CLI for one account. |
+| [`devmachine-skills`](packages/devmachine-skills/README.md) | workspace | Teaches supported agents to operate Devmachine and create packages. |
+
+### Developer tools
+
+| Package | Scope | What it does |
+| --- | --- | --- |
+| [`git-key`](packages/git-key/README.md) | workspace | One SSH key the machine pushes with, copied into each workspace. |
+| [`glab`](packages/glab/README.md) | workspace | The GitLab CLI, installed for one account. |
+| [`sentry`](packages/sentry/README.md) | workspace | The Sentry CLI, installed for one account. |
+
+### Containers and web
+
+| Package | Scope | What it does |
+| --- | --- | --- |
+| [`docker`](packages/docker/README.md) | machine | Docker Engine and the Compose plugin, from Docker's own repository. |
+| [`caddy`](packages/caddy/README.md) | machine | A reverse proxy that gets its own certificates. |
+
+### Security
+
+| Package | Scope | What it does |
+| --- | --- | --- |
+| [`firewall`](packages/firewall/README.md) | machine | ufw, with SSH open and HTTP optional. |
+| [`fail2ban`](packages/fail2ban/README.md) | machine | fail2ban, with a jail for sshd. |
+| [`ssh_hardening`](packages/ssh_hardening/README.md) | machine | Password authentication off, for good. |
+
+### Network and DNS
+
+| Package | Scope | What it does |
+| --- | --- | --- |
+| [`tailscale`](packages/tailscale/README.md) | machine | Joins the machine to a tailnet, and resolves `tailscale:<name>` addresses. |
+| [`cloudflare`](packages/cloudflare/README.md) | machine | DNS zones on Cloudflare. |
+| [`hostinger`](packages/hostinger/README.md) | machine | DNS zones on Hostinger. |
+
+### macOS
+
+| Package | Scope | What it does |
+| --- | --- | --- |
+| [`devmachine-app`](packages/devmachine-app/README.md) | machine | What the [Devmachine macOS app](https://mydevmachine.sh/app/) asks a machine for. |
+| [`mac-brew`](packages/mac-brew/README.md) | machine | Installs Homebrew taps, formulae and casks from lists. |
+| [`mac-mise`](packages/mac-mise/README.md) | machine | Installs mise's global tools from a list. |
+
+Missing something? Write it as your own package and keep it in your
+configuration, or open a pull request here. See
+[wuzapi as your own package](https://mydevmachine.sh/guides/wuzapi-as-your-own-package/)
+for a full example.
 
 ## What a package is
 
@@ -19,43 +120,8 @@ packages/<name>/
 
 Nothing is translated. What is written here is what runs on the machine, so a
 failure points at a line somebody wrote rather than at generated YAML they have
-never seen.
-
-## What is in this release
-
-| Package | Scope | What it does |
-| --- | --- | --- |
-| [`essentials`](packages/essentials/README.md) | machine | base, git, firewall, ssh_hardening, caddy and devmachine-app, in one package. |
-| [`base`](packages/base/README.md) | machine | The base tools, a shared tmux config, and the `resume` session picker. |
-| [`git`](packages/git/README.md) | machine | Installs git. |
-| [`docker`](packages/docker/README.md) | machine | Docker Engine and the Compose plugin, from Docker's own repository. |
-| [`caddy`](packages/caddy/README.md) | machine | A reverse proxy that gets its own certificates. |
-| [`firewall`](packages/firewall/README.md) | machine | ufw, with SSH open and HTTP optional. |
-| [`fail2ban`](packages/fail2ban/README.md) | machine | fail2ban, with a jail for sshd. |
-| [`ssh_hardening`](packages/ssh_hardening/README.md) | machine | Password authentication off, for good. |
-| [`tailscale`](packages/tailscale/README.md) | machine | Joins the machine to a tailnet, and resolves `tailscale:<name>` addresses. |
-| [`cloudflare`](packages/cloudflare/README.md) | machine | DNS zones on Cloudflare. |
-| [`hostinger`](packages/hostinger/README.md) | machine | DNS zones on Hostinger. |
-| [`mac-brew`](packages/mac-brew/README.md) | machine | Installs Homebrew taps, formulae and casks from lists. |
-| [`mac-mise`](packages/mac-mise/README.md) | machine | Installs mise's global tools from a list. |
-| [`devmachine-app`](packages/devmachine-app/README.md) | machine | What the Devmachine macOS app asks a machine for. |
-| [`workspace`](packages/workspace/README.md) | workspace | The Linux account a person works in. |
-| [`zsh`](packages/zsh/README.md) | workspace | zsh, Oh My Zsh, and tmux auto-attach over SSH. |
-| [`mise`](packages/mise/README.md) | workspace | The per-project runtime manager, activated for one account. |
-| [`dev`](packages/dev/README.md) | workspace | The GitHub CLI, bun, Node LTS and unzip for one account. |
-| [`git-key`](packages/git-key/README.md) | workspace | One SSH key the machine pushes with, copied into each workspace. |
-| [`glab`](packages/glab/README.md) | workspace | The GitLab CLI, installed for one account. |
-| [`sentry`](packages/sentry/README.md) | workspace | The Sentry CLI, installed for one account. |
-| [`claude-code`](packages/claude-code/README.md) | workspace | The Claude Code CLI for one account. |
-| [`claude-plugins`](packages/claude-plugins/README.md) | workspace | Installs and updates Claude Code plugins in one account. |
-| [`claude-remote-control`](packages/claude-remote-control/README.md) | workspace | Keeps one account's Claude Code Remote Control session up. |
-| [`antigravity`](packages/antigravity/README.md) | workspace | Google's Antigravity CLI (`agy`) for one account. |
-| [`opencode`](packages/opencode/README.md) | workspace | The opencode CLI for one account. |
-| [`pi`](packages/pi/README.md) | workspace | The Pi coding agent for one account, without Node. |
-| [`kimi-code`](packages/kimi-code/README.md) | workspace | Moonshot AI's Kimi Code CLI (`kimi`) for one account. |
-| [`cline`](packages/cline/README.md) | workspace | The Cline CLI for one account. |
-| [`codex`](packages/codex/README.md) | workspace | OpenAI's Codex CLI for one account, without Node. |
-| [`devmachine-skills`](packages/devmachine-skills/README.md) | workspace | Teaches supported agents to operate Devmachine and create packages. |
+never seen. The full format is in the
+[package format reference](https://mydevmachine.sh/reference/package-format/).
 
 ## A pin is a tag, never a branch
 
