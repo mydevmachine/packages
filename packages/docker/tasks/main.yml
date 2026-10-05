@@ -1,6 +1,21 @@
 ---
-- name: Load the repository and package names for this family
-  ansible.builtin.include_vars: "{{ ansible_facts['os_family'] }}.yml"
+# A loop over first_found, not a plain include_vars: when no file matches, the
+# loop is empty and the task skips, on ansible-core 2.14 as on the latest.
+- name: Load the names for this system
+  ansible.builtin.include_vars: "{{ devmachine_vars_file }}"
+  loop: "{{ query('ansible.builtin.first_found', devmachine_vars_chain) }}"
+  loop_control:
+    loop_var: devmachine_vars_file
+  vars:
+    devmachine_vars_chain:
+      files:
+        - "{{ ansible_facts['distribution'] }}.yml"
+        - "{{ ansible_facts['pkg_mgr'] }}.yml"
+        - "{{ ansible_facts['os_family'] }}.yml"
+        - default.yml
+      paths:
+        - "{{ role_path }}/vars"
+      skip: true
 
 - name: Remove the old and conflicting docker packages
   ansible.builtin.package:

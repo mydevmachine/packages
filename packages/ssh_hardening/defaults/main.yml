@@ -6,7 +6,7 @@
 # setting, or the setting would be delivered and then quietly overridden.
 devmachine_ssh_hardening_service: ""
 
-# The family's own name for it, overridden in vars/<family>.yml. It has a value
+# The family's own name for it, overridden in vars/<system>.yml. It has a value
 # here as well, so a family with no file of its own still has a service to
 # reload.
 devmachine_ssh_hardening_family_service: sshd
