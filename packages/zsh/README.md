@@ -36,6 +36,8 @@ devmachine sync
   the computer you connect from through OSC 52, over SSH and over mosh, and
   leaves copy mode. A tmux server that was already running picks this up
   after `tmux source-file ~/.tmux.conf`.
+- On macOS the login shell is the system's `/bin/zsh`, and only tmux is
+  installed, from Homebrew (as the account that owns it) or MacPorts.
 
 ## Learn more
 

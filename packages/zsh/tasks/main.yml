@@ -28,13 +28,29 @@
 
 - name: Install zsh and what Oh My Zsh's installer needs
   ansible.builtin.package:
-    name:
-      - zsh
-      # Oh My Zsh's installer clones itself and downloads with these two.
-      - git
-      - curl
-      - tmux
+    name: "{{ devmachine_zsh_packages }}"
     state: present
+  when:
+    - devmachine_zsh_packages | length > 0
+    - ansible_facts['pkg_mgr'] != 'homebrew'
+
+# Homebrew refuses to run as root, and root is what this play runs as on a Mac
+# reached over SSH, so the install becomes the account that owns Homebrew.
+- name: Find who owns Homebrew
+  ansible.builtin.stat:
+    path: "{{ '/opt/homebrew' if ansible_facts['architecture'] == 'arm64' else '/usr/local' }}/bin/brew"
+  register: devmachine_zsh_brew
+  when: ansible_facts['pkg_mgr'] == 'homebrew'
+
+- name: Install tmux from Homebrew
+  ansible.builtin.package:
+    name: "{{ devmachine_zsh_packages }}"
+    state: present
+  become: "{{ devmachine_zsh_brew.stat.uid != ansible_facts['effective_user_id'] }}"
+  become_user: "{{ devmachine_zsh_brew.stat.pw_name }}"
+  when:
+    - devmachine_zsh_packages | length > 0
+    - ansible_facts['pkg_mgr'] == 'homebrew'
 
 # A dry run on a machine where this account does not exist yet cannot become
 # it: Ansible has no user to hand its temporary files to, and fails saying so.
