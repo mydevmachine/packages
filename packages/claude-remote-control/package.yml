@@ -1,6 +1,7 @@
 format: 1
 name: claude-remote-control
 scope: workspace
+platforms: [linux]
 category: Coding agents
 summary: >-
   Keeps one account's Claude Code Remote Control session up: a user systemd
