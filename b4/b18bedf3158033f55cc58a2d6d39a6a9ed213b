@@ -1,0 +1,51 @@
+packages/base/vars/Darwin.yml
+  s_87d72b62cfc5a1::t_53c74b779c408c 1-10
+packages/base/README.md
+  s_87d72b62cfc5a1::t_82a7320a939228 56
+  s_87d72b62cfc5a1::t_61f1ee5407441c 49-55
+  s_87d72b62cfc5a1::t_547e10f6163a04 16-17
+packages/base/tasks/main.yml
+  s_87d72b62cfc5a1::t_ad71a5ff3c5e48 120-121
+  s_87d72b62cfc5a1::t_b90e4beda72881 2-6,9-12,53,61,64,66,93,109,111,117,119,187,238
+  s_87d72b62cfc5a1::t_d61e99f996995a 7-8
+  s_87d72b62cfc5a1::t_a1b7d1b5c3dff8 54-55
+  s_87d72b62cfc5a1::t_4228156209f7d1 59-60
+  s_87d72b62cfc5a1::t_0c07a8bb7f0c5e 62-63
+  s_87d72b62cfc5a1::t_099883dffd9f1f 65
+  s_87d72b62cfc5a1::t_e949309d0605bb 67
+  s_87d72b62cfc5a1::t_1174f6cb422a36 94-95
+  s_87d72b62cfc5a1::t_ce3d52c756f20b 106-108
+  s_87d72b62cfc5a1::t_53b53105712317 110
+  s_87d72b62cfc5a1::t_4dc514f71bc96c 112-116
+  s_87d72b62cfc5a1::t_ee4030486a2777 118
+  s_87d72b62cfc5a1::t_518527ce83414d 122-123
+  s_87d72b62cfc5a1::t_db226d2a2ec841 188-190
+  s_87d72b62cfc5a1::t_9a34a463c8b8d6 239-240
+  s_f4d5eb9a12c0c6::t_e057ce8a7ab83e 72-88,102,133,166-172,178,204,217,224,231
+packages/base/package.yml
+  s_87d72b62cfc5a1::t_42740ec7ab4579 4,24,27-29
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b4b18bedf3158033f55cc58a2d6d39a6a9ed213b",
+  "prompts": {},
+  "sessions": {
+    "s_87d72b62cfc5a1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5e69ca1d-9900-4500-8ba7-104b479b47eb",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Djalma Araujo <djalma@nossomos.cc>"
+    },
+    "s_f4d5eb9a12c0c6": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "agent-af1b8cf9d67c6ec7f",
+        "model": "unknown"
+      },
+      "human_author": "Djalma Araujo <djalma@nossomos.cc>"
+    }
+  }
+}
