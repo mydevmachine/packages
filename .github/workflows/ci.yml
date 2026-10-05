@@ -45,6 +45,9 @@ jobs:
       - name: Run devmachine-app's tests
         run: pytest -q packages/devmachine-app/test
 
+      - name: Run hardware-guard's tests
+        run: pytest -q packages/hardware-guard/test
+
       # macOS ships Python 3.9, and a Mac reached as a self machine runs the
       # entrypoint with it: syntax newer than 3.9 breaks there and nowhere else.
       - uses: actions/setup-python@v5
@@ -53,6 +56,9 @@ jobs:
 
       - name: Run devmachine-app's tests on Python 3.9
         run: python3.9 -m pip install --quiet pytest && python3.9 -m pytest -q packages/devmachine-app/test
+
+      - name: Run hardware-guard's tests on Python 3.9
+        run: python3.9 -m pytest -q packages/hardware-guard/test
 
   syntax:
     runs-on: ubuntu-latest

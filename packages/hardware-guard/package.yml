@@ -1,0 +1,64 @@
+format: 1
+name: hardware-guard
+scope: machine
+category: Monitoring
+summary: >-
+  Watches the machine's temperatures and battery every minute, sends alerts
+  and a daily heartbeat to a push URL, and shuts the machine down when a
+  limit holds. Meant for hardware nobody is watching, like a computer left
+  running at home.
+
+requires:
+  cli: ">= 0.7.0"
+
+entrypoint: bin/hardware-guard
+commands: [status, check, notify-test]
+
+variables:
+  interval_seconds:
+    summary: How often the guard reads the sensors.
+    default: 60
+  warn_celsius:
+    summary: The hottest sensor at or above this sends an alert.
+    default: 80
+  shutdown_celsius:
+    summary: >-
+      The hottest sensor at or above this for sustain_seconds shuts the
+      machine down. Linux only; macOS gives an ordinary user no CPU
+      temperature.
+    default: 90
+  battery_warn_celsius:
+    summary: The battery at or above this sends an alert.
+    default: 45
+  battery_shutdown_celsius:
+    summary: The battery at or above this for sustain_seconds shuts the machine down.
+    default: 55
+  sustain_seconds:
+    summary: >-
+      How long a shutdown limit has to hold before the guard acts, so one
+      spike never powers a machine off.
+    default: 120
+  shutdown:
+    summary: >-
+      Power the machine off when a limit holds. False only alerts. A machine
+      powered off this way stays off until somebody turns it on.
+    default: true
+  notify_url:
+    summary: >-
+      A webhook each alert is POSTed to, as JSON with the host, the kind of
+      event and the message. Empty logs only.
+    default: ""
+  heartbeat_hours:
+    summary: >-
+      Send a short status this often, so silence means the machine is off or
+      unreachable. 0 turns it off.
+    default: 24
+  repeat_minutes:
+    summary: How long the same alert waits before it is sent again.
+    default: 30
+  battery_charge_limit:
+    summary: >-
+      Keep the battery below this percentage, on a laptop whose firmware
+      exposes charge_control_end_threshold. A laptop always on the charger
+      lasts longer, and swells less, below 100. 0 leaves it alone.
+    default: 0

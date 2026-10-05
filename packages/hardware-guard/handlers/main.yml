@@ -1,0 +1,9 @@
+---
+- name: Reload systemd for hardware-guard
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: Restart the hardware-guard agent
+  community.general.launchd:
+    name: sh.mydevmachine.hardware-guard
+    state: restarted

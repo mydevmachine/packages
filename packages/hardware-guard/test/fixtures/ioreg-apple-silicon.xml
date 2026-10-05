@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<array>
+	<dict>
+		<key>CurrentCapacity</key>
+		<integer>80</integer>
+		<key>MaxCapacity</key>
+		<integer>100</integer>
+		<key>Temperature</key>
+		<integer>3050</integer>
+		<key>IsCharging</key>
+		<true/>
+		<key>FullyCharged</key>
+		<false/>
+		<key>ExternalConnected</key>
+		<true/>
+	</dict>
+</array>
+</plist>

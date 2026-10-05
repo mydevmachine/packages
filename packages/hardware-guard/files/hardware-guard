@@ -1,0 +1,429 @@
+#!/usr/bin/env python3
+"""hardware-guard: watch a machine's temperatures and battery, and act on them.
+
+Usage:
+    hardware-guard status        one JSON document: sensors, battery, thresholds
+    hardware-guard check         one pass: alert, heartbeat, and shut down when
+                                 a limit has held long enough
+    hardware-guard notify-test   send one test notification
+
+`check` is what the timer (systemd on Linux, launchd on macOS) runs every
+interval. It is deterministic: every decision comes from the readings, the
+configuration and a small state file, so the same inputs always give the
+same actions.
+
+Linux reads /sys/class/thermal, /sys/class/hwmon and /sys/class/power_supply.
+macOS has no CPU temperature without third-party tools, so it reads what the
+system gives an ordinary user: the battery through `ioreg`, and the CPU speed
+limit macOS sets under thermal pressure through `pmset -g therm`.
+
+Python 3.9, standard library only.
+"""
+from __future__ import annotations
+
+import json
+import os
+import platform
+import plistlib
+import re
+import socket
+import subprocess
+import sys
+import time
+import urllib.request
+
+DEFAULTS = {
+    "warn_celsius": 80,
+    "shutdown_celsius": 90,
+    "battery_warn_celsius": 45,
+    "battery_shutdown_celsius": 55,
+    "sustain_seconds": 120,
+    "shutdown": True,
+    "notify_url": "",
+    "heartbeat_hours": 24,
+    "repeat_minutes": 30,
+    "battery_charge_limit": 0,
+}
+
+# A reading outside this range is a sensor that is absent or broken (many
+# laptops report 0 for an unused zone), not a temperature.
+PLAUSIBLE_CELSIUS = (1.0, 150.0)
+
+# How far below a warning a reading has to fall before "back to normal" is
+# sent, so a value hovering at the line does not alert on every pass.
+RECOVERY_MARGIN = 5.0
+
+
+def is_macos() -> bool:
+    return platform.system() == "Darwin"
+
+
+def default_paths() -> tuple:
+    if is_macos():
+        base = os.path.expanduser("~/Library/Application Support/hardware-guard")
+        return os.path.join(base, "config.json"), os.path.join(base, "state.json")
+    return "/etc/hardware-guard/config.json", "/var/lib/hardware-guard/state.json"
+
+
+def load_json(path: str, fallback):
+    try:
+        with open(path) as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return fallback
+
+
+def load_config(path: str) -> dict:
+    config = dict(DEFAULTS)
+    config.update(load_json(path, {}))
+    for key, default in DEFAULTS.items():
+        value = config[key]
+        try:
+            if isinstance(default, bool):
+                config[key] = value if isinstance(value, bool) else str(value).lower() in ("1", "true", "yes")
+            elif isinstance(default, (int, float)):
+                config[key] = float(value)
+        except (TypeError, ValueError):
+            config[key] = default
+    return config
+
+
+def save_state(path: str, state: dict) -> None:
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    tmp = path + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump(state, f, indent=2, sort_keys=True)
+    os.replace(tmp, path)
+
+
+def run(cmd: list, timeout: int = 10):
+    """Run a command, return (ok, stdout). Never raises."""
+    try:
+        p = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+        return p.returncode == 0, p.stdout
+    except (OSError, subprocess.TimeoutExpired):
+        return False, ""
+
+
+# ── Linux ────────────────────────────────────────────────────────────────
+
+def read_text(path: str):
+    try:
+        with open(path) as f:
+            return f.read().strip()
+    except OSError:
+        return None
+
+
+def read_int(path: str):
+    text = read_text(path)
+    try:
+        return int(text) if text is not None else None
+    except ValueError:
+        return None
+
+
+def plausible(celsius) -> bool:
+    return celsius is not None and PLAUSIBLE_CELSIUS[0] <= celsius <= PLAUSIBLE_CELSIUS[1]
+
+
+def listdir(path: str) -> list:
+    try:
+        return sorted(os.listdir(path))
+    except OSError:
+        return []
+
+
+def linux_sensors(sysfs: str) -> list:
+    sensors = []
+    thermal = os.path.join(sysfs, "class", "thermal")
+    for zone in listdir(thermal):
+        if not zone.startswith("thermal_zone"):
+            continue
+        milli = read_int(os.path.join(thermal, zone, "temp"))
+        celsius = milli / 1000.0 if milli is not None else None
+        if plausible(celsius):
+            name = read_text(os.path.join(thermal, zone, "type")) or zone
+            sensors.append({"source": "thermal", "name": name, "label": "", "celsius": round(celsius, 1)})
+    hwmon = os.path.join(sysfs, "class", "hwmon")
+    for chip in listdir(hwmon):
+        base = os.path.join(hwmon, chip)
+        name = read_text(os.path.join(base, "name")) or chip
+        for entry in listdir(base):
+            match = re.fullmatch(r"temp(\d+)_input", entry)
+            if not match:
+                continue
+            milli = read_int(os.path.join(base, entry))
+            celsius = milli / 1000.0 if milli is not None else None
+            if plausible(celsius):
+                label = read_text(os.path.join(base, "temp%s_label" % match.group(1))) or ""
+                sensors.append({"source": "hwmon", "name": name, "label": label, "celsius": round(celsius, 1)})
+    return sensors
+
+
+def linux_battery(sysfs: str):
+    supplies = os.path.join(sysfs, "class", "power_supply")
+    external = None
+    battery = None
+    for supply in listdir(supplies):
+        base = os.path.join(supplies, supply)
+        kind = read_text(os.path.join(base, "type"))
+        if kind == "Mains":
+            online = read_int(os.path.join(base, "online"))
+            if online is not None:
+                external = bool(online) or bool(external)
+        elif kind == "Battery" and battery is None:
+            capacity = read_int(os.path.join(base, "capacity"))
+            if capacity is None:
+                now = read_int(os.path.join(base, "energy_now")) or read_int(os.path.join(base, "charge_now"))
+                full = read_int(os.path.join(base, "energy_full")) or read_int(os.path.join(base, "charge_full"))
+                if now is not None and full:
+                    capacity = round(now * 100 / full)
+            tenths = read_int(os.path.join(base, "temp"))
+            battery = {
+                "name": supply,
+                "percent": capacity,
+                "status": read_text(os.path.join(base, "status")),
+                "celsius": round(tenths / 10.0, 1) if plausible(tenths / 10.0 if tenths is not None else None) else None,
+                "charge_limit": read_int(os.path.join(base, "charge_control_end_threshold")),
+                "charge_limit_path": (
+                    os.path.join(base, "charge_control_end_threshold")
+                    if os.path.exists(os.path.join(base, "charge_control_end_threshold")) else None
+                ),
+            }
+    if battery is not None:
+        battery["external_power"] = external
+    return battery
+
+
+# ── macOS ────────────────────────────────────────────────────────────────
+
+def parse_ioreg_battery(xml: str):
+    """The battery from `ioreg -a -rn AppleSmartBattery`, or None without one."""
+    try:
+        entries = plistlib.loads(xml.encode())
+    except Exception:
+        return None
+    if not entries:
+        return None
+    b = entries[0]
+    current, maximum = b.get("CurrentCapacity"), b.get("MaxCapacity")
+    percent = None
+    if isinstance(current, int) and isinstance(maximum, int) and maximum > 0:
+        # Apple silicon reports percent in both; Intel reports mAh.
+        percent = current if maximum <= 100 else round(current * 100 / maximum)
+    raw = b.get("Temperature")
+    celsius = round(raw / 100.0, 1) if isinstance(raw, int) else None
+    charging = b.get("IsCharging")
+    return {
+        "name": "AppleSmartBattery",
+        "percent": percent,
+        "status": "Charging" if charging else ("Full" if b.get("FullyCharged") else "Discharging"),
+        "celsius": celsius if plausible(celsius) else None,
+        "charge_limit": None,
+        "charge_limit_path": None,
+        "external_power": b.get("ExternalConnected"),
+    }
+
+
+def parse_pmset_therm(text: str):
+    """The CPU speed limit macOS has set, as a percentage; None when it says nothing."""
+    match = re.search(r"CPU_Speed_Limit\s*=\s*(\d+)", text)
+    return int(match.group(1)) if match else None
+
+
+def macos_readings() -> dict:
+    ok, xml = run(["ioreg", "-a", "-rn", "AppleSmartBattery"])
+    battery = parse_ioreg_battery(xml) if ok else None
+    ok, therm = run(["pmset", "-g", "therm"])
+    return {"sensors": [], "battery": battery, "cpu_speed_limit": parse_pmset_therm(therm) if ok else None}
+
+
+# ── readings and decisions ───────────────────────────────────────────────
+
+def readings(sysfs: str = "/sys") -> dict:
+    if is_macos():
+        r = macos_readings()
+    else:
+        r = {"sensors": linux_sensors(sysfs), "battery": linux_battery(sysfs), "cpu_speed_limit": None}
+    temps = [s["celsius"] for s in r["sensors"]]
+    r["hottest_celsius"] = max(temps) if temps else None
+    return r
+
+
+def watch(state, key, value, warn, limit, config, now, label, actions):
+    """Alert, recover and shut down for one reading."""
+    hot_since = state.setdefault("hot_since", {})
+    alerted = state.setdefault("alerted", {})
+    tripped = state.setdefault("tripped", {})
+    if value is None:
+        hot_since.pop(key, None)
+        tripped.pop(key, None)
+        return
+    if value >= limit:
+        hot_since.setdefault(key, now)
+        held = now - hot_since[key]
+        # Announced once per episode; check() keeps powering off while any
+        # limit stays tripped, in case the first attempt did not take.
+        if held >= config["sustain_seconds"] and key not in tripped:
+            tripped[key] = now
+            actions.append({
+                "kind": "shutdown",
+                "message": "%s at %.0f°C for %ds, at or above %g°C. Shutting down."
+                % (label, value, held, limit),
+            })
+    else:
+        hot_since.pop(key, None)
+        tripped.pop(key, None)
+    if value >= warn:
+        last = alerted.get(key)
+        if last is None or now - last >= config["repeat_minutes"] * 60:
+            alerted[key] = now
+            actions.append({
+                "kind": "alert",
+                "message": "%s at %.0f°C (warning at %g°C, shutdown at %g°C)." % (label, value, warn, limit),
+            })
+    elif key in alerted and value <= warn - RECOVERY_MARGIN:
+        del alerted[key]
+        actions.append({"kind": "recovered", "message": "%s back to %.0f°C." % (label, value)})
+
+
+def decide(r: dict, config: dict, state: dict, now: float) -> list:
+    """What this pass should do. Changes state in place; returns the actions."""
+    actions = []
+    watch(state, "cpu", r.get("hottest_celsius"), config["warn_celsius"],
+          config["shutdown_celsius"], config, now, "Hottest sensor", actions)
+    battery = r.get("battery") or {}
+    watch(state, "battery", battery.get("celsius"), config["battery_warn_celsius"],
+          config["battery_shutdown_celsius"], config, now, "Battery", actions)
+
+    limit = r.get("cpu_speed_limit")
+    alerted = state.setdefault("alerted", {})
+    if limit is not None and limit < 100:
+        last = alerted.get("throttle")
+        if last is None or now - last >= config["repeat_minutes"] * 60:
+            alerted["throttle"] = now
+            actions.append({"kind": "alert", "message": "macOS is holding the CPU to %d%% of its speed to cool down." % limit})
+    elif limit is not None and "throttle" in alerted:
+        del alerted["throttle"]
+        actions.append({"kind": "recovered", "message": "macOS no longer limits the CPU speed."})
+
+    hours = config["heartbeat_hours"]
+    last_beat = state.get("last_heartbeat")
+    if hours and (last_beat is None or now - last_beat >= hours * 3600):
+        state["last_heartbeat"] = now
+        actions.append({"kind": "heartbeat", "message": summary(r)})
+    return actions
+
+
+def summary(r: dict) -> str:
+    parts = []
+    if r.get("hottest_celsius") is not None:
+        parts.append("hottest %.0f°C" % r["hottest_celsius"])
+    if r.get("cpu_speed_limit") is not None:
+        parts.append("CPU speed limit %d%%" % r["cpu_speed_limit"])
+    b = r.get("battery")
+    if b:
+        bits = [x for x in (
+            "%s%%" % b["percent"] if b.get("percent") is not None else None,
+            "%.0f°C" % b["celsius"] if b.get("celsius") is not None else None,
+            (b.get("status") or "").lower() or None,
+        ) if x]
+        parts.append("battery " + ", ".join(bits))
+    return "Running: " + ("; ".join(parts) if parts else "no sensors readable") + "."
+
+
+# ── side effects ─────────────────────────────────────────────────────────
+
+def notify(url: str, kind: str, message: str) -> bool:
+    """POST one event as JSON: {"host", "kind", "message"}. Any webhook that
+    takes a JSON body can receive it."""
+    host = socket.gethostname()
+    print("%s: %s" % (kind, message), flush=True)
+    if not url:
+        return False
+    request = urllib.request.Request(
+        url,
+        data=json.dumps({"host": host, "kind": kind, "message": message}).encode(),
+        method="POST",
+        headers={"Content-Type": "application/json", "User-Agent": "devmachine-hardware-guard/1.0"},
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=15):
+            return True
+    except Exception as e:  # a failed notification must never stop a shutdown
+        print("notify failed: %s" % e, file=sys.stderr, flush=True)
+        return False
+
+
+def power_off() -> None:
+    if is_macos():
+        run(["osascript", "-e", 'tell application "System Events" to shut down'], timeout=30)
+    else:
+        run(["systemctl", "poweroff"], timeout=30)
+
+
+def apply_charge_limit(battery, wanted) -> None:
+    wanted = int(wanted or 0)  # sysfs takes "60", and refuses "60.0"
+    if not wanted or not battery or not battery.get("charge_limit_path"):
+        return
+    if battery.get("charge_limit") == wanted:
+        return
+    try:
+        with open(battery["charge_limit_path"], "w") as f:
+            f.write(str(wanted))
+        print("charge limit set to %d%%" % wanted, flush=True)
+    except OSError as e:
+        print("charge limit not set: %s" % e, file=sys.stderr, flush=True)
+
+
+# ── commands ─────────────────────────────────────────────────────────────
+
+def main(argv: list) -> int:
+    command = argv[0] if argv else "status"
+    config_path, state_path = default_paths()
+    config_path = os.environ.get("HARDWARE_GUARD_CONFIG", config_path)
+    state_path = os.environ.get("HARDWARE_GUARD_STATE", state_path)
+    sysfs = os.environ.get("HARDWARE_GUARD_SYSFS", "/sys")
+    config = load_config(config_path)
+
+    if command == "status":
+        r = readings(sysfs)
+        r["thresholds"] = {k: config[k] for k in (
+            "warn_celsius", "shutdown_celsius", "battery_warn_celsius",
+            "battery_shutdown_celsius", "sustain_seconds", "shutdown")}
+        r["notify"] = bool(config["notify_url"])
+        print(json.dumps(r, indent=2))
+        return 0
+
+    if command == "notify-test":
+        sent = notify(config["notify_url"], "test", "hardware-guard can reach you. " + summary(readings(sysfs)))
+        return 0 if sent else 1
+
+    if command == "check":
+        r = readings(sysfs)
+        apply_charge_limit(r.get("battery"), config["battery_charge_limit"])
+        state = load_json(state_path, {})
+        actions = decide(r, config, state, time.time())
+        save_state(state_path, state)
+        shutdown = None
+        for action in actions:
+            if action["kind"] == "shutdown":
+                shutdown = shutdown or action
+            else:
+                notify(config["notify_url"], action["kind"], action["message"])
+        if shutdown and not config["shutdown"]:
+            notify(config["notify_url"], "alert", shutdown["message"].replace(
+                "Shutting down.", "Shutdown is off, so it keeps running."))
+        elif config["shutdown"] and state.get("tripped"):
+            if shutdown:
+                notify(config["notify_url"], "shutdown", shutdown["message"])
+            power_off()
+        return 0
+
+    print("usage: hardware-guard {status,check,notify-test}", file=sys.stderr)
+    return 2
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

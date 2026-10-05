@@ -1,0 +1,27 @@
+---
+# The guard reads this file on every pass; the timer is the only thing that
+# changes when interval_seconds does.
+- name: Gather the settings the guard reads
+  ansible.builtin.set_fact:
+    devmachine_hardware_guard_config:
+      warn_celsius: "{{ devmachine_hardware_guard_warn_celsius | float }}"
+      shutdown_celsius: "{{ devmachine_hardware_guard_shutdown_celsius | float }}"
+      battery_warn_celsius: "{{ devmachine_hardware_guard_battery_warn_celsius | float }}"
+      battery_shutdown_celsius: "{{ devmachine_hardware_guard_battery_shutdown_celsius | float }}"
+      sustain_seconds: "{{ devmachine_hardware_guard_sustain_seconds | int }}"
+      shutdown: "{{ devmachine_hardware_guard_shutdown | bool }}"
+      notify_url: "{{ devmachine_hardware_guard_notify_url }}"
+      heartbeat_hours: "{{ devmachine_hardware_guard_heartbeat_hours | float }}"
+      repeat_minutes: "{{ devmachine_hardware_guard_repeat_minutes | float }}"
+      battery_charge_limit: "{{ devmachine_hardware_guard_battery_charge_limit | int }}"
+    # The interpreter Ansible already found on the machine: on a Mac the
+    # system /usr/bin/python3 can be a stub that asks to install tools.
+    devmachine_hardware_guard_python: "{{ ansible_facts['python']['executable'] }}"
+
+- name: Watch a Linux machine
+  ansible.builtin.include_tasks: linux.yml
+  when: ansible_facts['system'] == 'Linux'
+
+- name: Watch a Mac
+  ansible.builtin.include_tasks: macos.yml
+  when: ansible_facts['system'] == 'Darwin'

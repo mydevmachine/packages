@@ -32,6 +32,7 @@ never seen.
 | [`caddy`](packages/caddy/README.md) | machine | A reverse proxy that gets its own certificates. |
 | [`firewall`](packages/firewall/README.md) | machine | ufw, with SSH open and HTTP optional. |
 | [`fail2ban`](packages/fail2ban/README.md) | machine | fail2ban, with a jail for sshd. |
+| [`hardware-guard`](packages/hardware-guard/README.md) | machine | Watches temperatures and battery, alerts, and shuts the machine down when a limit holds. |
 | [`ssh_hardening`](packages/ssh_hardening/README.md) | machine | Password authentication off, for good. |
 | [`tailscale`](packages/tailscale/README.md) | machine | Joins the machine to a tailnet, and resolves `tailscale:<name>` addresses. |
 | [`cloudflare`](packages/cloudflare/README.md) | machine | DNS zones on Cloudflare. |

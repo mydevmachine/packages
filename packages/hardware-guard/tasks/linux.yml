@@ -1,0 +1,76 @@
+---
+- name: Create the guard's directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+  loop:
+    - /usr/local/lib/hardware-guard
+    - /etc/hardware-guard
+    - /var/lib/hardware-guard
+
+- name: Install the guard
+  ansible.builtin.copy:
+    src: hardware-guard
+    dest: /usr/local/lib/hardware-guard/hardware-guard
+    owner: root
+    group: root
+    mode: "0755"
+
+# 0600: the notify URL is as good as a password for whoever reads it.
+- name: Write the guard's settings
+  ansible.builtin.copy:
+    dest: /etc/hardware-guard/config.json
+    content: "{{ devmachine_hardware_guard_config | to_nice_json }}\n"
+    owner: root
+    group: root
+    mode: "0600"
+
+# Root, because powering off and writing the battery's charge limit are
+# root's to do.
+- name: Write the service
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/hardware-guard.service
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      [Unit]
+      Description=hardware-guard: one pass over temperatures and battery
+
+      [Service]
+      Type=oneshot
+      ExecStart={{ devmachine_hardware_guard_python }} /usr/local/lib/hardware-guard/hardware-guard check
+  notify: Reload systemd for hardware-guard
+
+- name: Write the timer
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/hardware-guard.timer
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      [Unit]
+      Description=hardware-guard every {{ devmachine_hardware_guard_interval_seconds }} seconds
+
+      [Timer]
+      OnBootSec=1min
+      OnUnitActiveSec={{ devmachine_hardware_guard_interval_seconds }}s
+      AccuracySec=5s
+
+      [Install]
+      WantedBy=timers.target
+  notify: Reload systemd for hardware-guard
+
+- name: Flush the handlers before the timer starts
+  ansible.builtin.meta: flush_handlers
+
+- name: Start the timer
+  ansible.builtin.systemd:
+    name: hardware-guard.timer
+    enabled: true
+    state: started
+  # A dry run never wrote the unit, so there is nothing to start yet.
+  when: not ansible_check_mode

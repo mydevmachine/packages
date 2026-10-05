@@ -1,0 +1,61 @@
+---
+# A LaunchAgent, not a LaunchDaemon: everything the guard reads on a Mac is
+# readable by the logged-in user, and shutting down through System Events
+# needs no root either.
+- name: Set where the guard lives on this Mac
+  ansible.builtin.set_fact:
+    devmachine_hardware_guard_home: "{{ ansible_facts['env']['HOME'] }}/Library/Application Support/hardware-guard"
+    devmachine_hardware_guard_agent: "{{ ansible_facts['env']['HOME'] }}/Library/LaunchAgents/sh.mydevmachine.hardware-guard.plist"
+
+- name: Create the guard's directory
+  ansible.builtin.file:
+    path: "{{ devmachine_hardware_guard_home }}"
+    state: directory
+    mode: "0700"
+
+- name: Install the guard
+  ansible.builtin.copy:
+    src: hardware-guard
+    dest: "{{ devmachine_hardware_guard_home }}/hardware-guard"
+    mode: "0755"
+
+- name: Write the guard's settings
+  ansible.builtin.copy:
+    dest: "{{ devmachine_hardware_guard_home }}/config.json"
+    content: "{{ devmachine_hardware_guard_config | to_nice_json }}\n"
+    mode: "0600"
+
+- name: Write the launch agent
+  ansible.builtin.copy:
+    dest: "{{ devmachine_hardware_guard_agent }}"
+    mode: "0644"
+    content: |
+      <?xml version="1.0" encoding="UTF-8"?>
+      <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+      <plist version="1.0">
+      <dict>
+        <key>Label</key>
+        <string>sh.mydevmachine.hardware-guard</string>
+        <key>ProgramArguments</key>
+        <array>
+          <string>{{ devmachine_hardware_guard_python }}</string>
+          <string>{{ devmachine_hardware_guard_home }}/hardware-guard</string>
+          <string>check</string>
+        </array>
+        <key>StartInterval</key>
+        <integer>{{ devmachine_hardware_guard_interval_seconds | int }}</integer>
+        <key>RunAtLoad</key>
+        <true/>
+        <key>StandardOutPath</key>
+        <string>{{ devmachine_hardware_guard_home }}/guard.log</string>
+        <key>StandardErrorPath</key>
+        <string>{{ devmachine_hardware_guard_home }}/guard.log</string>
+      </dict>
+      </plist>
+  notify: Restart the hardware-guard agent
+
+- name: Start the agent
+  community.general.launchd:
+    name: sh.mydevmachine.hardware-guard
+    state: started
+  when: not ansible_check_mode

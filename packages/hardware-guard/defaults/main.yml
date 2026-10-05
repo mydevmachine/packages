@@ -1,0 +1,12 @@
+---
+devmachine_hardware_guard_interval_seconds: 60
+devmachine_hardware_guard_warn_celsius: 80
+devmachine_hardware_guard_shutdown_celsius: 90
+devmachine_hardware_guard_battery_warn_celsius: 45
+devmachine_hardware_guard_battery_shutdown_celsius: 55
+devmachine_hardware_guard_sustain_seconds: 120
+devmachine_hardware_guard_shutdown: true
+devmachine_hardware_guard_notify_url: ""
+devmachine_hardware_guard_heartbeat_hours: 24
+devmachine_hardware_guard_repeat_minutes: 30
+devmachine_hardware_guard_battery_charge_limit: 0
