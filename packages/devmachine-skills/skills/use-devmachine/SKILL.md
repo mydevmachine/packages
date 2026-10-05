@@ -21,7 +21,8 @@ description: "Use when running, inspecting, or troubleshooting the Devmachine CL
 - A server: run `devmachine machines scan --address <address>` and show the
   fingerprint to the person to compare with the provider's console. Then
   `devmachine machines add --address <address> --name <name> --fingerprint
-  SHA256:… --location <location> [--key agent:SHA256:…]`.
+  SHA256:… --location <location> [--key agent:SHA256:…] [--user <login>]`.
+  Pass `--user` when the login is not root, as on every Mac.
 - Before adding a machine, ask the person where it is, for example
   `hostinger`, `home` or `office`, and pass it as `--location`. With no
   answer, a server is `external` and a Lima VM made here is `local`. Change
@@ -30,6 +31,37 @@ description: "Use when running, inspecting, or troubleshooting the Devmachine CL
   forever. Always pass the non-interactive flags, such as `--yes`, and
   `devmachine skills add --agent <harness> --yes`.
 - Find the configuration with `devmachine config path`. Never guess it.
+
+## Setting up a machine: the person decides
+
+A machine runs Debian, Ubuntu, Arch Linux or macOS. `essentials`,
+`firewall` and `caddy` are Linux-only; `sync` refuses them on a Mac.
+
+- To set up a machine, use `devmachine setup` (a person at a terminal) or
+  `devmachine machines add` (you). Never install Ansible, Homebrew or
+  MacPorts yourself.
+- When setup asks something — which package manager (Homebrew or
+  MacPorts), or whether to install what the machine lacks — ask the person
+  and wait for the answer. Never choose for them.
+- Without a terminal, pass the person's answer as a flag:
+  `--package-manager brew` or `--package-manager ports`, and
+  `--install-prerequisites` only after they said yes to the install.
+- `--yes` never means consent to install. Never use it, or
+  `--install-prerequisites`, to get past a question the person has not
+  answered.
+- On a Mac already in the configuration, read
+  `devmachine --format json doctor --machine <name>` before `setup` or
+  `sync`. Each `prerequisite: <name>` entry of `checks[]` is something
+  missing. Tell the person what is missing, and the steps only they can do:
+  turn Remote Login on (System Settings > General > Sharing), give the admin
+  login passwordless sudo, and allow full disk access for remote users when
+  a package needs it.
+- Before you compose a `devmachine run` command, read
+  `devmachine --format json machines show <name>`. Use what is under
+  `observed`: `pkg_mgr` (apt, pacman, homebrew, macports), `service_mgr`
+  (systemd, launchd) and `path_prefix` (`run` already puts it first on
+  `PATH`). `apt list --installed` on a Mac or
+  `systemctl` on launchd is a guess, and it fails.
 
 ## First, always
 
@@ -79,8 +111,8 @@ ad-hoc SSH or an old Ansible repository without first identifying the missing
 capability.
 
 A **machine** is a server the CLI can reach, or the local computer itself when
-marked `self: true` in `config.yml`. A **workspace** is a Linux account on a
-machine (never on a self machine). Each machine or workspace lists the
+marked `self: true` in `config.yml`. A **workspace** is an account on a
+machine, Linux or macOS (never on a self machine). Each machine or workspace lists the
 **packages** it has — an Ansible role plus `package.yml`, the CLI's only unit
 of persistent state. `sync` is what converges a machine to match the
 configuration; most other configuration edits, including `expose` (which
@@ -114,6 +146,7 @@ Read the matching file under `references/` before guessing at behavior:
 | DNS and public sites | `references/concepts/dns.md` and `references/concepts/publishing.md` |
 | Credentials | `references/concepts/credentials.md` |
 | Agent skills shipped by a package | `references/concepts/agent-skills.md` |
+| What a machine needs before setup, a Mac's prerequisites, consent | `references/what-a-machine-needs.md` |
 
 These are copies of the CLI's own docs, kept in sync by
 `scripts/sync-skill-references.sh`. When a copy disagrees with the installed
