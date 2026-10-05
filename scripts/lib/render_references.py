@@ -26,11 +26,13 @@ SKILLS = {
         ("concepts/machines-and-workspaces.md", "concepts/machines-and-workspaces.md"),
         ("concepts/packages.md", "concepts/packages.md"),
         ("concepts/publishing.md", "concepts/publishing.md"),
+        ("how-it-works/what-a-machine-needs.md", "what-a-machine-needs.md"),
     ],
     "create-devmachine-package": [
         ("reference/package-format.md", "package-format.md"),
         ("reference/dns-provider-contract.md", "dns-provider-contract.md"),
         ("concepts/packages.md", "concepts/packages.md"),
+        ("how-it-works/packages-on-many-systems.md", "multi-os.md"),
     ],
 }
 
