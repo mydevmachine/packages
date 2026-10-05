@@ -8,6 +8,8 @@
   changed_when: false
   register: devmachine_account
 
+# macOS ships curl, tar and unzip. Homebrew would also refuse the root this
+# play runs as on a Mac reached over SSH.
 - name: Install what the installer downloads with
   ansible.builtin.package:
     name:
@@ -15,6 +17,7 @@
       - curl
       - tar
     state: present
+  when: ansible_facts['system'] != 'Darwin'
 
 # A dry run on a machine where this account does not exist yet cannot become
 # it: Ansible has no user to hand its temporary files to, and fails saying so.
