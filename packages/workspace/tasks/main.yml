@@ -97,7 +97,8 @@
   ansible.builtin.user:
     name: "{{ devmachine_workspace.user }}"
     groups: "{{ devmachine_workspace_groups | default(omit, true) }}"
-    append: true
+    # ansible-core 2.21 refuses append without groups; older ones only warned.
+    append: "{{ true if devmachine_workspace_groups | length > 0 else omit }}"
     # Left out unless somebody asks for one. Setting a shell here would fight
     # the package that installs one: each run would change it back, and both
     # tasks would report a change forever.
@@ -176,7 +177,9 @@
   ansible.builtin.known_hosts:
     path: "{{ devmachine_workspace_home }}/.ssh/known_hosts"
     name: "{{ devmachine_workspace_scan.devmachine_workspace_forge }}"
-    key: "{{ devmachine_workspace_scan.stdout }}"
+    # OpenSSH 10 prints its "# host:22 SSH-2.0-..." comment on stdout, not
+    # stderr; a key with it never matches the file and changes every run.
+    key: "{{ devmachine_workspace_scan.stdout_lines | reject('match', '#') | join('\n') }}"
     state: present
   loop: "{{ devmachine_workspace_host_keys.results | default([]) }}"
   loop_control:
