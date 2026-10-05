@@ -20,6 +20,33 @@
       This package uses community.general.ufw. Install the collection with
       `ansible-galaxy collection install community.general`.
 
+- name: Install ufw
+  ansible.builtin.package:
+    name: ufw
+    state: present
+
+- name: Look for ufw's OpenSSH profile
+  ansible.builtin.command: ufw app info OpenSSH
+  register: devmachine_firewall_ssh_profile
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+# Debian and Ubuntu ship this profile with openssh-server. Arch ships none, and
+# the rule below would fail with "Could not find a profile matching 'OpenSSH'".
+- name: Describe OpenSSH to ufw where the system does not
+  ansible.builtin.copy:
+    dest: /etc/ufw/applications.d/devmachine-openssh
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      [OpenSSH]
+      title=Secure shell server
+      description=OpenSSH, the Secure Shell server.
+      ports=22/tcp
+  when: devmachine_firewall_ssh_profile.rc != 0
+
 - name: Allow OpenSSH
   community.general.ufw:
     rule: allow
@@ -46,3 +73,11 @@
 - name: Enable ufw
   community.general.ufw:
     state: enabled
+
+# `ufw enable` applies the rules now; the service is what applies them again
+# after a reboot, and Arch does not enable it when ufw is installed.
+- name: Apply the rules on every boot
+  ansible.builtin.systemd:
+    name: ufw
+    enabled: true
+  when: not ansible_check_mode
