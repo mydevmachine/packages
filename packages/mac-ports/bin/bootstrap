@@ -1,0 +1,153 @@
+#!/bin/sh
+# Brings a Mac to the point where devmachine can run Ansible on it, through
+# MacPorts: Xcode Command Line Tools, MacPorts, then Ansible.
+#
+#   bootstrap check   prints {"missing":[{"name":...,"minutes":...}]}, changes nothing
+#   bootstrap apply   installs what is missing, prints {"ansible_playbook":...,"path_prefix":[...]}
+#
+# Progress goes to stderr; stdout carries exactly one JSON document. A failure
+# exits non-zero with {"error":{"step":...,"message":...}} on stdout.
+set -u
+
+PREFIX=/opt/local
+PORT="$PREFIX/bin/port"
+ANSIBLE_PORT=py314-ansible
+RELEASES=https://api.github.com/repos/macports/macports-base/releases/latest
+
+json_string() {
+	printf '"%s"' "$(printf '%s' "$1" | tr '\n\t' '  ' | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g')"
+}
+
+fail() {
+	printf '{"error":{"step":%s,"message":%s}}\n' "$(json_string "$1")" "$(json_string "$2")"
+	exit 1
+}
+
+say() {
+	printf '%s\n' "$*" >&2
+}
+
+has_command_line_tools() {
+	xcode-select -p >/dev/null 2>&1
+}
+
+has_macports() {
+	[ -x "$PORT" ]
+}
+
+has_ansible_port() {
+	has_macports && "$PORT" -q installed "$ANSIBLE_PORT" 2>/dev/null | grep -q '(active)'
+}
+
+# MacPorts names Python tools with the Python version as a suffix
+# (ansible-playbook-3.14) unless `port select` was run.
+find_ansible_playbook() {
+	for candidate in "$PREFIX/bin/ansible-playbook-3.14" "$PREFIX/bin/ansible-playbook"; do
+		if [ -x "$candidate" ]; then
+			echo "$candidate"
+			return 0
+		fi
+	done
+	found=$("$PORT" -q contents py314-ansible-core 2>/dev/null | sed -n 's/^ *\(.*\/bin\/ansible-playbook[^/]*\)$/\1/p' | head -n 1)
+	[ -n "$found" ] && [ -x "$found" ] && echo "$found"
+}
+
+install_command_line_tools() {
+	say "Installing the Xcode Command Line Tools (5 to 10 minutes)..."
+	# softwareupdate lists the Command Line Tools only while this file exists:
+	# it is how macOS offers them without the GUI prompt.
+	marker=/tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress
+	touch "$marker" || fail "command-line-tools" "could not create $marker"
+	label=$(softwareupdate -l 2>/dev/null |
+		sed -n 's/^.*Label: \(Command Line Tools.*\)$/\1/p' |
+		sort -V | tail -n 1)
+	if [ -z "$label" ]; then
+		rm -f "$marker"
+		fail "command-line-tools" "softwareupdate offers no Command Line Tools for this macOS. Run 'xcode-select --install' on the Mac, then run devmachine setup again."
+	fi
+	say "Found $label."
+	if ! sudo -n softwareupdate -i "$label" --verbose >&2; then
+		rm -f "$marker"
+		fail "command-line-tools" "softwareupdate could not install '$label'. Run 'xcode-select --install' on the Mac, then run devmachine setup again."
+	fi
+	rm -f "$marker"
+	has_command_line_tools || fail "command-line-tools" "'$label' installed, but xcode-select still finds no developer directory."
+}
+
+# MacPorts publishes one .pkg per macOS major version, named after it
+# (MacPorts-2.12.6-15-Sequoia.pkg), so the name is read from the release.
+install_macports() {
+	version=$(sw_vers -productVersion) || fail "macports" "sw_vers could not read the macOS version."
+	case "$version" in
+	10.*) major=$(echo "$version" | cut -d. -f1-2) ;;
+	*) major=$(echo "$version" | cut -d. -f1) ;;
+	esac
+	say "Looking up the MacPorts release for macOS $major..."
+	release=$(curl -fsSL "$RELEASES") ||
+		fail "macports" "could not read $RELEASES. Check the Mac's internet access, or install MacPorts from https://www.macports.org/install.php."
+	major_pattern=$(echo "$major" | sed 's/\./\\./g')
+	url=$(printf '%s\n' "$release" |
+		grep -o "https://github.com/macports/macports-base/releases/download/[^\"]*/MacPorts-[0-9.]*-$major_pattern-[A-Za-z]*\.pkg" |
+		head -n 1)
+	[ -n "$url" ] ||
+		fail "macports" "the latest MacPorts release has no installer for macOS $major. Install MacPorts by hand from https://www.macports.org/install.php."
+	name=${url##*/}
+	checksums="${url%/*}/$(echo "$name" | sed 's/^\(MacPorts-[0-9.]*\)-.*$/\1/').chk.txt"
+
+	work=$(mktemp -d) || fail "macports" "could not create a temporary folder."
+	say "Downloading $name..."
+	curl -fsSL -o "$work/$name" "$url" || {
+		rm -rf "$work"
+		fail "macports" "could not download $url."
+	}
+	expected=$(curl -fsSL "$checksums" | sed -n "s/^SHA1($name)= *\([0-9a-f]*\)$/\1/p")
+	actual=$(shasum -a 1 "$work/$name" | cut -d' ' -f1)
+	if [ -z "$expected" ] || [ "$expected" != "$actual" ]; then
+		rm -rf "$work"
+		fail "macports" "$name does not match the SHA-1 published in $checksums. Nothing was installed; try again."
+	fi
+	say "Installing $name..."
+	sudo -n installer -pkg "$work/$name" -target / >&2 || {
+		rm -rf "$work"
+		fail "macports" "the MacPorts installer failed; its output is above. It needs passwordless sudo for the admin login."
+	}
+	rm -rf "$work"
+	has_macports || fail "macports" "the MacPorts installer finished, but $PORT does not exist."
+}
+
+install_ansible() {
+	say "Installing Ansible with MacPorts ($ANSIBLE_PORT)..."
+	sudo -n "$PORT" -N install "$ANSIBLE_PORT" >&2 ||
+		fail "ansible" "'port install $ANSIBLE_PORT' failed; its output is above. If MacPorts does not know the port, run 'sudo port selfupdate' on the Mac and try again."
+}
+
+check() {
+	missing=""
+	add() {
+		[ -n "$missing" ] && missing="$missing,"
+		missing="$missing{\"name\":$(json_string "$1"),\"minutes\":$2}"
+	}
+	has_command_line_tools || add "Xcode Command Line Tools" 10
+	has_macports || add "MacPorts" 5
+	has_ansible_port || add "Ansible ($ANSIBLE_PORT)" 15
+	printf '{"missing":[%s]}\n' "$missing"
+}
+
+apply() {
+	if has_command_line_tools; then say "Xcode Command Line Tools: present."; else install_command_line_tools; fi
+	if has_macports; then say "MacPorts: present at $PREFIX."; else install_macports; fi
+	if has_ansible_port; then say "Ansible: $ANSIBLE_PORT is installed."; else install_ansible; fi
+	playbook=$(find_ansible_playbook) ||
+		fail "ansible" "$ANSIBLE_PORT is installed, but no ansible-playbook was found under $PREFIX/bin."
+	printf '{"ansible_playbook":%s,"path_prefix":[%s,%s]}\n' \
+		"$(json_string "$playbook")" "$(json_string "$PREFIX/bin")" "$(json_string "$PREFIX/sbin")"
+}
+
+[ "$(id -u)" -ne 0 ] || fail "user" "run bootstrap as the admin login, not as root: it reaches root through sudo -n only where it needs it."
+[ "$(uname -s)" = "Darwin" ] || fail "system" "bootstrap is for macOS; this system is $(uname -s)."
+
+case "${1:-}" in
+check) check ;;
+apply) apply ;;
+*) fail "usage" "usage: bootstrap check|apply" ;;
+esac

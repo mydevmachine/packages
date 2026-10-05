@@ -100,6 +100,7 @@ Codex session can add packages for you.
 | [`devmachine-app`](packages/devmachine-app/README.md) | machine | What the [Devmachine macOS app](https://mydevmachine.sh/app/) asks a machine for. |
 | [`mac-brew`](packages/mac-brew/README.md) | machine | Installs Homebrew taps, formulae and casks from lists. |
 | [`mac-mise`](packages/mac-mise/README.md) | machine | Installs mise's global tools from a list. |
+| [`mac-ports`](packages/mac-ports/README.md) | machine | Installs MacPorts ports from a list. |
 
 Missing something? Write it as your own package and keep it in your
 configuration, or open a pull request here. See

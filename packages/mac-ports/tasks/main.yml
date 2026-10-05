@@ -1,0 +1,27 @@
+---
+- name: Refuse a machine that is not macOS
+  ansible.builtin.fail:
+    msg: "mac-ports only runs on macOS, this machine reports {{ ansible_facts['system'] }}."
+  when: ansible_facts['system'] != 'Darwin'
+
+- name: Look for MacPorts
+  ansible.builtin.stat:
+    path: /opt/local/bin/port
+  register: devmachine_mac_ports_bin
+
+- name: Refuse a machine without MacPorts
+  ansible.builtin.fail:
+    msg: >-
+      MacPorts is not installed at /opt/local. Install it from
+      https://www.macports.org/install.php, then run `devmachine setup` for
+      this machine.
+  when: not devmachine_mac_ports_bin.stat.exists
+
+# MacPorts installs as root. A Mac reached over SSH already runs the play as
+# root; on your own Mac this needs sudo.
+- name: Install the ports
+  community.general.macports:
+    name: "{{ devmachine_mac_ports_ports }}"
+    state: present
+  when: devmachine_mac_ports_ports | length > 0
+  become: "{{ ansible_facts['effective_user_id'] != 0 }}"

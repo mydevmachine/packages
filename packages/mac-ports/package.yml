@@ -1,0 +1,18 @@
+format: 1
+name: mac-ports
+scope: machine
+platforms: [macos]
+category: macOS
+summary: >-
+  Installs MacPorts ports from a list. Never removes anything.
+
+requires:
+  # The first CLI release that reads `bootstrap`; set at release time.
+  cli: ">= 0.8.0"
+
+bootstrap: bin/bootstrap
+
+variables:
+  ports:
+    summary: MacPorts ports to install, e.g. `git` or `ripgrep`.
+    default: []
