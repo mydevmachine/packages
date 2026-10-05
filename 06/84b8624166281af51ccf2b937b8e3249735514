@@ -1,0 +1,116 @@
+packages/workspace/package.yml
+  s_87d72b62cfc5a1::t_9da2e3bd79e6a2 15-16
+  s_87d72b62cfc5a1::t_181862a2646935 17
+README.md
+  s_87d72b62cfc5a1::t_35bebe44bd5ea0 143-151
+packages/antigravity/defaults/main.yml
+  s_87d72b62cfc5a1::t_4541c4ad47fa09 2
+packages/antigravity/package.yml
+  s_87d72b62cfc5a1::t_76e93d76030712 29
+packages/antigravity/tasks/main.yml
+  s_87d72b62cfc5a1::t_ef8d3efdb15717 2-10,46
+packages/claude-code/defaults/main.yml
+  s_87d72b62cfc5a1::t_094059d713d069 2
+packages/claude-code/package.yml
+  s_87d72b62cfc5a1::t_b0db66570bf8c7 30
+packages/claude-code/tasks/main.yml
+  s_87d72b62cfc5a1::t_be6d3b9adb108d 2-10,47,55,94,134
+packages/claude-plugins/defaults/main.yml
+  s_87d72b62cfc5a1::t_4f12b9ac3b8a16 2
+packages/claude-plugins/package.yml
+  s_87d72b62cfc5a1::t_51a49a2a7f1f94 18
+packages/claude-plugins/tasks/main.yml
+  s_87d72b62cfc5a1::t_e66b662dfa4487 2-10
+packages/claude-remote-control/defaults/main.yml
+  s_87d72b62cfc5a1::t_75f4769161f11d 2
+packages/claude-remote-control/package.yml
+  s_87d72b62cfc5a1::t_4aebb9772c24f5 18
+packages/claude-remote-control/tasks/main.yml
+  s_87d72b62cfc5a1::t_b264ca00acab50 2-10,49,62
+packages/cline/defaults/main.yml
+  s_87d72b62cfc5a1::t_992a5090229f30 2
+packages/cline/package.yml
+  s_87d72b62cfc5a1::t_cb833c0dbb4d7a 28
+packages/cline/tasks/main.yml
+  s_87d72b62cfc5a1::t_85dc134206d33b 2-10,40
+packages/codex/defaults/main.yml
+  s_87d72b62cfc5a1::t_9d45d4319390b1 2
+packages/codex/package.yml
+  s_87d72b62cfc5a1::t_2a51191428d9ce 29
+packages/codex/tasks/main.yml
+  s_87d72b62cfc5a1::t_1fee8bfa74bfc1 2-10,52
+packages/dev/defaults/main.yml
+  s_87d72b62cfc5a1::t_0da1de526a7a31 2
+packages/dev/package.yml
+  s_87d72b62cfc5a1::t_1e4f210a65d12e 31
+packages/dev/tasks/main.yml
+  s_87d72b62cfc5a1::t_355164813636fb 2-10,74
+packages/git-key/defaults/main.yml
+  s_87d72b62cfc5a1::t_e1ecfc858bfbc6 2
+packages/git-key/package.yml
+  s_87d72b62cfc5a1::t_ffd8acbac06f16 15
+packages/git-key/tasks/main.yml
+  s_87d72b62cfc5a1::t_b52429738a753d 2-10,48
+packages/glab/defaults/main.yml
+  s_87d72b62cfc5a1::t_778902ae0cc5a5 2
+packages/glab/package.yml
+  s_87d72b62cfc5a1::t_3a5f4413131a50 28
+packages/glab/tasks/main.yml
+  s_87d72b62cfc5a1::t_d833ed5403ee03 2-10,55
+packages/kimi-code/defaults/main.yml
+  s_87d72b62cfc5a1::t_497ddbcd3e53e4 2
+packages/kimi-code/package.yml
+  s_87d72b62cfc5a1::t_676521a09039e8 28
+packages/kimi-code/tasks/main.yml
+  s_87d72b62cfc5a1::t_89919cedb407db 2-10,45
+packages/mise/defaults/main.yml
+  s_87d72b62cfc5a1::t_1aa66240801912 2
+packages/mise/package.yml
+  s_87d72b62cfc5a1::t_7f9678071655c1 17
+packages/mise/tasks/main.yml
+  s_87d72b62cfc5a1::t_cb04bfe1e18e39 2-10,48
+packages/opencode/defaults/main.yml
+  s_87d72b62cfc5a1::t_5b41b9f67f897e 2
+packages/opencode/package.yml
+  s_87d72b62cfc5a1::t_03da9a637e36e3 29
+packages/opencode/tasks/main.yml
+  s_87d72b62cfc5a1::t_39adc1cf490b0f 2-10,45
+packages/pi/defaults/main.yml
+  s_87d72b62cfc5a1::t_163f714be7515e 2
+packages/pi/package.yml
+  s_87d72b62cfc5a1::t_76d6475aff3868 29
+packages/pi/tasks/main.yml
+  s_87d72b62cfc5a1::t_312c84b9152ccd 2-10,58
+packages/sentry/defaults/main.yml
+  s_87d72b62cfc5a1::t_1a19363743f4fa 2
+packages/sentry/package.yml
+  s_87d72b62cfc5a1::t_dd8e199f439df4 33
+packages/sentry/tasks/main.yml
+  s_87d72b62cfc5a1::t_cc24e8e8bf50b4 2-10,51
+packages/workspace/defaults/main.yml
+  s_87d72b62cfc5a1::t_47eee8fa67d88b 2-4
+packages/workspace/tasks/main.yml
+  s_87d72b62cfc5a1::t_0075487180023e 20-28,48-50,106,116,124,232
+packages/zsh/defaults/main.yml
+  s_87d72b62cfc5a1::t_a9a928d6b7b747 2
+packages/zsh/package.yml
+  s_87d72b62cfc5a1::t_4b2046cd36ff49 18
+packages/zsh/tasks/main.yml
+  s_87d72b62cfc5a1::t_ef3a0d40aad5bf 20-28,79,97,119
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "0684b8624166281af51ccf2b937b8e3249735514",
+  "prompts": {},
+  "sessions": {
+    "s_87d72b62cfc5a1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5e69ca1d-9900-4500-8ba7-104b479b47eb",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Djalma Araujo <djalma@nossomos.cc>"
+    }
+  }
+}
