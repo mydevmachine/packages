@@ -1,5 +1,8 @@
 [sshd]
 enabled = true
+{% if devmachine_fail2ban_sshd_backend is defined %}
+backend = {{ devmachine_fail2ban_sshd_backend }}
+{% endif %}
 # Anything on this list can fail to log in forever. Keep it to addresses you
 # own: a tool of your own that retries an SSH alias is enough to get the machine
 # you are sitting at banned.

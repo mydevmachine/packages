@@ -1,0 +1,14 @@
+---
+# No cache refresh here: on Arch that would be a partial upgrade. The base
+# package explains why.
+
+devmachine_workspace_packages:
+  # git is what the identity below is written with, and what a clone needs.
+  - git
+  # ssh-keygen and ssh-keyscan, for the account's own key and its known_hosts.
+  # Arch ships client and server as one package.
+  - openssh
+  # Ansible needs this to hand a temporary file to an unprivileged account it
+  # becomes. Without it, every task that runs as the account fails with
+  # "Failed to set permissions on the temporary files Ansible needs to create".
+  - acl
