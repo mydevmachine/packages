@@ -1,0 +1,37 @@
+packages/kimi-code/tasks/main.yml
+  s_87d72b62cfc5a1::t_eb6d60eb45d520 11-12,19
+packages/opencode/tasks/main.yml
+  s_87d72b62cfc5a1::t_2961da992d8f5d 11-12,20
+packages/claude-code/tasks/main.yml
+  s_87d72b62cfc5a1::t_37cae934709d89 11-12,19
+packages/pi/tasks/main.yml
+  s_87d72b62cfc5a1::t_9c2f7ad7212d52 11-12,19
+packages/codex/tasks/main.yml
+  s_87d72b62cfc5a1::t_b4837529386bc0 11-12,20
+packages/glab/tasks/main.yml
+  s_87d72b62cfc5a1::t_0bcad9ec9f489d 11-12,20
+packages/dev/tasks/main.yml
+  s_87d72b62cfc5a1::t_165ee31ce261d3 11-12,21
+packages/sentry/tasks/main.yml
+  s_87d72b62cfc5a1::t_0791f0fbc30c0a 11-12,19
+packages/antigravity/tasks/main.yml
+  s_87d72b62cfc5a1::t_be4ffc72f56f7e 11-12,19
+packages/mise/tasks/main.yml
+  s_87d72b62cfc5a1::t_960faf7d04ce5c 11-12,19
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "658b12b3c81ced1ce29cfcea842c07a3437478d0",
+  "prompts": {},
+  "sessions": {
+    "s_87d72b62cfc5a1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5e69ca1d-9900-4500-8ba7-104b479b47eb",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Djalma Araujo <djalma@nossomos.cc>"
+    }
+  }
+}
