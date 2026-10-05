@@ -1,0 +1,33 @@
+packages/devmachine-skills/skills/create-devmachine-package/references/multi-os.md
+  s_87d72b62cfc5a1::t_4a828bd5d5b950 1-205
+packages/devmachine-skills/skills/create-devmachine-package/references/package-format.md
+  s_87d72b62cfc5a1::t_cdd3790318455a 65-66,69-74,258-281,312-314
+packages/devmachine-skills/skills/use-devmachine/references/commands.md
+  s_87d72b62cfc5a1::t_9c6077160542ad 19,37,45-60,81-83,108-109,126-132,193-206,297-299,305,326-362,409-410,498-505,823-829,1345-1351
+packages/devmachine-skills/skills/use-devmachine/references/concepts/configuration.md
+  s_87d72b62cfc5a1::t_0d9b160bb2ba22 40
+packages/devmachine-skills/skills/use-devmachine/references/settings.md
+  s_87d72b62cfc5a1::t_b22eafb6f4fd9e 35,37,39,44-45,49,54,58,62-63,65,74-75,78,81,87-91,95,99,103
+packages/devmachine-skills/skills/use-devmachine/references/troubleshooting.md
+  s_87d72b62cfc5a1::t_ca236f4a7d9812 168-170,173-224,284-304,325-408,527-548,1187-1189
+packages/devmachine-skills/skills/use-devmachine/references/what-a-machine-needs.md
+  s_87d72b62cfc5a1::t_b699660b04a2e5 1-71
+scripts/lib/render_references.py
+  s_87d72b62cfc5a1::t_45c96130a8408a 29,35
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "80b05f68fd542089748e34abf137346506a47949",
+  "prompts": {},
+  "sessions": {
+    "s_87d72b62cfc5a1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5e69ca1d-9900-4500-8ba7-104b479b47eb",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Djalma Araujo <djalma@nossomos.cc>"
+    }
+  }
+}
