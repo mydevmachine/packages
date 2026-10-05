@@ -12,7 +12,7 @@ already running keeps its old configuration until it is told to reload.
 
 | Setting | Default | What it does |
 | --- | --- | --- |
-| `home` | `/home/<the account>` | Where the account's home is. |
+| `home` | the account's own home | Where the account's home is. Read from the account. |
 | `tmux_auto_attach` | `true` | Open a tmux session on every SSH login, so a dropped connection loses nothing. A second connection while the first is live gets a session of its own instead of a second view of the same one. |
 | `tmux_config` | `true` | Write the account's `~/.tmux.conf`. Turn it off to keep a config of your own. |
 
