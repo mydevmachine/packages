@@ -1,10 +1,11 @@
 ---
-- name: Load the package names for this family
-  ansible.builtin.include_vars: "{{ ansible_facts['os_family'] }}.yml"
-
 - name: Install what bun's installer unpacks with
   ansible.builtin.package:
-    name: "{{ devmachine_dev_packages }}"
+    # bun's installer unpacks a zip, and unzip is not on a server by default.
+    name:
+      - unzip
+      # Every installer below downloads with curl.
+      - curl
     state: present
 
 # A dry run on a machine where this account does not exist yet cannot become

@@ -1,10 +1,10 @@
 ---
-- name: Load the package names for this family
-  ansible.builtin.include_vars: "{{ ansible_facts['os_family'] }}.yml"
-
 - name: Install what the installer downloads with
   ansible.builtin.package:
-    name: "{{ devmachine_codex_packages }}"
+    name:
+      # The installer downloads with curl and unpacks with tar.
+      - curl
+      - tar
     state: present
 
 # A dry run on a machine where this account does not exist yet cannot become

@@ -1,9 +1,4 @@
 ---
-devmachine_glab_packages:
-  # The release is a tarball, fetched with curl.
-  - curl
-  - tar
-
 # A release asset is named after the architecture Go names, which is not the
 # one the kernel reports: x86_64 is amd64 and aarch64 is arm64. A URL carrying
 # the uname spelling is a 404, and nothing says why.

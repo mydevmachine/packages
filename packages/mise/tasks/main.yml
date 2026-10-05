@@ -1,10 +1,9 @@
 ---
-- name: Load the package names for this family
-  ansible.builtin.include_vars: "{{ ansible_facts['os_family'] }}.yml"
-
 - name: Install what mise's installer downloads with
   ansible.builtin.package:
-    name: "{{ devmachine_mise_packages }}"
+    name:
+      # mise's installer downloads itself with curl.
+      - curl
     state: present
 
 # A dry run on a machine where this account does not exist yet cannot become

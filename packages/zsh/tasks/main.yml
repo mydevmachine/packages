@@ -19,7 +19,12 @@
 
 - name: Install zsh and what Oh My Zsh's installer needs
   ansible.builtin.package:
-    name: "{{ devmachine_zsh_packages }}"
+    name:
+      - zsh
+      # Oh My Zsh's installer clones itself and downloads with these two.
+      - git
+      - curl
+      - tmux
     state: present
 
 # A dry run on a machine where this account does not exist yet cannot become
