@@ -1,0 +1,31 @@
+packages/claude-remote-control/README.md
+  s_5ccc211ae481bf::t_db2933825c5b26 4-5,34-46
+packages/claude-remote-control/defaults/main.yml
+  s_5ccc211ae481bf::t_abfa69ab8808e4 11-14
+packages/claude-remote-control/package.yml
+  s_5ccc211ae481bf::t_53b6eb1d9611fb 4,8-9,33
+packages/claude-remote-control/tasks/Darwin.yml
+  s_5ccc211ae481bf::t_a375c495aa21d8 1-62
+packages/claude-remote-control/tasks/Linux.yml
+  s_5ccc211ae481bf::t_8c10e4cdd22cdb 1-66
+packages/claude-remote-control/tasks/main.yml
+  s_5ccc211ae481bf::t_92960fc8314a55 37-43
+packages/claude-remote-control/templates/claude-rc.plist.j2
+  s_5ccc211ae481bf::t_b65f487f5846be 1-38
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1a4128e44305426c24a7e80fd8a6d5d8a7d4995d",
+  "prompts": {},
+  "sessions": {
+    "s_5ccc211ae481bf": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "570a9526-d48d-41cd-8528-3a3200e0855a",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Djalma Araujo <djalma@nossomos.cc>"
+    }
+  }
+}
