@@ -1,0 +1,25 @@
+packages/mise/tasks/main.yml
+  s_87d72b62cfc5a1::t_7c88946b12f883 41-50,55-74
+packages/mise/test/test_shellenv.py
+  s_87d72b62cfc5a1::t_375824b72202c3 1-88
+packages/mise/README.md
+  s_87d72b62cfc5a1::t_19fc1165ae9741 4-5,33-35
+packages/mise/package.yml
+  s_87d72b62cfc5a1::t_3644a110af6290 7-8
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "0f9ef68bfe715c1fcec6ad7c78ea642b0ce80bc7",
+  "prompts": {},
+  "sessions": {
+    "s_87d72b62cfc5a1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5e69ca1d-9900-4500-8ba7-104b479b47eb",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Djalma Araujo <djalma@nossomos.cc>"
+    }
+  }
+}
