@@ -1,0 +1,65 @@
+packages/caddy/README.md
+  s_5ccc211ae481bf::t_5086319c1e8346 51-53,93-109
+packages/caddy/defaults/main.yml
+  s_5ccc211ae481bf::t_6724cce9b70e24 23-26
+packages/caddy/handlers/main.yml
+  s_5ccc211ae481bf::t_eb0bbd43b42106 6-29
+packages/caddy/package.yml
+  s_5ccc211ae481bf::t_5c3a61d1d16d04 4,52-53
+packages/caddy/tasks/Darwin-service.yml
+  s_5ccc211ae481bf::t_bfa09eb78fb017 1-63
+packages/caddy/tasks/Darwin.yml
+  s_5ccc211ae481bf::t_a7bd60edd88876 1-31
+packages/caddy/tasks/main.yml
+  s_5ccc211ae481bf::t_8f831f171f30e5 32-35,40,49,57,66,75,87-93
+packages/caddy/templates/Caddyfile.j2
+  s_5ccc211ae481bf::t_6623084fb93fb5 4,12-19
+packages/caddy/templates/devmachine.caddy.plist.j2
+  s_5ccc211ae481bf::t_11a193eab710d3 1-33
+packages/caddy/vars/Darwin.yml
+  s_5ccc211ae481bf::t_9119a798e15b04 1-22
+packages/fail2ban/README.md
+  s_5ccc211ae481bf::t_31c9bddce81857 35-46
+packages/firewall/README.md
+  s_5ccc211ae481bf::t_feb3fb899acfad 4-5,41-57
+packages/firewall/package.yml
+  s_5ccc211ae481bf::t_37f30df8997b1e 4,8-9
+packages/firewall/tasks/Darwin.yml
+  s_5ccc211ae481bf::t_f53700e93a9ce0 1-123
+packages/firewall/tasks/main.yml
+  s_5ccc211ae481bf::t_a1a9e6aeb226e6 2-18,20-22,24-36,38-46,48-51,53-58,60-73,75-78,80-86,88-108
+packages/firewall/vars/Darwin.yml
+  s_5ccc211ae481bf::t_eb974c6952e482 1-11
+packages/hostinger/README.md
+  s_5ccc211ae481bf::t_7043d82904c90b 48-49
+packages/hostinger/package.yml
+  s_5ccc211ae481bf::t_919df3c3ee5c4c 4
+packages/hostinger/tasks/main.yml
+  s_5ccc211ae481bf::t_18a4e0da6ab872 2-4,6,9,12,16,20,24
+packages/ssh_hardening/README.md
+  s_5ccc211ae481bf::t_073bfdfe12ada4 15,36-46
+packages/ssh_hardening/handlers/main.yml
+  s_5ccc211ae481bf::t_064919faa7ecb2 6-7
+packages/ssh_hardening/package.yml
+  s_5ccc211ae481bf::t_1b6a4054ed9e46 4,17-19
+packages/ssh_hardening/tasks/Darwin.yml
+  s_5ccc211ae481bf::t_5562e806096685 1-46
+packages/ssh_hardening/tasks/main.yml
+  s_5ccc211ae481bf::t_e01c31a3008dd4 20-22,24-45,47-62
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "60c7927eb7e15fe2829d95c8f1763b8509d36ac4",
+  "prompts": {},
+  "sessions": {
+    "s_5ccc211ae481bf": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "570a9526-d48d-41cd-8528-3a3200e0855a",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Djalma Araujo <djalma@nossomos.cc>"
+    }
+  }
+}
