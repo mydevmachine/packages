@@ -8,3 +8,7 @@ devmachine_claude_remote_control_session_name: ""
 devmachine_claude_remote_control_working_directory: "{{ devmachine_claude_remote_control_home }}/dev"
 
 devmachine_claude_remote_control_restart_seconds: 30
+
+# One launch daemon per account, so two workspaces on one Mac never share a label.
+devmachine_claude_remote_control_label: "devmachine.claude-rc.{{ devmachine_workspace.user }}"
+devmachine_claude_remote_control_plist: "/Library/LaunchDaemons/{{ devmachine_claude_remote_control_label }}.plist"
