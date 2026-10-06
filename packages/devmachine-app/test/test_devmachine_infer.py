@@ -1068,12 +1068,32 @@ def test_a_mac_reached_over_ssh_reads_the_machine_wide_config(monkeypatch, tmp_p
 def test_a_mac_that_is_your_own_computer_reads_the_config_in_its_home(monkeypatch, tmp_path):
     import devmachine_infer as m
 
+    own = tmp_path / "home" / "config.json"
+    own.parent.mkdir()
+    own.write_text("{}")
     monkeypatch.delenv("DEVMACHINE_APP_CONFIG", raising=False)
     monkeypatch.setattr(m.platform, "system", lambda: "Darwin")
     monkeypatch.setattr(m, "CONFIG_PATH_SHARED", tmp_path / "etc" / "config.json")
-    monkeypatch.setattr(m, "CONFIG_PATH_MACOS", tmp_path / "home" / "config.json")
+    monkeypatch.setattr(m, "CONFIG_PATH_MACOS", own)
 
-    assert m.config_path() == tmp_path / "home" / "config.json"
+    assert m.config_path() == own
+
+
+def test_your_own_mac_prefers_its_home_config_over_an_old_shared_one(monkeypatch, tmp_path):
+    import devmachine_infer as m
+
+    own = tmp_path / "home" / "config.json"
+    own.parent.mkdir()
+    own.write_text("{}")
+    shared = tmp_path / "etc" / "config.json"
+    shared.parent.mkdir()
+    shared.write_text("{}")
+    monkeypatch.delenv("DEVMACHINE_APP_CONFIG", raising=False)
+    monkeypatch.setattr(m.platform, "system", lambda: "Darwin")
+    monkeypatch.setattr(m, "CONFIG_PATH_SHARED", shared)
+    monkeypatch.setattr(m, "CONFIG_PATH_MACOS", own)
+
+    assert m.config_path() == own
 
 
 def test_linux_reads_the_machine_wide_config_even_when_it_is_missing(monkeypatch, tmp_path):

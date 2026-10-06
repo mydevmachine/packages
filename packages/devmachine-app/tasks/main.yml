@@ -29,6 +29,16 @@
   become: true
   when: devmachine_devmachine_app_shared_config | bool
 
+# An older release wrote the config into root's home on a Mac reached over
+# SSH, and the context engine would prefer that stale copy.
+- name: Remove the copy an older release left in root's home
+  ansible.builtin.file:
+    path: "{{ ansible_facts['env']['HOME'] }}/.config/devmachine-app/config.json"
+    state: absent
+  when:
+    - ansible_facts['system'] == 'Darwin'
+    - devmachine_devmachine_app_shared_config | bool
+
 - name: Create the config directory, your own Mac
   ansible.builtin.file:
     path: "{{ ansible_facts['env']['HOME'] }}/.config/devmachine-app"

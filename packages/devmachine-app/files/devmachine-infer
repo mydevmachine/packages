@@ -54,10 +54,10 @@ def config_path() -> Path:
     override = os.environ.get("DEVMACHINE_APP_CONFIG")
     if override:
         return Path(override)
-    # A Mac reached over SSH gets the shared file, like Linux, so every
-    # workspace account reads it. Only your own Mac, synced without root,
-    # keeps it in the home.
-    if platform.system() == "Darwin" and not CONFIG_PATH_SHARED.exists():
+    # Your own Mac, synced without root, keeps it in the home. A Mac reached
+    # over SSH gets the shared file, like Linux, so every workspace account
+    # reads it.
+    if platform.system() == "Darwin" and CONFIG_PATH_MACOS.exists():
         return CONFIG_PATH_MACOS
     return CONFIG_PATH_SHARED
 
