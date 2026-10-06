@@ -281,3 +281,86 @@
     owner: "{{ devmachine_workspace.user }}"
     group: "{{ devmachine_account.group | default(omit) }}"
     mode: "0755"
+
+# The CLI delivers the workspace's secrets into this directory and keeps it at
+# 0700 itself, so any other mode here would be undone on every push.
+- name: Create ~/.devmachine
+  ansible.builtin.file:
+    path: "{{ devmachine_workspace_home }}/.devmachine"
+    state: directory
+    owner: "{{ devmachine_workspace.user }}"
+    group: "{{ devmachine_account.group | default(omit) }}"
+    mode: "0700"
+
+# ~/.devmachine/shellenv holds what every shell of the account needs, whichever
+# shell it is, so it is POSIX sh only. Each package writes a block of its own.
+- name: Put the package manager on the account's PATH
+  ansible.builtin.blockinfile:
+    path: "{{ devmachine_workspace_home }}/.devmachine/shellenv"
+    marker: "# {mark} devmachine — package manager on PATH"
+    create: true
+    owner: "{{ devmachine_workspace.user }}"
+    group: "{{ devmachine_account.group | default(omit) }}"
+    mode: "0644"
+    block: |
+      for devmachine_dir in {{ devmachine_workspace_path_prefix | reverse | join(' ') }}; do
+        case ":$PATH:" in
+          *":$devmachine_dir:"*) ;;
+          *) PATH="$devmachine_dir:$PATH" ;;
+        esac
+      done
+      unset devmachine_dir
+      export PATH
+  when: devmachine_workspace_path_prefix | length > 0
+
+# `devmachine secrets set NAME --workspace <ws>` delivers into ~/.devmachine/env.
+- name: Load the workspace's secrets in every shell
+  ansible.builtin.blockinfile:
+    path: "{{ devmachine_workspace_home }}/.devmachine/shellenv"
+    marker: "# {mark} devmachine — workspace secrets"
+    create: true
+    owner: "{{ devmachine_workspace.user }}"
+    group: "{{ devmachine_account.group | default(omit) }}"
+    mode: "0644"
+    block: |
+      if [ -r "$HOME/.devmachine/env" ]; then
+        set -a
+        . "$HOME/.devmachine/env"
+        set +a
+      fi
+
+# Never created: a new ~/.bash_profile would hide the ~/.profile a login bash
+# reads when there is none, and on Debian and Ubuntu that ~/.profile is what
+# runs ~/.bashrc.
+- name: Look for ~/.bash_profile
+  ansible.builtin.stat:
+    path: "{{ devmachine_workspace_home }}/.bash_profile"
+  register: devmachine_workspace_bash_profile
+  check_mode: false
+
+# zsh reads ~/.zshenv in every shell and sh a login ~/.profile. bash reads
+# ~/.bashrc when it is not a login, or over ssh with a command, and a login one
+# ~/.bash_profile, or ~/.profile when there is none. At the top, because the
+# ~/.bashrc of Debian, Ubuntu and Arch returns at once in a shell that is not
+# interactive. The variable is not exported on purpose: a login bash reads two
+# of these files and must load shellenv once, but a shell it starts inherits
+# none of its functions or hooks, so it has to load shellenv again.
+- name: Read ~/.devmachine/shellenv from every shell's startup files
+  ansible.builtin.blockinfile:
+    path: "{{ devmachine_workspace_home }}/{{ devmachine_workspace_startup_file }}"
+    marker: "# {mark} devmachine — shell environment"
+    insertbefore: BOF
+    create: true
+    owner: "{{ devmachine_workspace.user }}"
+    group: "{{ devmachine_account.group | default(omit) }}"
+    mode: "0644"
+    block: |
+      if [ -z "${devmachine_shellenv_loaded-}" ] && [ -r "$HOME/.devmachine/shellenv" ]; then
+        devmachine_shellenv_loaded=1
+        . "$HOME/.devmachine/shellenv"
+      fi
+  loop: "{{ ['.zshenv', '.bashrc', '.profile'] + (['.bash_profile'] if devmachine_workspace_bash_profile.stat.exists else []) }}"
+  loop_control:
+    # Never `item`: the generated playbook already uses it for the workspace
+    # this role is running for.
+    loop_var: devmachine_workspace_startup_file

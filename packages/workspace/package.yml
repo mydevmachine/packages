@@ -4,7 +4,7 @@ scope: workspace
 category: Foundation
 summary: >-
   The account a person works in: a home nobody else can read, a git
-  identity and ~/dev.
+  identity, ~/dev, and one environment every shell of the account reads.
 
 requires:
   cli: ">= 0.4.0"

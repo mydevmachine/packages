@@ -26,7 +26,7 @@
   register: devmachine_kimi_code_account
   check_mode: false
 
-# KIMI_NO_MODIFY_PATH: the PATH line goes to .zshenv below, where every zsh
+# KIMI_NO_MODIFY_PATH: the PATH line goes to shellenv below, where every shell
 # reads it, rather than to whichever startup file the installer guesses.
 - name: Install the Kimi Code CLI
   become: true
@@ -39,11 +39,24 @@
     creates: "{{ devmachine_kimi_code_home }}/.kimi-code/bin/kimi"
   when: not ansible_check_mode or devmachine_kimi_code_account.stat.exists
 
+# ~/.devmachine/shellenv is read by every shell, interactive or not.
 - name: Put kimi on the PATH
-  ansible.builtin.lineinfile:
-    path: "{{ devmachine_kimi_code_home }}/.zshenv"
-    line: 'export PATH="$HOME/.kimi-code/bin:$PATH"'
+  ansible.builtin.blockinfile:
+    path: "{{ devmachine_kimi_code_home }}/.devmachine/shellenv"
+    marker: "# {mark} devmachine — kimi on PATH"
     create: true
     owner: "{{ devmachine_workspace.user }}"
     group: "{{ devmachine_account.group | default(omit) }}"
     mode: "0644"
+    block: |
+      case ":$PATH:" in
+        *":$HOME/.kimi-code/bin:"*) ;;
+        *) PATH="$HOME/.kimi-code/bin:$PATH" ;;
+      esac
+      export PATH
+
+- name: Take the line an older release wrote out of ~/.zshenv
+  ansible.builtin.lineinfile:
+    path: "{{ devmachine_kimi_code_home }}/.zshenv"
+    line: 'export PATH="$HOME/.kimi-code/bin:$PATH"'
+    state: absent

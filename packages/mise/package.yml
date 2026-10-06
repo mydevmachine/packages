@@ -4,7 +4,8 @@ scope: workspace
 category: Foundation
 summary: >-
   mise, the per-project runtime manager, installed for one account and
-  activated in ~/.zshenv so it is on the PATH even without a terminal.
+  activated in ~/.devmachine/shellenv so it is on the PATH in every shell, bash,
+  zsh or sh, even without a terminal.
 
 needs: [workspace]
 

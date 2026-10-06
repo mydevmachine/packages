@@ -8,7 +8,8 @@ person's job, once, in each account.
 - **Needs:** `workspace`
 
 It runs Kimi's own installer, which puts `kimi` in `~/.kimi-code/bin`, and
-adds that folder to the PATH in `~/.zshenv`.
+adds that folder to the PATH in `~/.devmachine/shellenv`, which every shell
+of the account reads, bash, zsh or sh.
 
 ## Settings
 

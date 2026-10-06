@@ -33,6 +33,20 @@ devmachine sync                                     # install it
 Or ask your coding agent: after `devmachine skills add`, any Claude Code or
 Codex session can add packages for you.
 
+## Where packages run
+
+A machine runs Debian, Ubuntu, Arch Linux or macOS. Each package says which
+of them it runs on in `platforms`, and `devmachine sync` refuses one that
+leaves out the machine's system, before it changes anything.
+
+- **Linux only:** `essentials`, `firewall`, `fail2ban`, `ssh_hardening`,
+  `caddy`, `docker`, `tailscale`, `hostinger` and `claude-remote-control`.
+- **macOS only:** `mac-brew`, `mac-ports` and `mac-mise`.
+- **Everywhere:** every other package.
+
+What works on each system is on the
+[Supported systems](https://mydevmachine.sh/supported-systems/) page.
+
 ## What is in this release
 
 ### Foundation

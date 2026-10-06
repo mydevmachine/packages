@@ -1,7 +1,8 @@
 # mise
 
 mise, the per-project runtime manager, installed for one account and
-activated in `~/.zshenv` so it is on the `PATH` even without a terminal.
+activated in `~/.devmachine/shellenv` so it is on the `PATH` in every shell,
+bash, zsh or sh, even without a terminal.
 
 - **Scope:** workspace
 - **Category:** Foundation
@@ -29,6 +30,9 @@ devmachine sync
 - Only installs mise itself; a package such as [`dev`](../dev/README.md)
   uses it to put Node on the `PATH`, and `mac-mise` does the same on a `self`
   machine.
+- zsh and bash run mise's own hook, so a tool changes with the folder you
+  are in. Any other shell, such as `sh`, gets mise's shims on the `PATH`
+  instead, and a shim runs the version the folder asks for too.
 
 ## Learn more
 

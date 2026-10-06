@@ -3,3 +3,9 @@
 # Command Line Tools, and Ansible hands its temporary files to the account
 # through macOS's own ACLs (chmod +a), so there is no acl package to add.
 devmachine_workspace_packages: []
+
+devmachine_workspace_path_prefix: >-
+  {{ ['/opt/local/bin', '/opt/local/sbin'] if ansible_facts['pkg_mgr'] == 'macports'
+     else [devmachine_workspace_brew_prefix ~ '/bin', devmachine_workspace_brew_prefix ~ '/sbin'] }}
+
+devmachine_workspace_brew_prefix: "{{ '/opt/homebrew' if ansible_facts['architecture'] == 'arm64' else '/usr/local' }}"

@@ -1,7 +1,8 @@
 # workspace
 
-The account a person works in: a home nobody else can read, a git identity
-and `~/dev`. Almost every other workspace-scoped package needs this one first.
+The account a person works in: a home nobody else can read, a git identity,
+`~/dev`, and one environment every shell of the account reads. Almost every
+other workspace-scoped package needs this one first.
 
 - **Scope:** workspace
 - **Category:** Foundation
@@ -50,6 +51,47 @@ devmachine sync
   otherwise SSH refuses it with `failed service ACL check`. With "All users"
   that group does not exist and nothing changes. `workspaces destroy` takes
   the account out of it again.
+
+## Every shell gets the same environment
+
+What every shell of the account needs, interactive or not, lives in one file:
+`~/.devmachine/shellenv`. It is plain POSIX `sh`, and each package that adds
+something writes a block of its own there: this one the workspace's secrets
+and, on a Mac, the package manager's `PATH`; `mise` its activation; a tool
+such as `claude-code` the folder it installs into.
+
+This package makes every shell read it, whichever login shell the account
+has:
+
+| Shell | Reads it from |
+| --- | --- |
+| zsh, any | `~/.zshenv` |
+| bash, not a login, or a command over `ssh` | `~/.bashrc`, at the top, before Debian's and Arch's early `return` |
+| bash, a login | `~/.bash_profile` when it exists (Arch), else `~/.profile` (Debian, Ubuntu, a new Mac account) |
+| sh, a login | `~/.profile` |
+
+A Mac's bash 3.2 reads no startup file at all in a login shell that is not
+interactive and was not given `-l`, such as `su - bob -c cmd` or a script
+piped into `ssh -T`. `ssh host cmd`, an interactive login and `bash -lc` all
+load shellenv there. Debian's and Ubuntu's bash load it in those two cases
+too.
+
+A login bash reads two of those files, and shellenv is loaded once. A shell
+started from another one loads it again, because functions and hooks such as
+mise's are not inherited. `~/.bash_profile` is never created: a new one would
+hide the `~/.profile` a login bash otherwise reads.
+
+An older release wrote all this to `~/.zshenv`, so only zsh got it. A sync
+moves it: each package takes its old lines out of `~/.zshenv` in the same run
+that writes its block to shellenv.
+
+## Workspace secrets
+
+Every shell in the workspace loads `~/.devmachine/env`, the file
+`devmachine secrets set NAME --workspace <ws>` fills. It is sourced from
+`~/.devmachine/shellenv`, so a command run over `ssh` sees the values too,
+not only an interactive shell, and whatever the login shell is. See
+https://mydevmachine.sh/concepts/credentials/.
 
 ## Learn more
 

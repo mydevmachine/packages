@@ -1,0 +1,4 @@
+---
+# Only a Mac needs it: there an account that is not an admin gets the system's
+# PATH alone, without MacPorts or Apple Silicon Homebrew.
+devmachine_workspace_path_prefix: []

@@ -110,43 +110,19 @@
     creates: "{{ devmachine_zsh_home }}/.oh-my-zsh"
   when: not ansible_check_mode or devmachine_zsh_account.stat.exists
 
-# `devmachine secrets set NAME --workspace <ws>` delivers into ~/.devmachine/env.
-# It goes in .zshenv, not .zshrc, so a command run over ssh sees the secrets too.
-- name: Load the workspace's secrets in every shell
+# The workspace's secrets and, on a Mac, the package manager's PATH (which the
+# tmux below needs) now come from ~/.devmachine/shellenv, which the workspace
+# package writes for every shell. An older release wrote them here.
+- name: Take the blocks shellenv now holds out of ~/.zshenv
   ansible.builtin.blockinfile:
     path: "{{ devmachine_zsh_home }}/.zshenv"
-    marker: "# {mark} devmachine — workspace secrets"
-    create: true
-    owner: "{{ devmachine_workspace.user }}"
-    group: "{{ devmachine_account.group | default(omit) }}"
-    mode: "0644"
-    block: |
-      if [ -r "$HOME/.devmachine/env" ]; then
-        set -a
-        . "$HOME/.devmachine/env"
-        set +a
-      fi
-
-# A Mac gives an account that is not an admin only the system's PATH, without
-# MacPorts or Apple Silicon Homebrew, so the tmux below would not be found.
-- name: Put the package manager on the account's PATH
-  ansible.builtin.blockinfile:
-    path: "{{ devmachine_zsh_home }}/.zshenv"
-    marker: "# {mark} devmachine — package manager on PATH"
-    create: true
-    owner: "{{ devmachine_workspace.user }}"
-    group: "{{ devmachine_account.group | default(omit) }}"
-    mode: "0644"
-    block: |
-      for devmachine_dir in {{ devmachine_zsh_path_prefix | reverse | join(' ') }}; do
-        case ":$PATH:" in
-          *":$devmachine_dir:"*) ;;
-          *) PATH="$devmachine_dir:$PATH" ;;
-        esac
-      done
-      unset devmachine_dir
-      export PATH
-  when: devmachine_zsh_path_prefix | length > 0
+    marker: "{{ devmachine_zsh_old_marker }}"
+    state: absent
+  loop:
+    - "# {mark} devmachine — workspace secrets"
+    - "# {mark} devmachine — package manager on PATH"
+  loop_control:
+    loop_var: devmachine_zsh_old_marker
 
 # A connection that drops loses nothing, because the work was never in the
 # connection. The second branch is what stops a new SSH login from stealing the

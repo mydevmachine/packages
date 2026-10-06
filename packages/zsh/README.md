@@ -38,9 +38,13 @@ devmachine sync
   after `tmux source-file ~/.tmux.conf`.
 - On macOS the login shell is the system's `/bin/zsh`, and only tmux is
   installed, from Homebrew (as the account that owns it, after a
-  `brew update`) or MacPorts. The
-  account's `~/.zshenv` puts that package manager's `bin` and `sbin` on its
-  `PATH`, which macOS leaves out for an account that is not an admin.
+  `brew update`) or MacPorts. The `workspace` package puts that package
+  manager's `bin` and `sbin` on the account's `PATH`, which macOS leaves out
+  for an account that is not an admin.
+- The environment every shell needs (the `PATH`, mise, the workspace's
+  secrets) is not this package's: it lives in `~/.devmachine/shellenv`, which
+  the `workspace` package makes every shell read, zsh included. An older
+  release wrote it to `~/.zshenv`, and a sync takes it out of there.
 - An SSH login opens tmux only when tmux is on the `PATH`; without it you get
   a plain shell instead of a closed connection.
 
@@ -48,9 +52,3 @@ devmachine sync
 
 - [Packages](https://mydevmachine.sh/packages/)
 
-## Workspace secrets
-
-Every shell in the workspace loads `~/.devmachine/env`, the file
-`devmachine secrets set NAME --workspace <ws>` fills. It is sourced from
-`~/.zshenv`, so a command run over `ssh` sees the values too, not only an
-interactive shell. See https://mydevmachine.sh/concepts/credentials/.

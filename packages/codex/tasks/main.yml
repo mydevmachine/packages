@@ -28,7 +28,7 @@
   check_mode: false
 
 # The installer has no flag to leave the PATH alone: it skips the edit only
-# when ~/.local/bin is already on it, so it is, and the line goes to .zshenv
+# when ~/.local/bin is already on it, so it is, and the line goes to shellenv
 # below rather than to whichever startup file the installer guesses.
 # CODEX_NON_INTERACTIVE stops it asking to start Codex at the end. Codex
 # updates itself from then on, so this runs once per account.
@@ -44,13 +44,26 @@
     creates: "{{ devmachine_codex_home }}/.local/bin/codex"
   when: not ansible_check_mode or devmachine_codex_account.stat.exists
 
-# .zshenv is read by every zsh, interactive or not. The same line is written by
-# the dev package, and writing it twice costs nothing.
+# ~/.devmachine/shellenv is read by every shell, interactive or not. Other
+# packages write this same block under the same marker, and writing it twice
+# costs nothing: blockinfile finds it already there.
 - name: Put the account's own tools on the PATH
-  ansible.builtin.lineinfile:
-    path: "{{ devmachine_codex_home }}/.zshenv"
-    line: 'export PATH="$HOME/.local/bin:$PATH"'
+  ansible.builtin.blockinfile:
+    path: "{{ devmachine_codex_home }}/.devmachine/shellenv"
+    marker: "# {mark} devmachine — ~/.local/bin on PATH"
     create: true
     owner: "{{ devmachine_workspace.user }}"
     group: "{{ devmachine_account.group | default(omit) }}"
     mode: "0644"
+    block: |
+      case ":$PATH:" in
+        *":$HOME/.local/bin:"*) ;;
+        *) PATH="$HOME/.local/bin:$PATH" ;;
+      esac
+      export PATH
+
+- name: Take the line an older release wrote out of ~/.zshenv
+  ansible.builtin.lineinfile:
+    path: "{{ devmachine_codex_home }}/.zshenv"
+    line: 'export PATH="$HOME/.local/bin:$PATH"'
+    state: absent
