@@ -35,14 +35,47 @@
   become: "{{ devmachine_mac_brew_become }}"
   become_user: "{{ devmachine_mac_brew_owner }}"
 
-# A brew with old code fails on today's formulae (e.g. "unknown keyword"); a
-# terminal `brew install` updates itself first, the module does not by default.
+- name: Find which formulae are missing
+  ansible.builtin.command:
+    argv: "{{ [devmachine_mac_brew_prefix ~ '/bin/brew', 'list', '--formula', '--versions'] + devmachine_mac_brew_formulae }}"
+  register: devmachine_mac_brew_formulae_listed
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  when: devmachine_mac_brew_formulae | length > 0
+  become: "{{ devmachine_mac_brew_become }}"
+  become_user: "{{ devmachine_mac_brew_owner }}"
+
+- name: Find which casks are missing
+  ansible.builtin.command:
+    argv: "{{ [devmachine_mac_brew_prefix ~ '/bin/brew', 'list', '--cask', '--versions'] + devmachine_mac_brew_casks }}"
+  register: devmachine_mac_brew_casks_listed
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  when: devmachine_mac_brew_casks | length > 0
+  become: "{{ devmachine_mac_brew_become }}"
+  become_user: "{{ devmachine_mac_brew_owner }}"
+
+# A brew with old code fails on today's formulae (e.g. "unknown keyword"). Update
+# only when something is missing, so a sync with nothing to install stays unchanged.
+- name: Update Homebrew before installing
+  ansible.builtin.command:
+    argv: ["{{ devmachine_mac_brew_prefix }}/bin/brew", update]
+  changed_when: false
+  when:
+    - not ansible_check_mode
+    - >-
+      (devmachine_mac_brew_formulae | map('regex_replace', '^.*/', '') | difference(devmachine_mac_brew_formulae_listed.stdout_lines | default([]) | map('regex_replace', ' .*$', '')) | length > 0)
+      or (devmachine_mac_brew_casks | map('regex_replace', '^.*/', '') | difference(devmachine_mac_brew_casks_listed.stdout_lines | default([]) | map('regex_replace', ' .*$', '')) | length > 0)
+  become: "{{ devmachine_mac_brew_become }}"
+  become_user: "{{ devmachine_mac_brew_owner }}"
+
 - name: Install the formulae
   community.general.homebrew:
     name: "{{ devmachine_mac_brew_formulae }}"
     state: present
     path: "{{ devmachine_mac_brew_prefix }}/bin"
-    update_homebrew: true
   when: devmachine_mac_brew_formulae | length > 0
   become: "{{ devmachine_mac_brew_become }}"
   become_user: "{{ devmachine_mac_brew_owner }}"
@@ -84,7 +117,6 @@
     name: "{{ devmachine_mac_brew_casks }}"
     state: present
     path: "{{ devmachine_mac_brew_prefix }}/bin"
-    update_homebrew: true
   when: devmachine_mac_brew_casks | length > 0
   become: "{{ devmachine_mac_brew_become }}"
   become_user: "{{ devmachine_mac_brew_owner }}"

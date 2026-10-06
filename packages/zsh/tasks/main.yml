@@ -42,13 +42,36 @@
   register: devmachine_zsh_brew
   when: ansible_facts['pkg_mgr'] == 'homebrew'
 
-# A brew with old code fails on today's formulae (e.g. "unknown keyword"); a
-# terminal `brew install` updates itself first, the module does not by default.
+- name: Find which Homebrew packages are missing
+  ansible.builtin.command:
+    argv: "{{ [devmachine_zsh_brew.stat.path, 'list', '--formula', '--versions'] + devmachine_zsh_packages }}"
+  register: devmachine_zsh_brew_listed
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  become: "{{ devmachine_zsh_brew.stat.uid != ansible_facts['effective_user_id'] }}"
+  become_user: "{{ devmachine_zsh_brew.stat.pw_name }}"
+  when:
+    - devmachine_zsh_packages | length > 0
+    - ansible_facts['pkg_mgr'] == 'homebrew'
+
+# A brew with old code fails on today's formulae (e.g. "unknown keyword"). Update
+# only when something is missing, so a sync with nothing to install stays unchanged.
+- name: Update Homebrew before installing
+  ansible.builtin.command:
+    argv: ["{{ devmachine_zsh_brew.stat.path }}", update]
+  changed_when: false
+  become: "{{ devmachine_zsh_brew.stat.uid != ansible_facts['effective_user_id'] }}"
+  become_user: "{{ devmachine_zsh_brew.stat.pw_name }}"
+  when:
+    - not ansible_check_mode
+    - devmachine_zsh_brew_listed is not skipped
+    - devmachine_zsh_packages | map('regex_replace', '^.*/', '') | difference(devmachine_zsh_brew_listed.stdout_lines | default([]) | map('regex_replace', ' .*$', '')) | length > 0
+
 - name: Install tmux from Homebrew
   community.general.homebrew:
     name: "{{ devmachine_zsh_packages }}"
     state: present
-    update_homebrew: true
   become: "{{ devmachine_zsh_brew.stat.uid != ansible_facts['effective_user_id'] }}"
   become_user: "{{ devmachine_zsh_brew.stat.pw_name }}"
   when:
