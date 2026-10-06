@@ -1,5 +1,9 @@
 ---
+# macOS ships python3 with its Command Line Tools, and the provider runs on its
+# 3.9. Homebrew would also refuse the root this play runs as on a Mac reached
+# over SSH.
 - name: Make sure Python is available
   package:
     name: python3
     state: present
+  when: ansible_facts['system'] != 'Darwin'

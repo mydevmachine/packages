@@ -11,6 +11,14 @@
 # On PATH, not under the role: the credential's `command` is what a person
 # types, and a path into /opt/devmachine changes with where the package came
 # from (a released package unpacks into roles/, a local one into roles.local/).
+# A new Mac has no /usr/local/bin. No owner or mode: on an Intel Mac it can be
+# Homebrew's, and taking it back for root would break Homebrew.
+- name: Make sure /usr/local/bin exists
+  become: true
+  ansible.builtin.file:
+    path: /usr/local/bin
+    state: directory
+
 - name: Install the key maker
   become: true
   ansible.builtin.copy:
