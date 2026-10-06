@@ -12,8 +12,23 @@ devmachine_tailscale_repo_file: /etc/apt/sources.list.d/tailscale.list
 
 # Tailscale publishes one tree per distribution and release name, so Debian
 # and Ubuntu do not share a path, and neither do two Ubuntu releases.
-devmachine_tailscale_repo_distro: "{{ ansible_facts['distribution'] | lower }}"
-devmachine_tailscale_repo_codename: "{{ ansible_facts['distribution_release'] }}"
+# A system built on one of them, such as Linux Mint or Pop!_OS, has no tree of
+# its own: it uses its base's, under the release name its /etc/os-release gives
+# in UBUNTU_CODENAME or DEBIAN_CODENAME.
+devmachine_tailscale_own_tree: "{{ ansible_facts['distribution'] in ['Debian', 'Ubuntu'] }}"
+devmachine_tailscale_os_release: "{{ devmachine_tailscale_os_release_file.content | default('') | b64decode }}"
+devmachine_tailscale_ubuntu_codename: >-
+  {{ devmachine_tailscale_os_release | regex_findall('(?m)^UBUNTU_CODENAME="?([^"\s]+)') | first | default('') }}
+devmachine_tailscale_debian_codename: >-
+  {{ devmachine_tailscale_os_release | regex_findall('(?m)^DEBIAN_CODENAME="?([^"\s]+)') | first | default('') }}
+devmachine_tailscale_repo_distro: >-
+  {{ ansible_facts['distribution'] | lower if devmachine_tailscale_own_tree | bool
+     else 'ubuntu' if devmachine_tailscale_ubuntu_codename
+     else 'debian' if devmachine_tailscale_debian_codename
+     else '' }}
+devmachine_tailscale_repo_codename: >-
+  {{ ansible_facts['distribution_release'] if devmachine_tailscale_own_tree | bool
+     else devmachine_tailscale_ubuntu_codename or devmachine_tailscale_debian_codename }}
 
 devmachine_tailscale_key_url: >-
   https://pkgs.tailscale.com/stable/{{ devmachine_tailscale_repo_distro }}/{{
