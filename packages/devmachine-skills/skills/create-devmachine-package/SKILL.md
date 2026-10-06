@@ -44,6 +44,12 @@ A machine runs Debian, Ubuntu, Arch Linux or macOS. Write one package, never
 - Put what differs per system in `vars/`, loaded through the `first_found`
   chain in `references/multi-os.md`, copied as it is. Read facts only as
   `ansible_facts['...']`.
+- A system built on Debian, Ubuntu or Arch (Linux Mint, Pop!_OS, Manjaro)
+  is set up as its base. Ansible can give it its own `distribution` but
+  gives it its base's `os_family`, so decide by `os_family` or `pkg_mgr`.
+  A vendor repository has no tree for it: take the base's release name from
+  `UBUNTU_CODENAME` or `DEBIAN_CODENAME` in `/etc/os-release`, as `docker`
+  and `tailscale` do.
 - Install in this order of preference: the project's official installer, a
   release binary by OS and architecture, `mise`, the `package` module with
   names in `vars/`, and `tasks/<System>.yml` only when the steps differ.
