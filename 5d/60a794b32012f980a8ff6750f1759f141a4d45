@@ -1,0 +1,49 @@
+packages/zsh/test/test_auto_attach.py
+  s_87d72b62cfc5a1::t_967391cc9b94c4 22-23
+  s_87d72b62cfc5a1::t_cbf46ecfb312c6 1-21,24-28
+packages/workspace/test/test_shellenv.py
+  s_87d72b62cfc5a1::t_65e0aca7cbf779 3-135
+  s_87d72b62cfc5a1::t_27a9a7c0175c59 136
+packages/workspace/vars/Darwin.yml
+  s_87d72b62cfc5a1::t_b26d9d7e2cbca3 6-11
+packages/workspace/tasks/main.yml
+  s_87d72b62cfc5a1::t_fde419fa48621e 284-366
+packages/zsh/tasks/main.yml
+  s_87d72b62cfc5a1::t_62f11f0a3c8366 113-116,119-125
+packages/workspace/README.md
+  s_87d72b62cfc5a1::t_aaacd390d30584 76-77
+  s_87d72b62cfc5a1::t_497c26340aace2 73-75,78
+  s_87d72b62cfc5a1::t_c68fa95f4b2b9e 70-72
+  s_87d72b62cfc5a1::t_6de7d4f4d47060 79-81
+  s_150b2fab9eebaf::t_9bfc0883888150 3-5,55-69,82-95
+packages/workspace/vars/main.yml
+  s_87d72b62cfc5a1::t_5c95bdfc03ecbe 1-4
+packages/workspace/package.yml
+  s_87d72b62cfc5a1::t_e96576c2907ff2 7
+packages/zsh/README.md
+  s_87d72b62cfc5a1::t_b4000abae9ef7c 41-47
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5d60a794b32012f980a8ff6750f1759f141a4d45",
+  "prompts": {},
+  "sessions": {
+    "s_150b2fab9eebaf": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "agent-a18324e519da09bb9",
+        "model": "unknown"
+      },
+      "human_author": "Djalma Araujo <djalma@nossomos.cc>"
+    },
+    "s_87d72b62cfc5a1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5e69ca1d-9900-4500-8ba7-104b479b47eb",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Djalma Araujo <djalma@nossomos.cc>"
+    }
+  }
+}
