@@ -46,7 +46,7 @@ ANTIGRAVITY_DIR = Path.home() / ".gemini" / "antigravity-cli"
 
 HARNESSES = ("claude", "codex", "pi", "opencode", "kimi", "cline", "antigravity")
 
-CONFIG_PATH_LINUX = Path("/etc/devmachine-app/config.json")
+CONFIG_PATH_SHARED = Path("/etc/devmachine-app/config.json")
 CONFIG_PATH_MACOS = Path.home() / ".config" / "devmachine-app" / "config.json"
 
 
@@ -54,7 +54,12 @@ def config_path() -> Path:
     override = os.environ.get("DEVMACHINE_APP_CONFIG")
     if override:
         return Path(override)
-    return CONFIG_PATH_MACOS if platform.system() == "Darwin" else CONFIG_PATH_LINUX
+    # A Mac reached over SSH gets the shared file, like Linux, so every
+    # workspace account reads it. Only your own Mac, synced without root,
+    # keeps it in the home.
+    if platform.system() == "Darwin" and not CONFIG_PATH_SHARED.exists():
+        return CONFIG_PATH_MACOS
+    return CONFIG_PATH_SHARED
 
 
 def load_config() -> dict:

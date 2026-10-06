@@ -16,28 +16,29 @@
     state: directory
     mode: "0755"
   become: true
-  when: ansible_facts['system'] == 'Linux'
+  when: devmachine_devmachine_app_shared_config | bool
 
 # Every workspace account reads this file, so it lives beside root's own
-# config rather than any one workspace's home.
-- name: Write the config, Linux
+# config rather than any one workspace's home. A Mac reached over SSH runs
+# this play as root and keeps it here too.
+- name: Write the config for every account
   ansible.builtin.copy:
     dest: /etc/devmachine-app/config.json
     mode: "0644"
     content: "{{ {'github_hosts': devmachine_devmachine_app_github_hosts} | to_nice_json }}\n"
   become: true
-  when: ansible_facts['system'] == 'Linux'
+  when: devmachine_devmachine_app_shared_config | bool
 
-- name: Create the config directory, macOS
+- name: Create the config directory, your own Mac
   ansible.builtin.file:
     path: "{{ ansible_facts['env']['HOME'] }}/.config/devmachine-app"
     state: directory
     mode: "0755"
-  when: ansible_facts['system'] == 'Darwin'
+  when: not devmachine_devmachine_app_shared_config | bool
 
-- name: Write the config, macOS
+- name: Write the config, your own Mac
   ansible.builtin.copy:
     dest: "{{ ansible_facts['env']['HOME'] }}/.config/devmachine-app/config.json"
     mode: "0644"
     content: "{{ {'github_hosts': devmachine_devmachine_app_github_hosts} | to_nice_json }}\n"
-  when: ansible_facts['system'] == 'Darwin'
+  when: not devmachine_devmachine_app_shared_config | bool

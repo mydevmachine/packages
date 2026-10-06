@@ -1051,6 +1051,41 @@ def test_a_configured_host_with_no_proxy_gets_gh_host_and_no_proxy(monkeypatch, 
     assert "HTTPS_PROXY" not in env
 
 
+def test_a_mac_reached_over_ssh_reads_the_machine_wide_config(monkeypatch, tmp_path):
+    import devmachine_infer as m
+
+    shared = tmp_path / "etc" / "config.json"
+    shared.parent.mkdir()
+    shared.write_text("{}")
+    monkeypatch.delenv("DEVMACHINE_APP_CONFIG", raising=False)
+    monkeypatch.setattr(m.platform, "system", lambda: "Darwin")
+    monkeypatch.setattr(m, "CONFIG_PATH_SHARED", shared)
+    monkeypatch.setattr(m, "CONFIG_PATH_MACOS", tmp_path / "home" / "config.json")
+
+    assert m.config_path() == shared
+
+
+def test_a_mac_that_is_your_own_computer_reads_the_config_in_its_home(monkeypatch, tmp_path):
+    import devmachine_infer as m
+
+    monkeypatch.delenv("DEVMACHINE_APP_CONFIG", raising=False)
+    monkeypatch.setattr(m.platform, "system", lambda: "Darwin")
+    monkeypatch.setattr(m, "CONFIG_PATH_SHARED", tmp_path / "etc" / "config.json")
+    monkeypatch.setattr(m, "CONFIG_PATH_MACOS", tmp_path / "home" / "config.json")
+
+    assert m.config_path() == tmp_path / "home" / "config.json"
+
+
+def test_linux_reads_the_machine_wide_config_even_when_it_is_missing(monkeypatch, tmp_path):
+    import devmachine_infer as m
+
+    monkeypatch.delenv("DEVMACHINE_APP_CONFIG", raising=False)
+    monkeypatch.setattr(m.platform, "system", lambda: "Linux")
+    monkeypatch.setattr(m, "CONFIG_PATH_SHARED", tmp_path / "etc" / "config.json")
+
+    assert m.config_path() == tmp_path / "etc" / "config.json"
+
+
 def _codex_session_meta(cwd):
     return {"timestamp": "2026-01-01T00:00:00.000Z", "ordinal": 0, "type": "session_meta",
             "payload": {"session_id": "s1", "cwd": cwd, "originator": "codex-tui"}}

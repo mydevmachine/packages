@@ -13,6 +13,10 @@ What the Devmachine macOS app asks a machine for, reached through
 | --- | --- | --- |
 | `github_hosts` | `[]` | GitHub Enterprise hosts the context panel resolves pull requests on, each as `{host, proxy}` with `proxy` optional. `github.com` always works; this adds more. |
 
+The settings land in `/etc/devmachine-app/config.json`, which every workspace
+account reads. A Mac reached over SSH keeps them there too. Only your own Mac,
+synced without root, keeps them in `~/.config/devmachine-app/config.json`.
+
 ## Credentials
 
 None.
