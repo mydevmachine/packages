@@ -38,15 +38,37 @@
     creates: "{{ devmachine_mise_home }}/.local/bin/mise"
   when: not ansible_check_mode or devmachine_mise_account.stat.exists
 
-# .zshenv, and not .zshrc. .zshrc is read by an interactive shell only, so
-# `ssh machine 'mise ...'` — and everything a tool runs the same way, Ansible
-# included — would not find mise at all. This was got wrong once: mise worked
-# when a person typed it and vanished for every non-interactive command.
-- name: Activate mise in ~/.zshenv
-  ansible.builtin.lineinfile:
-    path: "{{ devmachine_mise_home }}/.zshenv"
-    line: 'eval "$(~/.local/bin/mise activate zsh)"'
+# ~/.devmachine/shellenv, which every shell reads, interactive or not, and not
+# an interactive file like .zshrc: there `ssh machine 'mise ...'` — and
+# everything a tool runs the same way, Ansible included — would not find mise
+# at all. This was got wrong once: mise worked when a person typed it and
+# vanished for every non-interactive command. zsh and bash get mise's own hook;
+# a shell mise has no hook for gets its shims on the PATH instead.
+- name: Activate mise in every shell
+  ansible.builtin.blockinfile:
+    path: "{{ devmachine_mise_home }}/.devmachine/shellenv"
+    marker: "# {mark} devmachine — mise"
     create: true
     owner: "{{ devmachine_workspace.user }}"
     group: "{{ devmachine_account.group | default(omit) }}"
     mode: "0644"
+    block: |
+      if [ -x "$HOME/.local/bin/mise" ]; then
+        if [ -n "${ZSH_VERSION-}" ]; then
+          eval "$("$HOME/.local/bin/mise" activate zsh)"
+        elif [ -n "${BASH_VERSION-}" ]; then
+          eval "$("$HOME/.local/bin/mise" activate bash)"
+        else
+          case ":$PATH:" in
+            *":$HOME/.local/share/mise/shims:"*) ;;
+            *) PATH="$HOME/.local/share/mise/shims:$PATH" ;;
+          esac
+          export PATH
+        fi
+      fi
+
+- name: Take the line an older release wrote out of ~/.zshenv
+  ansible.builtin.lineinfile:
+    path: "{{ devmachine_mise_home }}/.zshenv"
+    line: 'eval "$(~/.local/bin/mise activate zsh)"'
+    state: absent
