@@ -45,6 +45,11 @@ devmachine sync
   or in System Settings. Its primary group is `staff`, and nothing is
   installed for it, because git, `ssh-keygen` and `ssh-keyscan` come with the
   Command Line Tools.
+- **On macOS with Remote Login set to "Only these users"**, sshd lets in only
+  members of the `com.apple.access_ssh` group, so the account joins it;
+  otherwise SSH refuses it with `failed service ACL check`. With "All users"
+  that group does not exist and nothing changes. `workspaces destroy` takes
+  the account out of it again.
 
 ## Learn more
 

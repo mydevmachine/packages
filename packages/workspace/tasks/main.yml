@@ -114,6 +114,35 @@
     hidden: "{{ true if ansible_facts['system'] == 'Darwin' else omit }}"
   register: devmachine_account
 
+# With Remote Login set to "Only these users", sshd lets in only members of
+# this group, and refuses a new account with "failed service ACL check".
+- name: Let the account in through Remote Login
+  when: ansible_facts['system'] == 'Darwin'
+  block:
+    - name: Look for the Remote Login access group
+      ansible.builtin.command: dscl . -read /Groups/com.apple.access_ssh RecordName
+      register: devmachine_workspace_ssh_group
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: Ask whether the account is in it
+      ansible.builtin.command:
+        argv: [dseditgroup, -o, checkmember, -m, "{{ devmachine_workspace.user }}", com.apple.access_ssh]
+      register: devmachine_workspace_ssh_member
+      changed_when: false
+      failed_when: false
+      check_mode: false
+      when: devmachine_workspace_ssh_group.rc == 0
+
+    - name: Add the account to it
+      ansible.builtin.command:
+        argv: [dseditgroup, -o, edit, -a, "{{ devmachine_workspace.user }}", -t, user, com.apple.access_ssh]
+      changed_when: true
+      when:
+        - devmachine_workspace_ssh_group.rc == 0
+        - devmachine_workspace_ssh_member.rc != 0
+
 # This is the whole isolation model: one workspace cannot read another's home.
 # It is also why delivering a credential into a home is safe enough — nothing
 # else on the machine can open it.
