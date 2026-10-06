@@ -1,0 +1,28 @@
+packages/git/tasks/main.yml
+  s_87d72b62cfc5a1::t_663a59419440ba 2-3,8
+packages/cloudflare/README.md
+  s_87d72b62cfc5a1::t_32207a09cfe2db 38-39
+packages/git-key/tasks/main.yml
+  s_87d72b62cfc5a1::t_e9c9b01e404317 14-16,18-21
+  s_87d72b62cfc5a1::t_bfc788d00c8ba5 17
+packages/cloudflare/tasks/main.yml
+  s_87d72b62cfc5a1::t_0df05b4ea70d04 2-4,9
+packages/git/README.md
+  s_87d72b62cfc5a1::t_7a552984788bc7 26-27
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1336087f3e858bdd8cdba42436f9518c135df00b",
+  "prompts": {},
+  "sessions": {
+    "s_87d72b62cfc5a1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5e69ca1d-9900-4500-8ba7-104b479b47eb",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Djalma Araujo <djalma@nossomos.cc>"
+    }
+  }
+}
