@@ -1,0 +1,19 @@
+packages/devmachine-skills/skills/use-devmachine/references/troubleshooting.md
+  s_f189ebb9e4f6eb::t_087972842fc58e 627-638,676-697,781-792,912-925,936-951,963-966,968,1100-1142
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "570599feca1389cb4b98f3eeebffbb43e6ae6ad4",
+  "prompts": {},
+  "sessions": {
+    "s_f189ebb9e4f6eb": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "843dabc7-924b-4359-8709-5440a1a8fe93",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Djalma Araujo <djalma@nossomos.cc>"
+    }
+  }
+}
