@@ -12,7 +12,7 @@ in each account.
 
 | Setting | Default | What it does |
 | --- | --- | --- |
-| `home` | `/home/<the account>` | Where the account's home is. |
+| `home` | the account's own home | Where the account's home is. Read from the account. |
 | `status_line` | `""` | The command Claude Code runs to draw its status line. Empty leaves the status line alone. It runs outside a login shell, so give it an absolute path. |
 | `remote_control_at_startup` | `false` | Connect every session to Remote Control as it opens, instead of waiting for somebody to type `/rc`. |
 | `session_name_prefix` | `""` | What each Remote Control session is called in the phone app. Empty means the workspace's name. |

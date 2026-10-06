@@ -1,8 +1,7 @@
 # workspace
 
-The Linux account a person works in: a home nobody else can read, a git
-identity and `~/dev`. Almost every other workspace-scoped package needs this
-one first.
+The account a person works in: a home nobody else can read, a git identity
+and `~/dev`. Almost every other workspace-scoped package needs this one first.
 
 - **Scope:** workspace
 - **Category:** Foundation
@@ -12,8 +11,8 @@ one first.
 
 | Setting | Default | What it does |
 | --- | --- | --- |
-| `home` | `/home/<the account>` | Where the account's home is. Debian and Ubuntu put it under `/home`; a machine whose `useradd` is configured otherwise says so here. |
-| `admin_home` | `/root` | The home of the account the CLI provisions with. Whatever reaches that account over SSH is what reaches this workspace. |
+| `home` | the account's own home | Where the account's home is. It is read from the account; a new account gets `/home/<the account>` unless this says otherwise. On macOS a new account always gets `/Users/<the account>`. |
+| `admin_home` | `/root` | The home of the account the CLI provisions with. Whatever reaches that account over SSH is what reaches this workspace. On macOS it is the admin login's own home, read from the system. |
 | `groups` | `[]` | Extra Linux groups the account joins. The `docker` group is one of them, and it is effectively root, so nobody joins it by accident. |
 | `shell` | `""` | The login shell. Empty means whatever `useradd` would pick; the package that installs a shell (such as `zsh`) is the one that sets it. |
 | `git_name` | `""` | The name on this workspace's commits. |
@@ -42,6 +41,15 @@ devmachine sync
   workspace that genuinely needs it.
 - `sign_commits` only takes effect once a key exists — pair it with
   [`git-key`](../git-key/README.md) or a key set up by hand.
+- **On macOS** the account is created hidden: it is not on the login window
+  or in System Settings. Its primary group is `staff`, and nothing is
+  installed for it, because git, `ssh-keygen` and `ssh-keyscan` come with the
+  Command Line Tools.
+- **On macOS with Remote Login set to "Only these users"**, sshd lets in only
+  members of the `com.apple.access_ssh` group, so the account joins it;
+  otherwise SSH refuses it with `failed service ACL check`. With "All users"
+  that group does not exist and nothing changes. `workspaces destroy` takes
+  the account out of it again.
 
 ## Learn more
 

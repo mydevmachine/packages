@@ -1,0 +1,41 @@
+---
+- name: Create the keyring directory
+  ansible.builtin.file:
+    path: "{{ devmachine_tailscale_keyring | dirname }}"
+    state: directory
+    mode: "0755"
+
+- name: Download Tailscale's own signing key
+  ansible.builtin.get_url:
+    url: "{{ devmachine_tailscale_key_url }}"
+    dest: "{{ devmachine_tailscale_keyring }}"
+    mode: "0644"
+
+- name: Add Tailscale's own repository
+  ansible.builtin.copy:
+    dest: "{{ devmachine_tailscale_repo_file }}"
+    owner: root
+    group: root
+    mode: "0644"
+    content: "{{ devmachine_tailscale_repo_line }}\n"
+  register: devmachine_tailscale_repo
+
+- name: Refresh the package cache
+  ansible.builtin.command: "{{ devmachine_package_cache_command }}"
+  register: devmachine_tailscale_cache
+  changed_when: false
+  failed_when:
+    - devmachine_tailscale_cache.rc != 0
+    - devmachine_tailscale_cache.stderr_lines | select('match', '^E:') | reject('search', devmachine_package_cache_tolerated) | list | length > 0
+  when: devmachine_tailscale_repo is changed
+
+- name: Warn that the cache refresh skipped Caddy's repository
+  ansible.builtin.debug:
+    msg: >-
+      WARNING: apt refused Caddy's repository while refreshing the package
+      cache, because it cannot check its signature. This is Caddy's problem,
+      not this machine's: see https://github.com/caddyserver/dist/issues/130.
+      Every other repository was refreshed.
+  when:
+    - devmachine_tailscale_cache.rc is defined
+    - devmachine_tailscale_cache.rc != 0

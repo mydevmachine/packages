@@ -30,6 +30,9 @@ devmachine sync
 
 - Expects mise already installed (for example by `mac-brew`); it does not
   install mise itself, only its global tools.
+- The tools belong to your own account, never to root. On a Mac reached over
+  SSH, where the play runs as root, that is the admin login: the default `bin`
+  and the global mise config are under its home.
 
 ## Learn more
 

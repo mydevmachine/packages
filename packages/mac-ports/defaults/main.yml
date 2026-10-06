@@ -1,0 +1,4 @@
+---
+# Empty on purpose. The operator's own list arrives through settings; this
+# package never installs a port on its own.
+devmachine_mac_ports_ports: []

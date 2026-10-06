@@ -12,7 +12,7 @@ already running keeps its old configuration until it is told to reload.
 
 | Setting | Default | What it does |
 | --- | --- | --- |
-| `home` | `/home/<the account>` | Where the account's home is. |
+| `home` | the account's own home | Where the account's home is. Read from the account. |
 | `tmux_auto_attach` | `true` | Open a tmux session on every SSH login, so a dropped connection loses nothing. A second connection while the first is live gets a session of its own instead of a second view of the same one. |
 | `tmux_config` | `true` | Write the account's `~/.tmux.conf`. Turn it off to keep a config of your own. |
 
@@ -36,6 +36,13 @@ devmachine sync
   the computer you connect from through OSC 52, over SSH and over mosh, and
   leaves copy mode. A tmux server that was already running picks this up
   after `tmux source-file ~/.tmux.conf`.
+- On macOS the login shell is the system's `/bin/zsh`, and only tmux is
+  installed, from Homebrew (as the account that owns it, after a
+  `brew update`) or MacPorts. The
+  account's `~/.zshenv` puts that package manager's `bin` and `sbin` on its
+  `PATH`, which macOS leaves out for an account that is not an admin.
+- An SSH login opens tmux only when tmux is on the `PATH`; without it you get
+  a plain shell instead of a closed connection.
 
 ## Learn more
 

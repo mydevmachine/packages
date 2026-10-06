@@ -70,6 +70,35 @@ jobs:
       - name: Check workspace account creation
         run: ./scripts/test-workspace-account.sh
 
+  # The oldest Ansible a machine runs: Debian 12's own, ansible-core 2.14. A
+  # recipe that uses anything newer breaks every Debian 12 sync.
+  syntax-debian-12:
+    runs-on: ubuntu-latest
+    container: debian:12
+    steps:
+      - name: Install Ansible as Debian 12 ships it
+        run: |
+          apt-get update
+          apt-get install --yes --no-install-recommends ansible git ca-certificates
+
+      - uses: actions/checkout@v5
+
+      - name: Check every recipe parses as a role
+        run: ./scripts/syntax-check.sh
+
+  # Arch's own Ansible, the one an Arch machine runs.
+  syntax-arch:
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    steps:
+      - name: Install Ansible as Arch ships it
+        run: pacman -Syu --noconfirm ansible git
+
+      - uses: actions/checkout@v5
+
+      - name: Check every recipe parses as a role
+        run: ./scripts/syntax-check.sh
+
   data:
     runs-on: ubuntu-latest
     steps:

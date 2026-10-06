@@ -4,6 +4,13 @@
     msg: "mac-mise only runs on macOS, this machine reports {{ ansible_facts['system'] }}."
   when: ansible_facts['system'] != 'Darwin'
 
+- name: Read the home of the account mise belongs to
+  ansible.builtin.user:
+    name: "{{ devmachine_mac_mise_user }}"
+  check_mode: true
+  changed_when: false
+  register: devmachine_mac_mise_account
+
 - name: Look for mise
   ansible.builtin.stat:
     path: "{{ devmachine_mac_mise_bin }}"
@@ -18,7 +25,7 @@
 
 - name: Read the mise config before
   ansible.builtin.slurp:
-    path: "{{ ansible_facts['env']['HOME'] }}/.config/mise/config.toml"
+    path: "{{ devmachine_mac_mise_home }}/.config/mise/config.toml"
   register: devmachine_mac_mise_config_before
   failed_when: false
   changed_when: false
@@ -31,10 +38,14 @@
   loop: "{{ devmachine_mac_mise_tools }}"
   changed_when: false
   when: devmachine_mac_mise_tools | length > 0
+  become: "{{ devmachine_mac_mise_account.uid != ansible_facts['effective_user_id'] }}"
+  become_user: "{{ devmachine_mac_mise_user }}"
+  environment:
+    HOME: "{{ devmachine_mac_mise_home }}"
 
 - name: Read the mise config after
   ansible.builtin.slurp:
-    path: "{{ ansible_facts['env']['HOME'] }}/.config/mise/config.toml"
+    path: "{{ devmachine_mac_mise_home }}/.config/mise/config.toml"
   register: devmachine_mac_mise_config_after
   failed_when: false
   changed_when: >-

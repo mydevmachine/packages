@@ -1,11 +1,82 @@
 ---
-- name: Load the package names for this family
-  ansible.builtin.include_vars: "{{ ansible_facts['os_family'] }}.yml"
+# A loop over first_found, not a plain include_vars: when no file matches, the
+# loop is empty and the task skips, on ansible-core 2.14 as on the latest.
+- name: Load the names for this system
+  ansible.builtin.include_vars: "{{ devmachine_vars_file }}"
+  loop: "{{ query('ansible.builtin.first_found', devmachine_vars_chain) }}"
+  loop_control:
+    loop_var: devmachine_vars_file
+  vars:
+    devmachine_vars_chain:
+      files:
+        - "{{ ansible_facts['distribution'] }}.yml"
+        - "{{ ansible_facts['pkg_mgr'] }}.yml"
+        - "{{ ansible_facts['os_family'] }}.yml"
+        - default.yml
+      paths:
+        - "{{ role_path }}/vars"
+      skip: true
+
+# check_mode makes the user module only read: it never creates the account,
+# and a missing one just leaves no home in the result.
+- name: Read the account's home and group
+  ansible.builtin.user:
+    name: "{{ devmachine_workspace.user }}"
+  check_mode: true
+  changed_when: false
+  register: devmachine_account
 
 - name: Install zsh and what Oh My Zsh's installer needs
   ansible.builtin.package:
     name: "{{ devmachine_zsh_packages }}"
     state: present
+  when:
+    - devmachine_zsh_packages | length > 0
+    - ansible_facts['pkg_mgr'] != 'homebrew'
+
+# Homebrew refuses to run as root, and root is what this play runs as on a Mac
+# reached over SSH, so the install becomes the account that owns Homebrew.
+- name: Find who owns Homebrew
+  ansible.builtin.stat:
+    path: "{{ '/opt/homebrew' if ansible_facts['architecture'] == 'arm64' else '/usr/local' }}/bin/brew"
+  register: devmachine_zsh_brew
+  when: ansible_facts['pkg_mgr'] == 'homebrew'
+
+- name: Find which Homebrew packages are missing
+  ansible.builtin.command:
+    argv: "{{ [devmachine_zsh_brew.stat.path, 'list', '--formula', '--versions'] + devmachine_zsh_packages }}"
+  register: devmachine_zsh_brew_listed
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  become: "{{ devmachine_zsh_brew.stat.uid != ansible_facts['effective_user_id'] }}"
+  become_user: "{{ devmachine_zsh_brew.stat.pw_name }}"
+  when:
+    - devmachine_zsh_packages | length > 0
+    - ansible_facts['pkg_mgr'] == 'homebrew'
+
+# A brew with old code fails on today's formulae (e.g. "unknown keyword"). Update
+# only when something is missing, so a sync with nothing to install stays unchanged.
+- name: Update Homebrew before installing
+  ansible.builtin.command:
+    argv: ["{{ devmachine_zsh_brew.stat.path }}", update]
+  changed_when: false
+  become: "{{ devmachine_zsh_brew.stat.uid != ansible_facts['effective_user_id'] }}"
+  become_user: "{{ devmachine_zsh_brew.stat.pw_name }}"
+  when:
+    - not ansible_check_mode
+    - devmachine_zsh_brew_listed is not skipped
+    - devmachine_zsh_packages | map('regex_replace', '^.*/', '') | difference(devmachine_zsh_brew_listed.stdout_lines | default([]) | map('regex_replace', ' .*$', '')) | length > 0
+
+- name: Install tmux from Homebrew
+  community.general.homebrew:
+    name: "{{ devmachine_zsh_packages }}"
+    state: present
+  become: "{{ devmachine_zsh_brew.stat.uid != ansible_facts['effective_user_id'] }}"
+  become_user: "{{ devmachine_zsh_brew.stat.pw_name }}"
+  when:
+    - devmachine_zsh_packages | length > 0
+    - ansible_facts['pkg_mgr'] == 'homebrew'
 
 # A dry run on a machine where this account does not exist yet cannot become
 # it: Ansible has no user to hand its temporary files to, and fails saying so.
@@ -47,7 +118,7 @@
     marker: "# {mark} devmachine — workspace secrets"
     create: true
     owner: "{{ devmachine_workspace.user }}"
-    group: "{{ devmachine_workspace.user }}"
+    group: "{{ devmachine_account.group | default(omit) }}"
     mode: "0644"
     block: |
       if [ -r "$HOME/.devmachine/env" ]; then
@@ -55,6 +126,27 @@
         . "$HOME/.devmachine/env"
         set +a
       fi
+
+# A Mac gives an account that is not an admin only the system's PATH, without
+# MacPorts or Apple Silicon Homebrew, so the tmux below would not be found.
+- name: Put the package manager on the account's PATH
+  ansible.builtin.blockinfile:
+    path: "{{ devmachine_zsh_home }}/.zshenv"
+    marker: "# {mark} devmachine — package manager on PATH"
+    create: true
+    owner: "{{ devmachine_workspace.user }}"
+    group: "{{ devmachine_account.group | default(omit) }}"
+    mode: "0644"
+    block: |
+      for devmachine_dir in {{ devmachine_zsh_path_prefix | reverse | join(' ') }}; do
+        case ":$PATH:" in
+          *":$devmachine_dir:"*) ;;
+          *) PATH="$devmachine_dir:$PATH" ;;
+        esac
+      done
+      unset devmachine_dir
+      export PATH
+  when: devmachine_zsh_path_prefix | length > 0
 
 # A connection that drops loses nothing, because the work was never in the
 # connection. The second branch is what stops a new SSH login from stealing the
@@ -65,10 +157,10 @@
     marker: "# {mark} devmachine — tmux auto-attach"
     create: true
     owner: "{{ devmachine_workspace.user }}"
-    group: "{{ devmachine_workspace.user }}"
+    group: "{{ devmachine_account.group | default(omit) }}"
     mode: "0644"
     block: |
-      if [ -z "$TMUX" ] && [ -n "$SSH_CONNECTION" ]; then
+      if [ -z "$TMUX" ] && [ -n "$SSH_CONNECTION" ] && command -v tmux >/dev/null 2>&1; then
         if tmux has-session -t main 2>/dev/null && [ -n "$(tmux list-clients -t main 2>/dev/null)" ]; then
           exec tmux new-session -s "ssh-$$"
         else
@@ -87,6 +179,6 @@
     src: tmux.conf
     dest: "{{ devmachine_zsh_home }}/.tmux.conf"
     owner: "{{ devmachine_workspace.user }}"
-    group: "{{ devmachine_workspace.user }}"
+    group: "{{ devmachine_account.group | default(omit) }}"
     mode: "0644"
   when: devmachine_zsh_tmux_config | bool

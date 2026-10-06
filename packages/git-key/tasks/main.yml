@@ -1,4 +1,13 @@
 ---
+# check_mode makes the user module only read: it never creates the account,
+# and a missing one just leaves no home in the result.
+- name: Read the account's home and group
+  ansible.builtin.user:
+    name: "{{ devmachine_workspace.user }}"
+  check_mode: true
+  changed_when: false
+  register: devmachine_account
+
 # On PATH, not under the role: the credential's `command` is what a person
 # types, and a path into /opt/devmachine changes with where the package came
 # from (a released package unpacks into roles/, a local one into roles.local/).
@@ -8,7 +17,7 @@
     src: devmachine-make-git-key
     dest: /usr/local/bin/devmachine-make-git-key
     owner: root
-    group: root
+    group: "{{ 'wheel' if ansible_facts['system'] == 'Darwin' else 'root' }}"
     mode: "0755"
 
 # The CLI copies the private key into this workspace after every workspace
@@ -36,7 +45,7 @@
   ansible.builtin.file:
     path: "{{ devmachine_git_key_home }}/.ssh/id_ed25519.pub"
     owner: "{{ devmachine_workspace.user }}"
-    group: "{{ devmachine_workspace.user }}"
+    group: "{{ devmachine_account.group | default(omit) }}"
     mode: "0644"
   when: devmachine_git_key_private.stat.exists
 

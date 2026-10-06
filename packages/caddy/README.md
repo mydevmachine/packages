@@ -17,7 +17,7 @@ by itself.
 | `local_certs` | `false` | Sign certificates locally instead of asking Let's Encrypt. For a machine no name resolves to — a test VM, a private network — where the ACME challenge can never succeed. |
 | `site` | `true` | Serve a one-page site straight from Caddy, no container behind it. It answers 200, proving the name, the certificate and the proxy in one request. |
 | `site_domain` | `""` | The name the one-page site answers to, with its own certificate. Empty serves it on port 80 at the machine's address, over plain HTTP. It creates no DNS record — pointing the name is `devmachine dns add`. |
-| `source` | `auto` | Where Caddy is installed from. `auto` uses Caddy's apt repository, and installs the pinned GitHub release instead when apt cannot check that repository's signature. `apt` uses only the repository and fails when it cannot be checked. `github` always installs the pinned GitHub release and removes the repository. |
+| `source` | `auto` | Where Caddy is installed from. `auto` uses Caddy's apt repository, and installs the pinned GitHub release instead when apt cannot check that repository's signature. `apt` uses only the repository and fails when it cannot be checked. `github` always installs the pinned GitHub release and removes the repository. Debian and Ubuntu only: elsewhere Caddy comes from the system's own repository. |
 | `version` | `"2.11.4"` | The Caddy release installed from GitHub, by `source: github` or by the `auto` fallback. The apt repository ignores it. |
 
 ## Credentials

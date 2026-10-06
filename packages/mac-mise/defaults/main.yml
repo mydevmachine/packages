@@ -1,5 +1,12 @@
 ---
-devmachine_mac_mise_bin: "{{ ansible_facts['env']['HOME'] }}/.local/bin/mise"
+# mise and its tools belong to the person's own account, never to root. A Mac
+# reached over SSH runs the play as root through the admin login's sudo, and
+# sudo names that login in SUDO_USER on this side of the connection; your own
+# Mac runs it as you.
+devmachine_mac_mise_user: "{{ lookup('ansible.builtin.env', 'SUDO_USER') | default(ansible_facts['user_id'], true) }}"
+devmachine_mac_mise_home: "{{ devmachine_mac_mise_account.home }}"
+
+devmachine_mac_mise_bin: "{{ devmachine_mac_mise_home }}/.local/bin/mise"
 
 # Empty on purpose. The operator's own list arrives through settings; this
 # package never installs a tool on its own.

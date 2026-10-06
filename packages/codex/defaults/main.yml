@@ -1,2 +1,2 @@
 ---
-devmachine_codex_home: "/home/{{ devmachine_workspace.user }}"
+devmachine_codex_home: "{{ devmachine_account.home | default('/home/' ~ devmachine_workspace.user) }}"

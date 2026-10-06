@@ -22,7 +22,7 @@ def system_conf():
     body = start + next(i for i, line in enumerate(lines[start:]) if line.strip() == "content: |") + 1
     content = []
     for line in lines[body:]:
-        if line.startswith("- name:"):
+        if line.strip() and not line.startswith(" " * 6):
             break
         content.append(line[6:])
     return "\n".join(content).strip() + "\n"

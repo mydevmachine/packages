@@ -1,4 +1,0 @@
----
-devmachine_claude_code_packages:
-  # The installer downloads itself with curl.
-  - curl

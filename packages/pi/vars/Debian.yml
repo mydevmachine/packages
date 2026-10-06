@@ -1,4 +1,0 @@
----
-devmachine_pi_packages:
-  - curl
-  - tar

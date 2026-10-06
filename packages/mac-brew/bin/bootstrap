@@ -1,0 +1,129 @@
+#!/bin/sh
+# Brings a Mac to the point where devmachine can run Ansible on it, through
+# Homebrew: Xcode Command Line Tools, Homebrew, then Ansible.
+#
+#   bootstrap check   prints {"missing":[{"name":...,"minutes":...}]}, changes nothing
+#   bootstrap apply   installs what is missing, prints {"ansible_playbook":...,"path_prefix":[...]}
+#
+# Progress goes to stderr; stdout carries exactly one JSON document. A failure
+# exits non-zero with {"error":{"step":...,"message":...}} on stdout.
+set -u
+
+json_string() {
+	printf '"%s"' "$(printf '%s' "$1" | tr '\n\t' '  ' | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g')"
+}
+
+fail() {
+	printf '{"error":{"step":%s,"message":%s}}\n' "$(json_string "$1")" "$(json_string "$2")"
+	exit 1
+}
+
+say() {
+	printf '%s\n' "$*" >&2
+}
+
+brew_prefix() {
+	case "$(uname -m)" in
+	arm64) echo /opt/homebrew ;;
+	*) echo /usr/local ;;
+	esac
+}
+
+has_command_line_tools() {
+	xcode-select -p >/dev/null 2>&1
+}
+
+has_homebrew() {
+	[ -x "$PREFIX/bin/brew" ]
+}
+
+# A plain SSH command gets PATH=/usr/bin:/bin:/usr/sbin:/sbin, so the usual
+# homes of ansible-playbook (pipx, both Homebrew prefixes) are looked at too.
+find_ansible_playbook() {
+	found=$(command -v ansible-playbook 2>/dev/null) && [ -x "$found" ] && {
+		echo "$found"
+		return 0
+	}
+	for candidate in "$HOME/.local/bin/ansible-playbook" "$PREFIX/bin/ansible-playbook" \
+		/opt/homebrew/bin/ansible-playbook /usr/local/bin/ansible-playbook; do
+		if [ -x "$candidate" ]; then
+			echo "$candidate"
+			return 0
+		fi
+	done
+	return 1
+}
+
+install_command_line_tools() {
+	say "Installing the Xcode Command Line Tools (5 to 10 minutes)..."
+	# softwareupdate lists the Command Line Tools only while this file exists:
+	# it is how macOS offers them without the GUI prompt.
+	marker=/tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress
+	touch "$marker" || fail "command-line-tools" "could not create $marker"
+	label=$(softwareupdate -l 2>/dev/null |
+		sed -n 's/^.*Label: \(Command Line Tools.*\)$/\1/p' |
+		sort -V | tail -n 1)
+	if [ -z "$label" ]; then
+		rm -f "$marker"
+		fail "command-line-tools" "softwareupdate offers no Command Line Tools for this macOS. Run 'xcode-select --install' on the Mac, then run devmachine setup again."
+	fi
+	say "Found $label."
+	if ! sudo -n softwareupdate -i "$label" --verbose >&2; then
+		rm -f "$marker"
+		fail "command-line-tools" "softwareupdate could not install '$label'. Run 'xcode-select --install' on the Mac, then run devmachine setup again."
+	fi
+	rm -f "$marker"
+	has_command_line_tools || fail "command-line-tools" "'$label' installed, but xcode-select still finds no developer directory."
+}
+
+install_homebrew() {
+	say "Installing Homebrew into $PREFIX..."
+	script=$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh) ||
+		fail "homebrew" "could not download the Homebrew installer from raw.githubusercontent.com. Check the Mac's internet access."
+	NONINTERACTIVE=1 /bin/bash -c "$script" >&2 ||
+		fail "homebrew" "the Homebrew installer failed; its output is above. It needs passwordless sudo for the admin login."
+	has_homebrew || fail "homebrew" "the Homebrew installer finished, but $PREFIX/bin/brew does not exist."
+}
+
+install_ansible() {
+	say "Installing Ansible with Homebrew..."
+	"$PREFIX/bin/brew" install ansible >&2 ||
+		fail "ansible" "'brew install ansible' failed; its output is above."
+	[ -x "$PREFIX/bin/ansible-playbook" ] ||
+		fail "ansible" "'brew install ansible' finished, but $PREFIX/bin/ansible-playbook does not exist."
+}
+
+check() {
+	missing=""
+	add() {
+		[ -n "$missing" ] && missing="$missing,"
+		missing="$missing{\"name\":$(json_string "$1"),\"minutes\":$2}"
+	}
+	has_command_line_tools || add "Xcode Command Line Tools" 10
+	has_homebrew || add "Homebrew" 5
+	find_ansible_playbook >/dev/null || add "Ansible" 3
+	printf '{"missing":[%s]}\n' "$missing"
+}
+
+apply() {
+	if has_command_line_tools; then say "Xcode Command Line Tools: present."; else install_command_line_tools; fi
+	if has_homebrew; then say "Homebrew: present at $PREFIX."; else install_homebrew; fi
+	if playbook=$(find_ansible_playbook); then
+		say "Ansible: present at $playbook."
+	else
+		install_ansible
+		playbook="$PREFIX/bin/ansible-playbook"
+	fi
+	printf '{"ansible_playbook":%s,"path_prefix":[%s,%s]}\n' \
+		"$(json_string "$playbook")" "$(json_string "$PREFIX/bin")" "$(json_string "$PREFIX/sbin")"
+}
+
+[ "$(id -u)" -ne 0 ] || fail "user" "run bootstrap as the admin login, not as root: Homebrew refuses to run as root."
+[ "$(uname -s)" = "Darwin" ] || fail "system" "bootstrap is for macOS; this system is $(uname -s)."
+PREFIX=$(brew_prefix)
+
+case "${1:-}" in
+check) check ;;
+apply) apply ;;
+*) fail "usage" "usage: bootstrap check|apply" ;;
+esac

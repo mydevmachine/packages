@@ -28,7 +28,7 @@ credentials:
 variables:
   home:
     summary: Where the account's home is.
-    default: /home/<the account>
+    default: <the account's own home>
   gh_version:
     summary: >-
       Which GitHub CLI release to install. It is a release asset rather than a

@@ -1,0 +1,10 @@
+---
+# The same names in Homebrew and MacPorts. curl, git, zsh and the build
+# toolchain (cc, make, the system headers) come with macOS and its Command
+# Line Tools, so there is no build-essential or base-devel to add.
+devmachine_base_packages:
+  - tmux
+  # Resilient SSH for a wobbly link and for roaming.
+  - mosh
+  # Audio and video processing, available to every workspace on the machine.
+  - ffmpeg

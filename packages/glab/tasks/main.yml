@@ -1,11 +1,23 @@
 ---
-- name: Load the package names for this family
-  ansible.builtin.include_vars: "{{ ansible_facts['os_family'] }}.yml"
+# check_mode makes the user module only read: it never creates the account,
+# and a missing one just leaves no home in the result.
+- name: Read the account's home and group
+  ansible.builtin.user:
+    name: "{{ devmachine_workspace.user }}"
+  check_mode: true
+  changed_when: false
+  register: devmachine_account
 
+# macOS ships curl, tar and unzip. Homebrew would also refuse the root this
+# play runs as on a Mac reached over SSH.
 - name: Install what the release is unpacked with
   ansible.builtin.package:
-    name: "{{ devmachine_glab_packages }}"
+    name:
+      # The release is a tarball, fetched with curl.
+      - curl
+      - tar
     state: present
+  when: ansible_facts['system'] != 'Darwin'
 
 # A dry run on a machine where this account does not exist yet cannot become
 # it: Ansible has no user to hand its temporary files to, and fails saying so.
@@ -43,5 +55,5 @@
     line: 'export PATH="$HOME/.local/bin:$PATH"'
     create: true
     owner: "{{ devmachine_workspace.user }}"
-    group: "{{ devmachine_workspace.user }}"
+    group: "{{ devmachine_account.group | default(omit) }}"
     mode: "0644"

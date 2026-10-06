@@ -1,5 +1,5 @@
 ---
-devmachine_mac_brew_prefix: /opt/homebrew
+devmachine_mac_brew_prefix: "{{ '/opt/homebrew' if ansible_facts['architecture'] == 'arm64' else '/usr/local' }}"
 
 # Empty on purpose. The operator's own lists arrive through settings; this
 # package never taps, installs or casks anything on its own.

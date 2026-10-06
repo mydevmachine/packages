@@ -1,7 +1,7 @@
 format: 1
 name: base
 scope: machine
-platforms: [linux]
+platforms: [linux, macos]
 category: Foundation
 summary: The base tools a development machine needs, plus a shared tmux config and a session picker.
 
@@ -20,8 +20,11 @@ variables:
   upgrade:
     summary: >-
       Upgrade every package already installed. Off, because that is the owner's
-      decision and not a side effect of installing base tools.
+      decision and not a side effect of installing base tools. On Arch Linux it
+      is also the only thing that refreshes the package lists. Nothing on macOS.
     default: false
   swap:
-    summary: Size of a swapfile at /swapfile, such as 8G. Empty leaves the machine alone.
+    summary: >-
+      Size of a swapfile at /swapfile, such as 8G. Empty leaves the machine
+      alone. Nothing on macOS, which manages its own swap.
     default: ""

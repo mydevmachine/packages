@@ -12,7 +12,7 @@ needs; one GitHub account normally serves every workspace on a machine.
 
 | Setting | Default | What it does |
 | --- | --- | --- |
-| `home` | `/home/<the account>` | Where the account's home is. |
+| `home` | the account's own home | Where the account's home is. Read from the account. |
 | `gh_version` | `"2.63.2"` | Which GitHub CLI release to install. It is a release asset rather than a distribution package because most distributions do not carry `gh` at all. |
 | `node_version` | `"lts"` | Which Node mise installs globally. |
 

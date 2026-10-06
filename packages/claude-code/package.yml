@@ -27,7 +27,7 @@ credentials:
 variables:
   home:
     summary: Where the account's home is.
-    default: /home/<the account>
+    default: <the account's own home>
   status_line:
     summary: >-
       The command Claude Code runs to draw its status line. Empty leaves the

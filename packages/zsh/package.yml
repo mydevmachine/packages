@@ -15,7 +15,7 @@ requires:
 variables:
   home:
     summary: Where the account's home is.
-    default: /home/<the account>
+    default: <the account's own home>
   tmux_auto_attach:
     summary: >-
       Open a tmux session on every SSH login, so a dropped connection loses

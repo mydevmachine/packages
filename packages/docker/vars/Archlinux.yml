@@ -1,0 +1,7 @@
+---
+# Arch carries Docker in its own repository, current enough that Docker's
+# repository is not needed, and Compose and Buildx as plugins beside it.
+devmachine_docker_packages:
+  - docker
+  - docker-buildx
+  - docker-compose

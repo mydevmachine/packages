@@ -8,12 +8,17 @@ summary: >-
   anything.
 
 requires:
+  # An older CLI ignores `bootstrap` and keeps preparing your own Mac its old
+  # way, so raising this would only lock it out of a package it can still run.
   cli: ">= 0.7.0"
+
+bootstrap: bin/bootstrap
 
 variables:
   prefix:
     summary: >-
-      Where Homebrew lives. /usr/local on an Intel Mac.
+      Where Homebrew lives. Left unset, /opt/homebrew on Apple Silicon and
+      /usr/local on an Intel Mac.
     default: /opt/homebrew
   taps:
     summary: Homebrew taps to add.

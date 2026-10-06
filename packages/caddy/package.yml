@@ -48,11 +48,13 @@ variables:
       when apt cannot check that repository's signature, installs the pinned
       GitHub release instead. `apt` uses only the repository and fails when it
       cannot be checked. `github` always installs the pinned GitHub release and
-      removes the repository.
+      removes the repository. Debian and Ubuntu only: elsewhere Caddy comes
+      from the system's own repository.
     default: auto
   version:
     summary: >-
       The Caddy release installed from GitHub, by `source: github` or by the
       `auto` fallback. The `.deb` is checked against the release's own sha512
-      checksums before it is installed. The apt repository ignores it.
+      checksums before it is installed. The apt repository, and every system
+      other than Debian and Ubuntu, ignores it.
     default: "2.11.4"

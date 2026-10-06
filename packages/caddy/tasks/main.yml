@@ -1,6 +1,21 @@
 ---
-- name: Load the repository names for this family
-  ansible.builtin.include_vars: "{{ ansible_facts['os_family'] }}.yml"
+# A loop over first_found, not a plain include_vars: when no file matches, the
+# loop is empty and the task skips, on ansible-core 2.14 as on the latest.
+- name: Load the names for this system
+  ansible.builtin.include_vars: "{{ devmachine_vars_file }}"
+  loop: "{{ query('ansible.builtin.first_found', devmachine_vars_chain) }}"
+  loop_control:
+    loop_var: devmachine_vars_file
+  vars:
+    devmachine_vars_chain:
+      files:
+        - "{{ ansible_facts['distribution'] }}.yml"
+        - "{{ ansible_facts['pkg_mgr'] }}.yml"
+        - "{{ ansible_facts['os_family'] }}.yml"
+        - default.yml
+      paths:
+        - "{{ role_path }}/vars"
+      skip: true
 
 - name: Check where Caddy is asked to come from
   ansible.builtin.assert:
@@ -10,141 +25,15 @@
       github.
     quiet: true
 
-- name: Create the keyring directory
-  ansible.builtin.file:
-    path: "{{ devmachine_caddy_keyring | dirname }}"
-    state: directory
-    mode: "0755"
-  when: devmachine_caddy_source != 'github'
+- name: Install Caddy from its own repository or release on Debian and Ubuntu
+  ansible.builtin.import_tasks: Debian.yml
+  when: ansible_facts['os_family'] == 'Debian'
 
-# Downloaded on every run, so a key Caddy fixes upstream reaches a machine on
-# its next sync. get_url reports a change only when the key really differs.
-- name: Download Caddy's own signing key
-  ansible.builtin.get_url:
-    url: "{{ devmachine_caddy_key_url }}"
-    dest: "{{ devmachine_caddy_keyring }}"
-    mode: "0644"
-    force: true
-  when: devmachine_caddy_source != 'github'
-
-- name: Add Caddy's own repository
-  ansible.builtin.copy:
-    dest: "{{ devmachine_caddy_repo_file }}"
-    owner: root
-    group: root
-    mode: "0644"
-    content: "{{ devmachine_caddy_repo_line }}\n"
-  when: devmachine_caddy_source != 'github'
-
-# With the release coming from GitHub, a repository left behind would only be
-# refreshed, and complained about, by every other package's cache refresh.
-- name: Remove Caddy's repository when the release comes from GitHub
-  ansible.builtin.file:
-    path: "{{ devmachine_caddy_repo_file }}"
-    state: absent
-  when: devmachine_caddy_source == 'github'
-
-# Caddy's repository is signed with a subkey its own published key lists as
-# expired (https://github.com/caddyserver/dist/issues/130). apt then refuses
-# the whole repository, which is the right call; failing the sync is not.
-- name: Refresh Caddy's repository
-  ansible.builtin.command: "{{ devmachine_caddy_repo_refresh_command }}"
-  register: devmachine_caddy_refresh
-  changed_when: false
-  failed_when:
-    - devmachine_caddy_refresh.rc != 0
-    - not (devmachine_caddy_refresh.stdout ~ devmachine_caddy_refresh.stderr) is search(devmachine_caddy_signature_errors)
-  when: devmachine_caddy_source != 'github'
-
-- name: Look for an installed Caddy
-  ansible.builtin.command: "{{ devmachine_caddy_installed_command }}"
-  register: devmachine_caddy_installed
-  changed_when: false
-  failed_when: false
-  check_mode: false
-
-- name: Note what the repository and the machine say
-  ansible.builtin.set_fact:
-    devmachine_caddy_repo_broken: >-
-      {{ ((devmachine_caddy_refresh.stdout | default('')) ~
-      (devmachine_caddy_refresh.stderr | default(''))) is search(devmachine_caddy_signature_errors) }}
-    devmachine_caddy_installed_version: >-
-      {{ devmachine_caddy_installed.stdout.split(' ', 1)[1]
-      if devmachine_caddy_installed.stdout.startswith('installed ') else '' }}
-
-- name: Stop, because apt cannot check Caddy's repository
-  ansible.builtin.fail:
-    msg: >-
-      apt cannot check the signature of Caddy's repository
-      ({{ devmachine_caddy_repo_url }}). This is Caddy's problem, not this
-      machine's: see https://github.com/caddyserver/dist/issues/130.
-      caddy.source is apt, so nothing else is tried. Set it to auto or github
-      to install the pinned GitHub release instead.
-  when:
-    - devmachine_caddy_source == 'apt'
-    - devmachine_caddy_repo_broken | bool
-
-- name: Warn that Caddy's repository is skipped this run
-  ansible.builtin.debug:
-    msg: >-
-      WARNING: apt cannot check the signature of Caddy's repository
-      ({{ devmachine_caddy_repo_url }}), so this run does not use it. This is
-      Caddy's problem, not this machine's: see
-      https://github.com/caddyserver/dist/issues/130.
-      {% if devmachine_caddy_installed_version %}Caddy
-      {{ devmachine_caddy_installed_version }} is already installed and stays
-      as it is, without an upgrade.{% else %}Caddy
-      {{ devmachine_caddy_version }} is installed from its GitHub release
-      instead, checked against the release's sha512 checksums.{% endif %}
-      The repository is used again on its own once Caddy fixes its key.
-  when:
-    - devmachine_caddy_source == 'auto'
-    - devmachine_caddy_repo_broken | bool
-
-- name: Install Caddy
+- name: Install Caddy from the system's own repository
   ansible.builtin.package:
     name: caddy
     state: present
-  when:
-    - devmachine_caddy_source != 'github'
-    - not devmachine_caddy_repo_broken | bool
-
-- name: Install Caddy from its GitHub release
-  when:
-    - not ansible_check_mode
-    - (devmachine_caddy_source == 'github' and
-       devmachine_caddy_installed_version != devmachine_caddy_version) or
-      (devmachine_caddy_source == 'auto' and devmachine_caddy_repo_broken | bool and
-       not devmachine_caddy_installed_version)
-  block:
-    - name: Create a directory for the download
-      ansible.builtin.tempfile:
-        state: directory
-        prefix: devmachine-caddy.
-      register: devmachine_caddy_download_dir
-
-    # get_url looks the file's name up in the checksums file and fails on a
-    # missing line or a mismatch, so an unchecked package is never installed.
-    - name: Download the release's package and check it
-      ansible.builtin.get_url:
-        url: "{{ devmachine_caddy_release_url }}/{{ devmachine_caddy_deb_name }}"
-        dest: "{{ devmachine_caddy_download_dir.path }}/{{ devmachine_caddy_deb_name }}"
-        checksum: "sha512:{{ devmachine_caddy_checksums_url }}"
-        mode: "0644"
-
-    - name: Install the release's package
-      ansible.builtin.command: >-
-        {{ devmachine_caddy_deb_install_command }}
-        {{ devmachine_caddy_download_dir.path }}/{{ devmachine_caddy_deb_name }}
-      environment:
-        DEBIAN_FRONTEND: noninteractive
-      changed_when: true
-  always:
-    - name: Remove the download
-      ansible.builtin.file:
-        path: "{{ devmachine_caddy_download_dir.path }}"
-        state: absent
-      when: devmachine_caddy_download_dir.path is defined
+  when: ansible_facts['os_family'] != 'Debian'
 
 # An empty sites.d is not an error. Caddy only warns when an import glob matches
 # nothing, so a machine with no site yet still starts.

@@ -1,6 +1,32 @@
 ---
-- name: Load the package names for this family
-  ansible.builtin.include_vars: "{{ ansible_facts['os_family'] }}.yml"
+# Before anything changes: a half-applied base is worse than none.
+- name: Refuse a Mac the play cannot be root on
+  ansible.builtin.fail:
+    msg: >-
+      base writes /etc/tmux.conf and /usr/local/bin/resume, which need root,
+      and this play does not run as root. On your own Mac (a self machine)
+      devmachine never asks for root: remove base from it.
+  when:
+    - ansible_facts['system'] == 'Darwin'
+    - ansible_facts['effective_user_id'] != 0
+
+# A loop over first_found, not a plain include_vars: when no file matches, the
+# loop is empty and the task skips, on ansible-core 2.14 as on the latest.
+- name: Load the names for this system
+  ansible.builtin.include_vars: "{{ devmachine_vars_file }}"
+  loop: "{{ query('ansible.builtin.first_found', devmachine_vars_chain) }}"
+  loop_control:
+    loop_var: devmachine_vars_file
+  vars:
+    devmachine_vars_chain:
+      files:
+        - "{{ ansible_facts['distribution'] }}.yml"
+        - "{{ ansible_facts['pkg_mgr'] }}.yml"
+        - "{{ ansible_facts['os_family'] }}.yml"
+        - default.yml
+      paths:
+        - "{{ role_path }}/vars"
+      skip: true
 
 - name: Refresh the package cache
   ansible.builtin.command: "{{ devmachine_package_cache_command }}"
@@ -9,6 +35,7 @@
   failed_when:
     - devmachine_base_cache.rc != 0
     - devmachine_base_cache.stderr_lines | select('match', '^E:') | reject('search', devmachine_package_cache_tolerated) | list | length > 0
+  when: devmachine_package_cache_command is defined
 
 - name: Warn that the cache refresh skipped Caddy's repository
   ansible.builtin.debug:
@@ -23,26 +50,101 @@
 
 - name: Upgrade the installed packages
   ansible.builtin.command: "{{ devmachine_package_upgrade_command }}"
-  when: devmachine_base_upgrade | bool
+  when:
+    - devmachine_base_upgrade | bool
+    - ansible_facts['system'] != 'Darwin'
   register: devmachine_base_upgrade_result
   changed_when: devmachine_base_upgrade_result.rc == 0
+
+- name: Say that macOS is not upgraded from here
+  ansible.builtin.debug:
+    msg: >-
+      WARNING: upgrade does nothing on macOS. Software Update upgrades the
+      system, and Homebrew or MacPorts upgrade what they installed.
+  when:
+    - devmachine_base_upgrade | bool
+    - ansible_facts['system'] == 'Darwin'
 
 - name: Install the base packages
   ansible.builtin.package:
     name: "{{ devmachine_base_packages }}"
     state: present
+  when: ansible_facts['pkg_mgr'] != 'homebrew'
+
+# Homebrew refuses to run as root, and root is what this play runs as on a Mac
+# reached over SSH, so the install becomes the account that owns Homebrew.
+- name: Find who owns Homebrew
+  ansible.builtin.stat:
+    path: "{{ '/opt/homebrew' if ansible_facts['architecture'] == 'arm64' else '/usr/local' }}/bin/brew"
+  register: devmachine_base_brew
+  when: ansible_facts['pkg_mgr'] == 'homebrew'
+
+- name: Find which Homebrew packages are missing
+  ansible.builtin.command:
+    argv: "{{ [devmachine_base_brew.stat.path, 'list', '--formula', '--versions'] + devmachine_base_packages }}"
+  register: devmachine_base_brew_listed
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  become: "{{ devmachine_base_brew.stat.uid != ansible_facts['effective_user_id'] }}"
+  become_user: "{{ devmachine_base_brew.stat.pw_name }}"
+  when:
+    - devmachine_base_packages | length > 0
+    - ansible_facts['pkg_mgr'] == 'homebrew'
+
+# A brew with old code fails on today's formulae (e.g. "unknown keyword"). Update
+# only when something is missing, so a sync with nothing to install stays unchanged.
+- name: Update Homebrew before installing
+  ansible.builtin.command:
+    argv: ["{{ devmachine_base_brew.stat.path }}", update]
+  changed_when: false
+  become: "{{ devmachine_base_brew.stat.uid != ansible_facts['effective_user_id'] }}"
+  become_user: "{{ devmachine_base_brew.stat.pw_name }}"
+  when:
+    - not ansible_check_mode
+    - devmachine_base_brew_listed is not skipped
+    - devmachine_base_packages | map('regex_replace', '^.*/', '') | difference(devmachine_base_brew_listed.stdout_lines | default([]) | map('regex_replace', ' .*$', '')) | length > 0
+
+- name: Install the base packages from Homebrew
+  community.general.homebrew:
+    name: "{{ devmachine_base_packages }}"
+    state: present
+  become: "{{ devmachine_base_brew.stat.uid != ansible_facts['effective_user_id'] }}"
+  become_user: "{{ devmachine_base_brew.stat.pw_name }}"
+  when: ansible_facts['pkg_mgr'] == 'homebrew'
 
 - name: Read the current timezone
   ansible.builtin.command: timedatectl show --property=Timezone --value
   register: devmachine_current_timezone
-  when: devmachine_base_timezone | length > 0
+  when:
+    - devmachine_base_timezone | length > 0
+    - ansible_facts['system'] == 'Linux'
   changed_when: false
 
 - name: Set the timezone
   ansible.builtin.command: "timedatectl set-timezone {{ devmachine_base_timezone }}"
   when:
     - devmachine_base_timezone | length > 0
+    - ansible_facts['system'] == 'Linux'
     - devmachine_current_timezone.stdout != devmachine_base_timezone
+  changed_when: true
+
+- name: Read the current timezone on macOS
+  ansible.builtin.command: systemsetup -gettimezone
+  register: devmachine_current_mac_timezone
+  when:
+    - devmachine_base_timezone | length > 0
+    - ansible_facts['system'] == 'Darwin'
+  changed_when: false
+  check_mode: false
+
+- name: Set the timezone on macOS
+  ansible.builtin.command: "systemsetup -settimezone {{ devmachine_base_timezone }}"
+  when:
+    - devmachine_base_timezone | length > 0
+    - ansible_facts['system'] == 'Darwin'
+    # It prints "Time Zone: America/New_York".
+    - devmachine_current_mac_timezone.stdout.split(':', 1) | last | trim != devmachine_base_timezone
   changed_when: true
 
 - name: Set the hostname
@@ -54,7 +156,7 @@
   ansible.builtin.copy:
     dest: /etc/tmux.conf
     owner: root
-    group: root
+    group: "{{ 'wheel' if ansible_facts['system'] == 'Darwin' else 'root' }}"
     mode: "0644"
     content: |
       set -s extended-keys on
@@ -87,12 +189,19 @@
       # every key to copy mode. Scrolling on the same event makes it visible.
       bind -n WheelUpPane if-shell -F '#{||:#{pane_in_mode},#{mouse_any_flag}}' 'send-keys -M' 'copy-mode -e; send-keys -X -N 5 scroll-up'
 
+# A new Mac has no /usr/local/bin. No owner or mode: on an Intel Mac it can be
+# Homebrew's, and taking it back for root would break Homebrew.
+- name: Make sure /usr/local/bin exists
+  ansible.builtin.file:
+    path: /usr/local/bin
+    state: directory
+
 - name: Install the `resume` command (a tmux session picker)
   ansible.builtin.copy:
     src: resume
     dest: /usr/local/bin/resume
     owner: root
-    group: root
+    group: "{{ 'wheel' if ansible_facts['system'] == 'Darwin' else 'root' }}"
     mode: "0755"
 
 # Empty by default on purpose. Creating swap on somebody's machine because they
@@ -101,12 +210,24 @@
   ansible.builtin.stat:
     path: /swapfile
   register: devmachine_base_swapfile
-  when: devmachine_base_swap | length > 0
-
-- name: Create the swapfile
-  ansible.builtin.command: "fallocate -l {{ devmachine_base_swap }} /swapfile"
   when:
     - devmachine_base_swap | length > 0
+    # macOS sizes and manages its own swap files in /private/var/vm.
+    - ansible_facts['system'] == 'Linux'
+
+# btrfs refuses to swap on a file fallocate made ("swapon failed: Invalid
+# argument"): it has to be NOCOW and contiguous, which only mkswapfile ensures.
+- name: Create the swapfile
+  ansible.builtin.command: >-
+    {{ 'btrfs filesystem mkswapfile --size' if devmachine_base_root_fstype == 'btrfs' else 'fallocate -l' }}
+    {{ devmachine_base_swap }} /swapfile
+  vars:
+    devmachine_base_root_fstype: >-
+      {{ ansible_facts['mounts'] | default([]) | selectattr('mount', 'equalto', '/')
+         | map(attribute='fstype') | first | default('') }}
+  when:
+    - devmachine_base_swap | length > 0
+    - ansible_facts['system'] == 'Linux'
     - not devmachine_base_swapfile.stat.exists
 
 # A dry run against a machine with no swapfile yet cannot set the mode of a
@@ -119,22 +240,49 @@
     mode: "0600"
   when:
     - devmachine_base_swap | length > 0
+    - ansible_facts['system'] == 'Linux'
     - not ansible_check_mode or devmachine_base_swapfile.stat.exists | default(false)
 
 - name: Format the swapfile
   ansible.builtin.command: mkswap /swapfile
   when:
     - devmachine_base_swap | length > 0
+    - ansible_facts['system'] == 'Linux'
     - not devmachine_base_swapfile.stat.exists
 
 - name: Turn the swapfile on
   ansible.builtin.command: swapon /swapfile
   when:
     - devmachine_base_swap | length > 0
+    - ansible_facts['system'] == 'Linux'
     - not devmachine_base_swapfile.stat.exists
 
 - name: Mount the swapfile on every boot
   ansible.builtin.lineinfile:
     path: /etc/fstab
     line: "/swapfile none swap sw 0 0"
-  when: devmachine_base_swap | length > 0
+  when:
+    - devmachine_base_swap | length > 0
+    - ansible_facts['system'] == 'Linux'
+
+- name: Read the system locale
+  ansible.builtin.slurp:
+    src: /etc/locale.conf
+  register: devmachine_base_locale_conf
+  failed_when: false
+  check_mode: false
+  when: devmachine_base_lang_in_environment | default(false) | bool
+
+# C.UTF-8 when the system names no locale: glibc always has it, and UTF-8 is
+# all mosh-server asks for.
+- name: Give every login the system locale
+  ansible.builtin.lineinfile:
+    path: /etc/environment
+    regexp: "^LANG="
+    line: "LANG={{ devmachine_base_lang }}"
+  vars:
+    devmachine_base_lang: >-
+      {{ (devmachine_base_locale_conf.content | default('') | b64decode).splitlines()
+         | select('match', '^LANG=') | map('regex_replace', '^LANG="?([^"]*)"?$', '\1')
+         | first | default('C.UTF-8', true) }}
+  when: devmachine_base_lang_in_environment | default(false) | bool

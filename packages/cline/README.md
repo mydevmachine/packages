@@ -15,7 +15,7 @@ own global directory, so upgrading Node does not take it away.
 
 | Setting | Default | What it does |
 | --- | --- | --- |
-| `home` | `/home/<the account>` | Where the account's home is. |
+| `home` | the account's own home | Where the account's home is. Read from the account. |
 
 ## Credentials
 

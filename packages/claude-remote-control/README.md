@@ -12,7 +12,7 @@ account has logged in, because there is nothing to connect without a session.
 
 | Setting | Default | What it does |
 | --- | --- | --- |
-| `home` | `/home/<the account>` | Where the account's home is. |
+| `home` | the account's own home | Where the account's home is. Read from the account. |
 | `session_name` | `""` | What this session is called in the phone app. Empty means the workspace's name. |
 | `working_directory` | `<home>/dev` | The directory a remote session starts in. |
 | `restart_seconds` | `30` | How long to wait before reconnecting. The server gives up on its own after about ten minutes with no network, so the unit restarts for good. |

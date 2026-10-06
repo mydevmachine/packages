@@ -1,0 +1,14 @@
+---
+# Debian, Ubuntu and Arch put the real binary here; /bin/zsh is a symlink into
+# it. chsh wants a path that is listed in /etc/shells, and this is the one that
+# is. A system that keeps it elsewhere sets it in vars/<system>.yml.
+devmachine_zsh_shell: /usr/bin/zsh
+
+devmachine_zsh_path_prefix: []
+
+devmachine_zsh_packages:
+  - zsh
+  # Oh My Zsh's installer clones itself and downloads with these two.
+  - git
+  - curl
+  - tmux

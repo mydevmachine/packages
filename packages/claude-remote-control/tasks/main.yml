@@ -1,4 +1,13 @@
 ---
+# check_mode makes the user module only read: it never creates the account,
+# and a missing one just leaves no home in the result.
+- name: Read the account's home and group
+  ansible.builtin.user:
+    name: "{{ devmachine_workspace.user }}"
+  check_mode: true
+  changed_when: false
+  register: devmachine_account
+
 # A dry run on a machine where this account does not exist yet cannot become
 # it: Ansible has no user to hand its temporary files to, and fails saying so.
 # So every task below that runs as the account asks first, and a dry run
@@ -37,7 +46,7 @@
     path: "{{ devmachine_claude_remote_control_home }}/.config/systemd/user"
     state: directory
     owner: "{{ devmachine_workspace.user }}"
-    group: "{{ devmachine_workspace.user }}"
+    group: "{{ devmachine_account.group | default(omit) }}"
     mode: "0755"
   when: devmachine_claude_remote_control_account.stat.exists
 
@@ -50,7 +59,7 @@
     src: claude-rc.service.j2
     dest: "{{ devmachine_claude_remote_control_home }}/.config/systemd/user/claude-rc.service"
     owner: "{{ devmachine_workspace.user }}"
-    group: "{{ devmachine_workspace.user }}"
+    group: "{{ devmachine_account.group | default(omit) }}"
     mode: "0644"
   register: devmachine_claude_remote_control_unit
   when: devmachine_claude_remote_control_account.stat.exists

@@ -25,7 +25,7 @@ credentials:
 variables:
   home:
     summary: Where the account's home is.
-    default: /home/<the account>
+    default: <the account's own home>
   version:
     summary: >-
       Which GitLab CLI release to install. It is a release asset rather than a

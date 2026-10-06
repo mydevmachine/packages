@@ -4,12 +4,13 @@
 Usage:
     devmachine-stats
 
-Reads memory, swap, disk, load, Docker containers, RAM by Linux user, and
+Reads memory, swap, disk, load, Docker containers, RAM by user, and
 listening ports with their owner — the same facts the Devmachine macOS app
 used to read by shipping a shell snippet over SSH. This script runs the
 snippet's own commands (`free`, `df`, `/proc/loadavg`, `docker`, `ps`, `ss`)
 on the machine itself and returns one structured document, so the app parses
-JSON instead of a shell transcript.
+JSON instead of a shell transcript. On macOS it reads the same facts from
+`sysctl`, `vm_stat`, `df` and `lsof`, into the same document.
 
 Deterministic and LLM-free. A missing tool (Docker not installed, no
 listeners) is not a failure: the matching field comes back empty and a note
@@ -19,13 +20,16 @@ document) when it cannot report anything at all.
 from __future__ import annotations
 
 import json
+import os
+import platform
 import subprocess
 import sys
 from datetime import datetime, timezone
 
 # Hostinger's own home-folder convention, and Devmachine's: a workspace's
 # processes and containers live under here, so the folder names the owner.
-HOME_PREFIX = "/home/"
+# macOS keeps homes under /Users.
+HOME_PREFIXES = ("/home/", "/Users/")
 
 
 def run(cmd: list, timeout: int = 10):
@@ -44,11 +48,11 @@ def run(cmd: list, timeout: int = 10):
 
 
 def owner_from_home(path: str) -> str | None:
-    if not path.startswith(HOME_PREFIX):
-        return None
-    rest = path[len(HOME_PREFIX):]
-    name = rest.split("/", 1)[0]
-    return name or None
+    for prefix in HOME_PREFIXES:
+        if path.startswith(prefix):
+            name = path[len(prefix):].split("/", 1)[0]
+            return name or None
+    return None
 
 
 # ── memory, swap ─────────────────────────────────────────────────────────
@@ -79,6 +83,90 @@ def read_memory_and_swap(errors: list):
     return memory, swap
 
 
+def read_memory_and_swap_darwin(errors: list):
+    memory = {"total_bytes": 0, "used_bytes": 0, "available_bytes": 0}
+    swap = {"total_bytes": 0, "used_bytes": 0}
+
+    ok, out, err = run(["sysctl", "-n", "hw.memsize"])
+    if err:
+        errors.append("sysctl: %s" % err)
+        return memory, swap
+    if not ok:
+        errors.append("sysctl: not found")
+        return memory, swap
+    try:
+        total = int(out.strip())
+    except ValueError:
+        errors.append("sysctl hw.memsize: unexpected output")
+        return memory, swap
+
+    ok, out, err = run(["vm_stat"])
+    if err:
+        errors.append("vm_stat: %s" % err)
+        return memory, swap
+    if not ok:
+        errors.append("vm_stat: not found")
+        return memory, swap
+    page_size, pages = parse_vm_stat(out)
+
+    # Activity Monitor's "Memory Used": app memory, wired and compressed.
+    if "Anonymous pages" in pages:
+        app = pages["Anonymous pages"] - pages.get("Pages purgeable", 0)
+    else:
+        app = pages.get("Pages active", 0)
+    used = (app + pages.get("Pages wired down", 0) + pages.get("Pages occupied by compressor", 0)) * page_size
+    used = min(used, total)
+    memory = {"total_bytes": total, "used_bytes": used, "available_bytes": total - used}
+
+    ok, out, err = run(["sysctl", "-n", "vm.swapusage"])
+    if err:
+        errors.append("sysctl: %s" % err)
+    elif ok:
+        values = parse_swapusage(out)
+        swap = {"total_bytes": values.get("total", 0), "used_bytes": values.get("used", 0)}
+    return memory, swap
+
+
+def parse_vm_stat(text: str):
+    """`vm_stat` -> (page size, {"Pages free": 6624, ...})."""
+    page_size = 4096
+    pages = {}
+    for line in text.splitlines():
+        if "page size of" in line:
+            try:
+                page_size = int(line.split("page size of", 1)[1].split()[0])
+            except (IndexError, ValueError):
+                pass
+            continue
+        name, sep, value = line.partition(":")
+        if not sep:
+            continue
+        try:
+            pages[name.strip().strip('"')] = int(value.strip().rstrip("."))
+        except ValueError:
+            continue
+    return page_size, pages
+
+
+SWAP_UNITS = {"K": 1024, "M": 1024**2, "G": 1024**3, "T": 1024**4}
+
+
+def parse_swapusage(text: str):
+    """`total = 2048.00M  used = 1024.50M  free = ...` -> {"total": bytes, ...}."""
+    values = {}
+    tokens = text.split()
+    for i in range(len(tokens) - 2):
+        if tokens[i + 1] != "=":
+            continue
+        amount = tokens[i + 2]
+        multiplier = SWAP_UNITS.get(amount[-1:], 1)
+        try:
+            values[tokens[i]] = int(float(amount.rstrip("KMGT")) * multiplier)
+        except ValueError:
+            continue
+    return values
+
+
 # ── disk ─────────────────────────────────────────────────────────────────
 
 def read_disk(errors: list):
@@ -105,6 +193,36 @@ def read_disk(errors: list):
     return disk
 
 
+# The system volume at / is read-only and sealed; what fills up is the data
+# volume beside it, which holds the homes and every installed tool.
+MACOS_DATA_VOLUME = "/System/Volumes/Data"
+
+
+def read_disk_darwin(errors: list):
+    path = MACOS_DATA_VOLUME if os.path.isdir(MACOS_DATA_VOLUME) else "/"
+    disk = {"path": path, "used_bytes": 0, "available_bytes": 0, "used_percent": 0}
+    ok, out, err = run(["df", "-k", path])
+    if err:
+        errors.append("df: %s" % err)
+        return disk
+    if not ok:
+        errors.append("df: not found")
+        return disk
+
+    lines = [l for l in out.splitlines() if l.strip()]
+    fields = lines[-1].split() if len(lines) >= 2 else []
+    if len(fields) < 5:
+        errors.append("df: unexpected output")
+        return disk
+    try:
+        disk["used_bytes"] = int(fields[2]) * 1024
+        disk["available_bytes"] = int(fields[3]) * 1024
+        disk["used_percent"] = int(fields[4].rstrip("%"))
+    except ValueError:
+        errors.append("df: unexpected output")
+    return disk
+
+
 # ── load ─────────────────────────────────────────────────────────────────
 
 def read_load(errors: list):
@@ -119,6 +237,23 @@ def read_load(errors: list):
         return load
     load = {"load1": float(fields[0]), "load5": float(fields[1]), "load15": float(fields[2])}
     return load
+
+
+def read_load_darwin(errors: list):
+    load = {"load1": 0.0, "load5": 0.0, "load15": 0.0}
+    ok, out, err = run(["sysctl", "-n", "vm.loadavg"])
+    if err:
+        errors.append("sysctl: %s" % err)
+        return load
+    if not ok:
+        errors.append("sysctl: not found")
+        return load
+    fields = out.replace("{", " ").replace("}", " ").split()
+    try:
+        return {"load1": float(fields[0]), "load5": float(fields[1]), "load15": float(fields[2])}
+    except (IndexError, ValueError):
+        errors.append("sysctl vm.loadavg: unexpected output")
+        return load
 
 
 # ── docker ───────────────────────────────────────────────────────────────
@@ -266,10 +401,7 @@ def first_pid(line: str):
     return int(digits) if digits else None
 
 
-def read_ports(errors: list):
-    """Container owner wins over the process holding the port: what listens
-    for a published port is Docker's own proxy, which belongs to root and
-    would hide nothing."""
+def container_published_ports(errors: list):
     ok, out, err = run(["docker", "ps", "--format", '{{.Names}}|{{.Label "com.docker.compose.project.working_dir"}}{{.Label "com.supabase.cli.workdir"}}|{{.Ports}}'])
     container_ports = []
     if ok:
@@ -285,6 +417,21 @@ def read_ports(errors: list):
                 container_ports.append((ports, owner))
     elif err:
         errors.append("docker ps: %s" % err)
+    return container_ports
+
+
+def with_container_owners(owners: dict, container_ports: list):
+    for ports, owner in container_ports:
+        for port in ports:
+            owners[port] = owner
+    return [{"port": port, "owner": owners[port]} for port in sorted(owners)]
+
+
+def read_ports(errors: list):
+    """Container owner wins over the process holding the port: what listens
+    for a published port is Docker's own proxy, which belongs to root and
+    would hide nothing."""
+    container_ports = container_published_ports(errors)
 
     ok, out, err = run(["ps", "-eo", "pid=,user="])
     user_of_pid = {}
@@ -318,27 +465,59 @@ def read_ports(errors: list):
         if port not in owners:
             owners[port] = user
 
-    for ports, owner in container_ports:
-        for port in ports:
-            owners[port] = owner
+    return with_container_owners(owners, container_ports)
 
-    return [{"port": port, "owner": owners[port]} for port in sorted(owners)]
+
+def port_of_address(address: str):
+    """`*:22`, `127.0.0.1:5432`, `[::1]:5432` -> the port."""
+    try:
+        return int(address.rsplit(":", 1)[1])
+    except (IndexError, ValueError):
+        return None
+
+
+def read_ports_darwin(errors: list):
+    """macOS has no `ss`: `lsof` names the listening sockets and, in its
+    field output, the login of each process. lsof exits 1 when nothing
+    listens, which is an empty list, not an error."""
+    container_ports = container_published_ports(errors)
+
+    ok, out, _ = run(["lsof", "-nP", "-iTCP", "-sTCP:LISTEN", "-FpLn"])
+    owners: dict = {}
+    if ok:
+        user = None
+        for line in out.splitlines():
+            tag, value = line[:1], line[1:]
+            if tag == "p":
+                user = None
+            elif tag == "L":
+                user = value or None
+            elif tag == "n":
+                port = port_of_address(value)
+                if port is not None and port not in owners:
+                    owners[port] = user
+
+    return with_container_owners(owners, container_ports)
 
 
 # ── main ─────────────────────────────────────────────────────────────────
 
-def collect() -> dict:
+def collect(system: str | None = None) -> dict:
+    darwin = (system or platform.system()) == "Darwin"
     errors: list = []
-    memory, swap = read_memory_and_swap(errors)
+    if darwin:
+        memory, swap = read_memory_and_swap_darwin(errors)
+    else:
+        memory, swap = read_memory_and_swap(errors)
     return {
         "collected_at": datetime.now(timezone.utc).isoformat(),
         "memory": memory,
         "swap": swap,
-        "disk": read_disk(errors),
-        "load": read_load(errors),
+        "disk": read_disk_darwin(errors) if darwin else read_disk(errors),
+        "load": read_load_darwin(errors) if darwin else read_load(errors),
         "docker": read_docker(errors),
         "users": read_users(errors),
-        "ports": read_ports(errors),
+        "ports": read_ports_darwin(errors) if darwin else read_ports(errors),
         "errors": errors,
     }
 

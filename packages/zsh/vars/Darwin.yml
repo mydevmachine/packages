@@ -1,0 +1,13 @@
+---
+# macOS ships zsh at /bin/zsh, the path /etc/shells lists, and ships git and
+# curl too. tmux is the one thing to install, from Homebrew or MacPorts.
+devmachine_zsh_shell: /bin/zsh
+
+devmachine_zsh_path_prefix: >-
+  {{ ['/opt/local/bin', '/opt/local/sbin'] if ansible_facts['pkg_mgr'] == 'macports'
+     else [devmachine_zsh_brew_prefix ~ '/bin', devmachine_zsh_brew_prefix ~ '/sbin'] }}
+
+devmachine_zsh_brew_prefix: "{{ '/opt/homebrew' if ansible_facts['architecture'] == 'arm64' else '/usr/local' }}"
+
+devmachine_zsh_packages:
+  - tmux

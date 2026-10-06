@@ -15,7 +15,7 @@ requires:
 variables:
   home:
     summary: Where the account's home is.
-    default: /home/<the account>
+    default: <the account's own home>
   claude:
     summary: >-
       Where the Claude Code CLI is. It is installed into the account's own

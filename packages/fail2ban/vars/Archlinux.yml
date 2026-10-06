@@ -1,0 +1,9 @@
+---
+# Arch logs sshd to the journal only: there is no /var/log/auth.log for the
+# jail to read, and fail2ban refuses to start the jail without one. The
+# systemd backend reads the journal, through python-systemd.
+devmachine_fail2ban_packages:
+  - fail2ban
+  - python-systemd
+
+devmachine_fail2ban_sshd_backend: systemd

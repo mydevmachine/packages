@@ -1,7 +1,7 @@
 # mac-brew
 
 Installs Homebrew taps, formulae and casks from lists. Never removes
-anything. For a `self: true` machine — your own Mac.
+anything. On your own Mac (`self: true`) or a Mac reached over SSH.
 
 - **Scope:** machine
 - **Category:** macOS
@@ -11,7 +11,7 @@ anything. For a `self: true` machine — your own Mac.
 
 | Setting | Default | What it does |
 | --- | --- | --- |
-| `prefix` | `/opt/homebrew` | Where Homebrew lives. `/usr/local` on an Intel Mac. |
+| `prefix` | `/opt/homebrew` | Where Homebrew lives. Left unset, `/opt/homebrew` on Apple Silicon and `/usr/local` on an Intel Mac. |
 | `taps` | `[]` | Homebrew taps to add. |
 | `formulae` | `[]` | Homebrew formulae to install. |
 | `casks` | `[]` | Homebrew casks to install. |
@@ -31,7 +31,46 @@ devmachine workspaces defaults --add mac-brew
 devmachine sync
 ```
 
+## Bootstrap
+
+`bin/bootstrap` brings a Mac to the point where devmachine can run Ansible on
+it. The CLI runs it as the admin login, never as root (Homebrew refuses root);
+it reaches root only through `sudo -n`. Progress goes to stderr; stdout holds
+one JSON document.
+
+`bootstrap check` changes nothing and lists what is missing:
+
+```json
+{"missing": [{"name": "Xcode Command Line Tools", "minutes": 10}, {"name": "Homebrew", "minutes": 5}, {"name": "Ansible", "minutes": 3}]}
+```
+
+`bootstrap apply` installs, in order, the Xcode Command Line Tools (headless,
+through `softwareupdate`), Homebrew (the official installer with
+`NONINTERACTIVE=1`) and Ansible (`brew install ansible`). It skips each step
+whose result already exists: an `ansible-playbook` already on `PATH`, in
+`~/.local/bin` (pipx) or in a Homebrew prefix is used as it is. It prints the
+absolute path the CLI calls Ansible by, and the folders to put first on `PATH`:
+
+```json
+{"ansible_playbook": "/opt/homebrew/bin/ansible-playbook", "path_prefix": ["/opt/homebrew/bin", "/opt/homebrew/sbin"]}
+```
+
+A failure exits non-zero with the step and what to do:
+
+```json
+{"error": {"step": "homebrew", "message": "the Homebrew installer failed; its output is above. It needs passwordless sudo for the admin login."}}
+```
+
 ## Notes
+
+- On a Mac reached over SSH the play runs as root, so every `brew` call runs
+  as the account that owns the Homebrew folder. On your own Mac it runs as
+  you, as before.
+- When a listed formula or cask is missing, it runs `brew update` before
+  installing, as `brew install` in a terminal does. A Homebrew whose own code
+  is older than the formulae it reads fails with errors such as `unknown
+  keyword`. With nothing missing it does not update, so the sync reports no
+  change.
 
 - Only installs what you list; it never removes a formula or cask you took
   out of the list.

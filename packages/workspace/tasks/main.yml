@@ -1,6 +1,30 @@
 ---
-- name: Load the package names for this family
-  ansible.builtin.include_vars: "{{ ansible_facts['os_family'] }}.yml"
+# A loop over first_found, not a plain include_vars: when no file matches, the
+# loop is empty and the task skips, on ansible-core 2.14 as on the latest.
+- name: Load the names for this system
+  ansible.builtin.include_vars: "{{ devmachine_vars_file }}"
+  loop: "{{ query('ansible.builtin.first_found', devmachine_vars_chain) }}"
+  loop_control:
+    loop_var: devmachine_vars_file
+  vars:
+    devmachine_vars_chain:
+      files:
+        - "{{ ansible_facts['distribution'] }}.yml"
+        - "{{ ansible_facts['pkg_mgr'] }}.yml"
+        - "{{ ansible_facts['os_family'] }}.yml"
+        - default.yml
+      paths:
+        - "{{ role_path }}/vars"
+      skip: true
+
+# check_mode makes the user module only read: it never creates the account,
+# and a missing one just leaves no home in the result.
+- name: Read the account's home and group
+  ansible.builtin.user:
+    name: "{{ devmachine_workspace.user }}"
+  check_mode: true
+  changed_when: false
+  register: devmachine_account
 
 # A dry run on a machine where this account does not exist yet cannot become
 # it: Ansible has no user to hand its temporary files to, and fails saying so.
@@ -21,7 +45,9 @@
   failed_when:
     - devmachine_workspace_cache.rc != 0
     - devmachine_workspace_cache.stderr_lines | select('match', '^E:') | reject('search', devmachine_package_cache_tolerated) | list | length > 0
-  when: devmachine_workspace_cache_refreshed is not defined
+  when:
+    - devmachine_package_cache_command is defined
+    - devmachine_workspace_cache_refreshed is not defined
 
 - name: Warn that the cache refresh skipped Caddy's repository
   ansible.builtin.debug:
@@ -43,6 +69,7 @@
   ansible.builtin.package:
     name: "{{ devmachine_workspace_packages }}"
     state: present
+  when: devmachine_workspace_packages | length > 0
 
 - name: Install the workspace account creator
   ansible.builtin.copy:
@@ -51,6 +78,7 @@
     owner: root
     group: root
     mode: "0755"
+  when: ansible_facts['system'] != 'Darwin'
 
 # Docker Engine uses the host daemon and the docker group. These accounts do
 # not run rootless containers, so allocating a 65,536-ID subordinate range to
@@ -65,18 +93,55 @@
       - "{{ devmachine_workspace_home }}"
   register: devmachine_workspace_created
   changed_when: "'created' in devmachine_workspace_created.stdout_lines"
-  when: not ansible_check_mode
+  when:
+    - not ansible_check_mode
+    # macOS has no useradd and no subordinate IDs: the task below creates it.
+    - ansible_facts['system'] != 'Darwin'
 
 - name: Create the account
   ansible.builtin.user:
     name: "{{ devmachine_workspace.user }}"
     groups: "{{ devmachine_workspace_groups | default(omit, true) }}"
-    append: true
+    # ansible-core 2.21 refuses append without groups; older ones only warned.
+    append: "{{ true if devmachine_workspace_groups | length > 0 else omit }}"
     # Left out unless somebody asks for one. Setting a shell here would fight
     # the package that installs one: each run would change it back, and both
     # tasks would report a change forever.
     shell: "{{ devmachine_workspace_shell | default(omit, true) }}"
     create_home: true
+    # Off the login window and out of System Settings: nobody logs into a
+    # workspace at the Mac's own screen.
+    hidden: "{{ true if ansible_facts['system'] == 'Darwin' else omit }}"
+  register: devmachine_account
+
+# With Remote Login set to "Only these users", sshd lets in only members of
+# this group, and refuses a new account with "failed service ACL check".
+- name: Let the account in through Remote Login
+  when: ansible_facts['system'] == 'Darwin'
+  block:
+    - name: Look for the Remote Login access group
+      ansible.builtin.command: dscl . -read /Groups/com.apple.access_ssh RecordName
+      register: devmachine_workspace_ssh_group
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: Ask whether the account is in it
+      ansible.builtin.command:
+        argv: [dseditgroup, -o, checkmember, -m, "{{ devmachine_workspace.user }}", com.apple.access_ssh]
+      register: devmachine_workspace_ssh_member
+      changed_when: false
+      failed_when: false
+      check_mode: false
+      when: devmachine_workspace_ssh_group.rc == 0
+
+    - name: Add the account to it
+      ansible.builtin.command:
+        argv: [dseditgroup, -o, edit, -a, "{{ devmachine_workspace.user }}", -t, user, com.apple.access_ssh]
+      changed_when: true
+      when:
+        - devmachine_workspace_ssh_group.rc == 0
+        - devmachine_workspace_ssh_member.rc != 0
 
 # This is the whole isolation model: one workspace cannot read another's home.
 # It is also why delivering a credential into a home is safe enough — nothing
@@ -86,7 +151,7 @@
     path: "{{ devmachine_workspace_home }}"
     state: directory
     owner: "{{ devmachine_workspace.user }}"
-    group: "{{ devmachine_workspace.user }}"
+    group: "{{ devmachine_account.group | default(omit) }}"
     mode: "0750"
 
 - name: Create ~/.ssh
@@ -94,8 +159,18 @@
     path: "{{ devmachine_workspace_home }}/.ssh"
     state: directory
     owner: "{{ devmachine_workspace.user }}"
-    group: "{{ devmachine_workspace.user }}"
+    group: "{{ devmachine_account.group | default(omit) }}"
     mode: "0700"
+
+# On a Mac reached over SSH the admin login is not root: it runs the play
+# through sudo, and sudo names it in SUDO_USER on this side of the connection.
+- name: Read the administrative account's home
+  ansible.builtin.user:
+    name: "{{ lookup('ansible.builtin.env', 'SUDO_USER') | default(ansible_facts['user_id'], true) }}"
+  check_mode: true
+  changed_when: false
+  register: devmachine_workspace_admin_account
+  when: ansible_facts['system'] == 'Darwin'
 
 - name: Look for the keys the administrative account is reached by
   ansible.builtin.stat:
@@ -149,7 +224,9 @@
   ansible.builtin.known_hosts:
     path: "{{ devmachine_workspace_home }}/.ssh/known_hosts"
     name: "{{ devmachine_workspace_scan.devmachine_workspace_forge }}"
-    key: "{{ devmachine_workspace_scan.stdout }}"
+    # OpenSSH 10 prints its "# host:22 SSH-2.0-..." comment on stdout, not
+    # stderr; a key with it never matches the file and changes every run.
+    key: "{{ devmachine_workspace_scan.stdout_lines | reject('match', '#') | join('\n') }}"
     state: present
   loop: "{{ devmachine_workspace_host_keys.results | default([]) }}"
   loop_control:
@@ -202,5 +279,5 @@
     path: "{{ devmachine_workspace_home }}/dev"
     state: directory
     owner: "{{ devmachine_workspace.user }}"
-    group: "{{ devmachine_workspace.user }}"
+    group: "{{ devmachine_account.group | default(omit) }}"
     mode: "0755"

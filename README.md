@@ -42,7 +42,7 @@ Codex session can add packages for you.
 | [`essentials`](packages/essentials/README.md) | machine | base, git, firewall, ssh_hardening, caddy and devmachine-app, in one package. |
 | [`base`](packages/base/README.md) | machine | The base tools, a shared tmux config, and the `resume` session picker. |
 | [`git`](packages/git/README.md) | machine | Installs git. |
-| [`workspace`](packages/workspace/README.md) | workspace | The Linux account a person works in. |
+| [`workspace`](packages/workspace/README.md) | workspace | The account a person works in. |
 | [`zsh`](packages/zsh/README.md) | workspace | zsh, Oh My Zsh, and tmux auto-attach over SSH. |
 | [`mise`](packages/mise/README.md) | workspace | The per-project runtime manager, activated for one account. |
 | [`dev`](packages/dev/README.md) | workspace | The GitHub CLI, bun, Node LTS and unzip for one account. |
@@ -100,6 +100,7 @@ Codex session can add packages for you.
 | [`devmachine-app`](packages/devmachine-app/README.md) | machine | What the [Devmachine macOS app](https://mydevmachine.sh/app/) asks a machine for. |
 | [`mac-brew`](packages/mac-brew/README.md) | machine | Installs Homebrew taps, formulae and casks from lists. |
 | [`mac-mise`](packages/mac-mise/README.md) | machine | Installs mise's global tools from a list. |
+| [`mac-ports`](packages/mac-ports/README.md) | machine | Installs MacPorts ports from a list. |
 
 Missing something? Write it as your own package and keep it in your
 configuration, or open a pull request here. See
@@ -140,9 +141,15 @@ refused and named.
 ## Rules a recipe keeps
 
 - **No `apt`, `apt_key` or `apt_repository`.** `package:` is what installs
-  things. Whatever differs between families — package names, a repository path,
-  a service name — lives in `vars/<family>.yml`, loaded with
-  `include_vars: "{{ ansible_os_family }}.yml"`.
+  things. A name that is the same everywhere (`curl`, `git`, `tar`) is written
+  inline. Whatever differs between systems — package names, a repository path,
+  a service name — lives in the role's `vars/`, in the first file that exists
+  of `<distribution>.yml`, `<pkg_mgr>.yml`, `<os_family>.yml` and
+  `default.yml`. Every role loads them with the same task, and finding none is
+  not an error.
+- **Home and group come from the account.** A workspace package never writes
+  `/home/<user>` or `group: <user>`: it reads both from the account, because a
+  Mac keeps homes in `/Users` and puts every account in the `staff` group.
 - **`name:` is the directory name.** A package is found by its directory.
 - **`needs:` is written down.** Ordering is declared, never implied by the order
   of a list.
