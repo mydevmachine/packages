@@ -1,0 +1,21 @@
+packages/caddy/tasks/Darwin-service.yml
+  s_5ccc211ae481bf::t_90d24233d5a179 10,20,27,32-33,52,58
+packages/caddy/tasks/Darwin.yml
+  s_5ccc211ae481bf::t_905fb881db284d 10-18
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "85c462937d2859d48e696b283263b41a37adf2c4",
+  "prompts": {},
+  "sessions": {
+    "s_5ccc211ae481bf": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "570a9526-d48d-41cd-8528-3a3200e0855a",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Djalma Araujo <djalma@nossomos.cc>"
+    }
+  }
+}
