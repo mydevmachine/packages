@@ -1,0 +1,20 @@
+packages/devmachine-skills/skills/create-devmachine-package/references/concepts/packages.md
+  h_0e71f0b33c1b87 39-41
+packages/devmachine-skills/skills/use-devmachine/references/commands.md
+  h_0e71f0b33c1b87 50-52,73-75,802-804,1161-1164,1287-1288
+packages/devmachine-skills/skills/use-devmachine/references/concepts/packages.md
+  h_0e71f0b33c1b87 39-41
+packages/devmachine-skills/skills/use-devmachine/references/troubleshooting.md
+  h_0e71f0b33c1b87 176,179-180,184,190-205,711-713
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a8c38aec3e1c51b8407418878f24cee969e666a5",
+  "prompts": {},
+  "humans": {
+    "h_0e71f0b33c1b87": {
+      "author": "Djalma Araujo <djalma@nossomos.cc>"
+    }
+  }
+}
