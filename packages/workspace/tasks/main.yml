@@ -98,12 +98,32 @@
     # macOS has no useradd and no subordinate IDs: the task below creates it.
     - ansible_facts['system'] != 'Darwin'
 
+# A configuration written for Linux often carries `groups: [docker]`, and a Mac
+# has no docker group: the docker package gives each workspace a VM of its own
+# there instead. A group macOS does not have is left out rather than failing.
+- name: Look for each group on macOS
+  ansible.builtin.command:
+    argv: [dscl, ., -read, "/Groups/{{ item }}", RecordName]
+  loop: "{{ devmachine_workspace_groups }}"
+  register: devmachine_workspace_mac_groups
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  when: ansible_facts['system'] == 'Darwin'
+
+- name: Say which groups macOS does not have
+  ansible.builtin.debug:
+    msg: >-
+      {{ devmachine_workspace.user }} joins no {{ item }} group: macOS has
+      none{{ ', and Docker reaches this workspace through a VM of its own instead' if item == 'docker' else '' }}.
+  loop: "{{ devmachine_workspace_groups | difference(devmachine_workspace_joined_groups) }}"
+
 - name: Create the account
   ansible.builtin.user:
     name: "{{ devmachine_workspace.user }}"
-    groups: "{{ devmachine_workspace_groups | default(omit, true) }}"
+    groups: "{{ devmachine_workspace_joined_groups | default(omit, true) }}"
     # ansible-core 2.21 refuses append without groups; older ones only warned.
-    append: "{{ true if devmachine_workspace_groups | length > 0 else omit }}"
+    append: "{{ true if devmachine_workspace_joined_groups | length > 0 else omit }}"
     # Left out unless somebody asks for one. Setting a shell here would fight
     # the package that installs one: each run would change it back, and both
     # tasks would report a change forever.
