@@ -1,0 +1,49 @@
+packages/antigravity/README.md
+  s_87d72b62cfc5a1::t_00eeda6418f386 17
+packages/claude-code/README.md
+  s_87d72b62cfc5a1::t_595257d993a374 15
+packages/claude-plugins/README.md
+  s_87d72b62cfc5a1::t_10d10c7b9ce703 15
+packages/claude-remote-control/README.md
+  s_87d72b62cfc5a1::t_c4387d472cbc1c 15
+packages/cline/README.md
+  s_87d72b62cfc5a1::t_5fa35b721135ae 18
+packages/codex/README.md
+  s_87d72b62cfc5a1::t_20b69017b8577d 19
+packages/dev/README.md
+  s_87d72b62cfc5a1::t_86adc5a6c8ecf9 15
+packages/git-key/README.md
+  s_87d72b62cfc5a1::t_7ba02063e37f1f 14
+packages/glab/README.md
+  s_87d72b62cfc5a1::t_90a9ee8aa738a6 14
+packages/kimi-code/README.md
+  s_87d72b62cfc5a1::t_02c9655589c78d 17
+packages/mise/README.md
+  s_87d72b62cfc5a1::t_dd030d163202f9 14
+packages/opencode/README.md
+  s_87d72b62cfc5a1::t_c058599adeba71 18
+packages/pi/README.md
+  s_87d72b62cfc5a1::t_81e8490e83e96f 20
+packages/sentry/README.md
+  s_87d72b62cfc5a1::t_e283be5572e8b0 15
+packages/workspace/README.md
+  s_87d72b62cfc5a1::t_8910317c6ab005 15
+packages/zsh/README.md
+  s_87d72b62cfc5a1::t_af8b52695202f0 15
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c915ab7e07af2aeaf7cbbabebf688e8c03e1826c",
+  "prompts": {},
+  "sessions": {
+    "s_87d72b62cfc5a1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5e69ca1d-9900-4500-8ba7-104b479b47eb",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Djalma Araujo <djalma@nossomos.cc>"
+    }
+  }
+}

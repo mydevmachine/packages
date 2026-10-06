@@ -1,0 +1,41 @@
+packages/zsh/vars/main.yml
+  s_87d72b62cfc5a1::t_590212a832f8fd 1-5
+packages/zsh/tasks/main.yml
+  s_87d72b62cfc5a1::t_547b14ec80011f 22-27
+packages/antigravity/tasks/main.yml
+  s_87d72b62cfc5a1::t_4e79b01b63efbe 4-6
+packages/claude-code/tasks/main.yml
+  s_87d72b62cfc5a1::t_e39385b2d35322 4-6
+packages/codex/tasks/main.yml
+  s_87d72b62cfc5a1::t_9df5149a4aa03a 4-7
+packages/dev/tasks/main.yml
+  s_87d72b62cfc5a1::t_061fced78941b3 4-8
+packages/glab/tasks/main.yml
+  s_87d72b62cfc5a1::t_9236329b614e9b 4-7
+packages/kimi-code/tasks/main.yml
+  s_87d72b62cfc5a1::t_a190ee772666b3 4-6
+packages/mise/tasks/main.yml
+  s_87d72b62cfc5a1::t_45b88adc7957cb 4-6
+packages/opencode/tasks/main.yml
+  s_87d72b62cfc5a1::t_d8ce12279c5ef6 4-7
+packages/pi/tasks/main.yml
+  s_87d72b62cfc5a1::t_87b53538305dbb 4-6
+packages/sentry/tasks/main.yml
+  s_87d72b62cfc5a1::t_09ddbc6b638dc4 4-6
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "aebd90c9663099850d7901a5d4895baff6916037",
+  "prompts": {},
+  "sessions": {
+    "s_87d72b62cfc5a1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5e69ca1d-9900-4500-8ba7-104b479b47eb",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Djalma Araujo <djalma@nossomos.cc>"
+    }
+  }
+}
