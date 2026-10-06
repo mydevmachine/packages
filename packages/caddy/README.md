@@ -18,7 +18,7 @@ by itself.
 | `site` | `true` | Serve a one-page site straight from Caddy, no container behind it. It answers 200, proving the name, the certificate and the proxy in one request. |
 | `site_domain` | `""` | The name the one-page site answers to, with its own certificate. Empty serves it on port 80 at the machine's address, over plain HTTP. It creates no DNS record — pointing the name is `devmachine dns add`. |
 | `source` | `auto` | Where Caddy is installed from. `auto` uses Caddy's apt repository, and installs the pinned GitHub release instead when apt cannot check that repository's signature. `apt` uses only the repository and fails when it cannot be checked. `github` always installs the pinned GitHub release and removes the repository. Debian and Ubuntu only: elsewhere Caddy comes from the system's own repository. |
-| `version` | `"2.11.4"` | The Caddy release installed from GitHub, by `source: github` or by the `auto` fallback. The apt repository ignores it. |
+| `version` | `"2.11.4"` | The Caddy release installed from GitHub, by `source: github` or by the `auto` fallback. The apt repository, and every system other than Debian and Ubuntu, ignores it. |
 
 ## Credentials
 
@@ -48,9 +48,13 @@ extends:
 
 ## Where Caddy comes from
 
-By default Caddy comes from Caddy's own apt repository, on
-`dl.cloudsmith.io`. Every sync downloads the repository's signing key again,
-so a key Caddy fixes upstream reaches the machine on the next sync.
+On Arch Linux, Caddy comes from the system's own repository, and the rest
+of this section does not apply.
+
+On Debian and Ubuntu, by default, Caddy comes from Caddy's own apt
+repository, on `dl.cloudsmith.io`. Every sync downloads the repository's
+signing key again, so a key Caddy fixes upstream reaches the machine on the
+next sync.
 
 That repository can be signed with a key its own published key file lists as
 expired: apt then says `EXPKEYSIG 531A6B20FA058A70 Caddy Web Server` and `The

@@ -24,6 +24,10 @@ None of its own.
 first `sync` installs it. Pass `--no-essentials` to start a machine with no
 packages instead.
 
+`essentials` runs only on Linux, because `firewall`, `ssh_hardening` and
+`caddy` do. On a Mac, `setup` and `machines add` start the machine with
+`base` and `devmachine-app` instead, and say so.
+
 To add it to a machine that does not have it yet:
 
 ```bash

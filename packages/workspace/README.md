@@ -14,8 +14,8 @@ other workspace-scoped package needs this one first.
 | --- | --- | --- |
 | `home` | the account's own home | Where the account's home is. It is read from the account; a new account gets `/home/<the account>` unless this says otherwise. On macOS a new account always gets `/Users/<the account>`. |
 | `admin_home` | `/root` | The home of the account the CLI provisions with. Whatever reaches that account over SSH is what reaches this workspace. On macOS it is the admin login's own home, read from the system. |
-| `groups` | `[]` | Extra Linux groups the account joins. The `docker` group is one of them, and it is effectively root, so nobody joins it by accident. |
-| `shell` | `""` | The login shell. Empty means whatever `useradd` would pick; the package that installs a shell (such as `zsh`) is the one that sets it. |
+| `groups` | `[]` | Extra groups the account joins. The `docker` group is one of them, and it is effectively root, so nobody joins it by accident. |
+| `shell` | `""` | The login shell. Empty means the system's default for a new account (`useradd`'s on Linux, `/bin/bash` on macOS); the package that installs a shell (such as `zsh`) is the one that sets it. |
 | `git_name` | `""` | The name on this workspace's commits. |
 | `git_email` | `""` | The address on this workspace's commits. |
 | `sign_commits` | `true` | Sign every commit and rebase, once a package such as `git-key` sets up a key. |
