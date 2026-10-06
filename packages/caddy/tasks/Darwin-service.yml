@@ -7,6 +7,7 @@
     owner: root
     group: wheel
     mode: "0644"
+  register: devmachine_caddy_plist
   notify: Load caddy's launchd job again
 
 - name: Look for Caddy's launchd job
@@ -16,17 +17,20 @@
   failed_when: false
   check_mode: false
 
+# A plist written this run is loaded by its handler, so it is not loaded twice.
 - name: Load Caddy's launchd job
   ansible.builtin.command: launchctl bootstrap system {{ devmachine_caddy_launchd_plist }}
   changed_when: true
   when:
     - not ansible_check_mode
     - devmachine_caddy_job.rc != 0
+    - devmachine_caddy_plist is not changed
 
 # The Application Firewall decides per program, not per port. A Caddy it has
 # never seen gets no incoming connection, and no one is at the screen to answer
 # its prompt. One it already lists is left alone: `firewall` with http off
-# blocks it on purpose.
+# blocks it on purpose. Each Homebrew upgrade is a new path, and it gets what
+# the Caddy before it had, so an upgrade never undoes that block.
 - name: Read the Application Firewall's state
   ansible.builtin.command: "{{ devmachine_socketfilterfw }} --getglobalstate"
   register: devmachine_caddy_alf_state
@@ -45,13 +49,13 @@
   check_mode: false
   when: devmachine_caddy_alf_state.stdout is search('State = [12]')
 
-- name: Let Caddy take incoming connections
+- name: Give a new Caddy what the Application Firewall decided for the last one
   ansible.builtin.command:
     argv:
       - "{{ devmachine_socketfilterfw }}"
       - --add
       - "{{ devmachine_caddy_real_bin }}"
-      - --unblockapp
+      - "{{ '--blockapp' if devmachine_caddy_alf_apps.stdout is search('(?m)/caddy\\s*\\n\\s*\\(Block incoming') else '--unblockapp' }}"
       - "{{ devmachine_caddy_real_bin }}"
   changed_when: true
   vars:

@@ -7,6 +7,15 @@
   register: devmachine_caddy_brew
   when: ansible_facts['pkg_mgr'] == 'homebrew'
 
+- name: Refuse a Homebrew that is not where it should be
+  ansible.builtin.fail:
+    msg: >-
+      Homebrew is not at {{ devmachine_caddy_brew_prefix }}, where it installs
+      itself on this Mac's processor, so Caddy cannot be installed from it.
+  when:
+    - ansible_facts['pkg_mgr'] == 'homebrew'
+    - not devmachine_caddy_brew.stat.exists
+
 - name: Install Caddy from Homebrew
   community.general.homebrew:
     name: caddy
