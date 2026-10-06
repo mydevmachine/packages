@@ -1,0 +1,116 @@
+---
+# Docker on macOS needs a Linux VM, and colima runs one headless. Lima, under
+# colima, refuses to run as root, and a VM sees the host's files as the account
+# that started it. So each workspace account runs a VM of its own: bind mounts
+# of its own home work, and no workspace reaches another's files through Docker.
+- name: Look for Homebrew
+  ansible.builtin.stat:
+    path: "{{ devmachine_docker_brew_prefix }}/bin/brew"
+  register: devmachine_docker_brew
+
+- name: Refuse a Mac without Homebrew
+  ansible.builtin.fail:
+    msg: >-
+      docker installs from Homebrew on macOS, and Homebrew is not at
+      {{ devmachine_docker_brew_prefix }}. Install it from https://brew.sh,
+      then sync again.
+  when: not devmachine_docker_brew.stat.exists
+
+# Homebrew refuses to run as root, which is what this play runs as on a Mac
+# reached over SSH, so the install becomes the account that owns Homebrew.
+- name: Install colima, the docker CLI and its plugins from Homebrew
+  community.general.homebrew:
+    name: "{{ devmachine_docker_formulae }}"
+    state: present
+    path: "{{ devmachine_docker_brew_prefix }}/bin"
+  become: "{{ devmachine_docker_brew.stat.uid != ansible_facts['effective_user_id'] }}"
+  become_user: "{{ devmachine_docker_brew.stat.pw_name }}"
+
+- name: Create the docker CLI's plugin directory
+  ansible.builtin.file:
+    path: "{{ devmachine_docker_plugin_dir }}"
+    state: directory
+    owner: root
+    group: wheel
+    mode: "0755"
+
+- name: Look for the plugins already there
+  ansible.builtin.stat:
+    path: "{{ devmachine_docker_plugin_dir }}/{{ item }}"
+  loop: "{{ devmachine_docker_plugins }}"
+  register: devmachine_docker_plugin_found
+
+# Only where nothing is: on an Intel Mac Homebrew's own prefix is /usr/local,
+# and a plugin it put there is not this package's to replace. force, because
+# the source exists only once Homebrew installed it, which a dry run never did.
+- name: Link the plugins where the docker CLI looks
+  ansible.builtin.file:
+    src: "{{ devmachine_docker_brew_prefix }}/opt/{{ item.item }}/bin/{{ item.item }}"
+    dest: "{{ devmachine_docker_plugin_dir }}/{{ item.item }}"
+    state: link
+    force: true
+  loop: "{{ devmachine_docker_plugin_found.results }}"
+  loop_control:
+    label: "{{ item.item }}"
+  when: not item.stat.exists
+
+# A root daemon that waits for the account, then becomes it: a sync creates
+# the machine's packages before its workspace accounts, so a daemon that ran
+# as the account from the start would fail on the first sync of a workspace.
+- name: Install a colima launch daemon for each workspace
+  ansible.builtin.template:
+    src: colima.plist.j2
+    dest: "/Library/LaunchDaemons/{{ devmachine_docker_label_prefix }}{{ item }}.plist"
+    owner: root
+    group: wheel
+    mode: "0644"
+  loop: "{{ devmachine_docker_vm_users }}"
+  register: devmachine_docker_units
+
+- name: Ask launchd which VMs are loaded
+  ansible.builtin.command:
+    argv: [launchctl, print, "system/{{ devmachine_docker_label_prefix }}{{ item }}"]
+  loop: "{{ devmachine_docker_vm_users }}"
+  register: devmachine_docker_loaded
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+# launchd reads a plist only when it loads it, so a changed one is unloaded
+# and loaded again. Loading right after an unload can fail with
+# "Input/output error" while the old job is still going away.
+- name: Start each workspace's VM
+  ansible.builtin.shell:
+    cmd: |
+      launchctl bootout system/{{ (devmachine_docker_label_prefix ~ item.0.item) | quote }} 2>/dev/null || true
+      launchctl bootstrap system {{ ('/Library/LaunchDaemons/' ~ devmachine_docker_label_prefix ~ item.0.item ~ '.plist') | quote }}
+  loop: "{{ devmachine_docker_units.results | zip(devmachine_docker_loaded.results) | list }}"
+  loop_control:
+    label: "{{ item.0.item }}"
+  register: devmachine_docker_started
+  until: devmachine_docker_started.rc == 0
+  retries: 3
+  delay: 2
+  changed_when: true
+  when:
+    - not ansible_check_mode
+    - item.0 is changed or item.1.rc != 0
+
+- name: Find the VMs of workspaces that left
+  ansible.builtin.find:
+    paths: /Library/LaunchDaemons
+    patterns: "{{ devmachine_docker_label_prefix }}*.plist"
+  register: devmachine_docker_present
+
+- name: Stop the VMs of workspaces that left
+  ansible.builtin.shell:
+    cmd: |
+      launchctl bootout system/{{ (item.path | basename | regex_replace('\.plist$', '')) | quote }} 2>/dev/null || true
+      rm -f {{ item.path | quote }}
+  loop: "{{ devmachine_docker_present.files }}"
+  loop_control:
+    label: "{{ item.path | basename }}"
+  changed_when: true
+  when:
+    - not ansible_check_mode
+    - (item.path | basename | regex_replace('^' ~ (devmachine_docker_label_prefix | regex_escape), '') | regex_replace('\.plist$', '')) not in devmachine_docker_vm_users
