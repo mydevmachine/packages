@@ -1,0 +1,23 @@
+packages/devmachine-app/files/devmachine-infer
+  s_5ccc211ae481bf::t_d7eed90ea29ee0 57-60
+packages/devmachine-app/tasks/main.yml
+  s_5ccc211ae481bf::t_a801654bab20df 32-41
+packages/devmachine-app/test/test_devmachine_infer.py
+  s_5ccc211ae481bf::t_65466aaf2cc2a7 1071-1073,1077-1094,1096
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "0fe0c30d15cc75a6290f09a44b47552e2a00b7e1",
+  "prompts": {},
+  "sessions": {
+    "s_5ccc211ae481bf": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "570a9526-d48d-41cd-8528-3a3200e0855a",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Djalma Araujo <djalma@nossomos.cc>"
+    }
+  }
+}
