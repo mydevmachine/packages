@@ -1,7 +1,7 @@
 format: 1
 name: ssh_hardening
 scope: machine
-platforms: [linux]
+platforms: [linux, macos]
 category: Security
 summary: >-
   Turns off password authentication for good. `setup` does this once, at first
@@ -14,5 +14,7 @@ variables:
   service:
     summary: >-
       What systemd calls sshd. Empty means the name this distribution family
-      uses, which is `ssh` on Debian and Ubuntu and `sshd` elsewhere.
+      uses, which is `ssh` on Debian and Ubuntu and `sshd` elsewhere. macOS
+      ignores it: launchd starts sshd for each connection, so there is nothing
+      to reload.
     default: ""

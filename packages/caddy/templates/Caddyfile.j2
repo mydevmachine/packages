@@ -1,13 +1,21 @@
 # Managed by the devmachine caddy package. Do not edit it: every site belongs in
 # a file of its own under /etc/caddy/sites.d, which is what this package
 # declares as its extension point.
-{% if devmachine_caddy_email | length > 0 or devmachine_caddy_local_certs %}
+{% if devmachine_caddy_email | length > 0 or devmachine_caddy_local_certs or devmachine_caddy_log is defined %}
 {
 {% if devmachine_caddy_email | length > 0 %}
 	email {{ devmachine_caddy_email }}
 {% endif %}
 {% if devmachine_caddy_local_certs %}
 	local_certs
+{% endif %}
+{% if devmachine_caddy_log is defined %}
+	log {
+		output file {{ devmachine_caddy_log }} {
+			roll_size 10MiB
+			roll_keep 5
+		}
+	}
 {% endif %}
 }
 

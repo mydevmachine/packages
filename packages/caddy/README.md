@@ -48,8 +48,9 @@ extends:
 
 ## Where Caddy comes from
 
-On Arch Linux, Caddy comes from the system's own repository, and the rest
-of this section does not apply.
+On Arch Linux, Caddy comes from the system's own repository, and on macOS
+from Homebrew (as the account that owns it) or MacPorts. The rest of this
+section does not apply to either.
 
 On Debian and Ubuntu, by default, Caddy comes from Caddy's own apt
 repository, on `dl.cloudsmith.io`. Every sync downloads the repository's
@@ -88,6 +89,23 @@ machines:
 ```
 
 With `github`, changing `version` installs that release on the next sync.
+
+## On macOS
+
+- Caddy runs as root from a launchd job,
+  `/Library/LaunchDaemons/devmachine.caddy.plist`, because nothing else on a
+  Mac may take 80 and 443 on every interface. Its certificates live in
+  `/var/db/devmachine-caddy`.
+- Caddy writes its own log, `/var/log/devmachine-caddy.log`, and rolls it at
+  10 MiB, keeping 5. Nothing rotates a launchd job's output, so launchd keeps
+  only what Caddy prints before it has read its config, in
+  `/var/log/devmachine-caddy.launchd.log`.
+- The paths other packages use are the same as on Linux: `/etc/caddy/Caddyfile`
+  and `/etc/caddy/sites.d`.
+- The Application Firewall decides per program. If it is on and has never seen
+  this Caddy, the sync permits it, because nobody is at the screen to answer
+  the prompt. A Caddy it already lists is left as it is: `firewall` with
+  `http: false` blocks it on purpose.
 
 ## Notes
 
