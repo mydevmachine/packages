@@ -19,6 +19,7 @@ document) when it cannot report anything at all.
 """
 from __future__ import annotations
 
+import glob
 import json
 import os
 import platform
@@ -276,14 +277,42 @@ def parse_size(text: str) -> int:
     return 0
 
 
-def container_owners(errors: list) -> dict:
+# A Mac runs one colima VM per workspace account, each with its own socket,
+# and root's PATH has no Homebrew.
+COLIMA_SOCKETS = "/Users/*/.colima/default/docker.sock"
+DARWIN_DOCKER_BINARIES = ("/opt/homebrew/bin/docker", "/usr/local/bin/docker")
+DEFAULT_DOCKER = ["docker"]
+
+
+def docker_endpoints(system: str) -> list:
+    """(docker command, account) for each daemon to ask. Linux has one
+    daemon; a container on it has no account until a label names one."""
+    if system != "Darwin":
+        return [(DEFAULT_DOCKER, None)]
+    binary = next((b for b in DARWIN_DOCKER_BINARIES if os.path.exists(b)), "docker")
+    sockets = sorted(glob.glob(COLIMA_SOCKETS))
+    if not sockets:
+        return [([binary], None)]
+    return [([binary, "--host", "unix://" + s], owner_from_home(s)) for s in sockets]
+
+
+def docker_error(errors: list, what: str, err: str, account):
+    """A colima socket left behind by a stopped VM refuses the connection:
+    that account's Docker is not running, which is not an error."""
+    if account and err.startswith("Cannot connect to the Docker daemon"):
+        return
+    errors.append("%s: %s" % (what, err))
+
+
+def container_owners(errors: list, docker: list = DEFAULT_DOCKER, account=None) -> dict:
     """Name -> owning user, from the folder Compose or the Supabase CLI
-    started the container from. A container with neither label has no
-    owner, and is shown to everyone rather than guessed at."""
+    started the container from, else the account whose colima runs it. A
+    container with neither has no owner, and is shown to everyone rather
+    than guessed at."""
     fmt = '{{.Names}}|{{.Label "com.docker.compose.project.working_dir"}}{{.Label "com.supabase.cli.workdir"}}'
-    ok, out, err = run(["docker", "ps", "--format", fmt])
+    ok, out, err = run(docker + ["ps", "--format", fmt])
     if err:
-        errors.append("docker ps: %s" % err)
+        docker_error(errors, "docker ps", err, account)
         return {}
     if not ok:
         return {}
@@ -293,23 +322,29 @@ def container_owners(errors: list) -> dict:
         if len(parts) != 2:
             continue
         name, workdir = parts[0].strip(), parts[1].strip()
-        owner = owner_from_home(workdir)
+        owner = owner_from_home(workdir) or account
         if name and owner:
             owners[name] = owner
     return owners
 
 
-def read_docker(errors: list):
+def read_docker(errors: list, endpoints: list | None = None):
     docker = {"available": False, "containers": []}
-    ok, out, err = run(["docker", "stats", "--no-stream", "--format", "{{.Name}}|{{.MemUsage}}|{{.CPUPerc}}"])
+    for command, account in endpoints or docker_endpoints("Linux"):
+        read_one_docker(errors, docker, command, account)
+    return docker
+
+
+def read_one_docker(errors: list, docker: dict, command: list, account):
+    ok, out, err = run(command + ["stats", "--no-stream", "--format", "{{.Name}}|{{.MemUsage}}|{{.CPUPerc}}"])
     if err:
-        errors.append("docker stats: %s" % err)
-        return docker
+        docker_error(errors, "docker stats", err, account)
+        return
     if not ok:
-        return docker
+        return
 
     docker["available"] = True
-    owners = container_owners(errors)
+    owners = container_owners(errors, command, account)
     for line in out.splitlines():
         parts = line.split("|")
         if len(parts) != 3:
@@ -323,7 +358,6 @@ def read_docker(errors: list):
             "cpu_percent": float(parts[2].strip().rstrip("%") or 0),
             "owner": owners.get(name),
         })
-    return docker
 
 
 # ── ram by user ──────────────────────────────────────────────────────────
@@ -401,22 +435,23 @@ def first_pid(line: str):
     return int(digits) if digits else None
 
 
-def container_published_ports(errors: list):
-    ok, out, err = run(["docker", "ps", "--format", '{{.Names}}|{{.Label "com.docker.compose.project.working_dir"}}{{.Label "com.supabase.cli.workdir"}}|{{.Ports}}'])
+def container_published_ports(errors: list, endpoints: list | None = None):
     container_ports = []
-    if ok:
-        for line in out.splitlines():
-            parts = line.split("|", 2)
-            if len(parts) != 3:
-                continue
-            owner = owner_from_home(parts[1].strip())
-            if not owner:
-                continue
-            ports = published_ports(parts[2])
-            if ports:
-                container_ports.append((ports, owner))
-    elif err:
-        errors.append("docker ps: %s" % err)
+    for command, account in endpoints or docker_endpoints("Linux"):
+        ok, out, err = run(command + ["ps", "--format", '{{.Names}}|{{.Label "com.docker.compose.project.working_dir"}}{{.Label "com.supabase.cli.workdir"}}|{{.Ports}}'])
+        if ok:
+            for line in out.splitlines():
+                parts = line.split("|", 2)
+                if len(parts) != 3:
+                    continue
+                owner = owner_from_home(parts[1].strip()) or account
+                if not owner:
+                    continue
+                ports = published_ports(parts[2])
+                if ports:
+                    container_ports.append((ports, owner))
+        elif err:
+            docker_error(errors, "docker ps", err, account)
     return container_ports
 
 
@@ -476,11 +511,11 @@ def port_of_address(address: str):
         return None
 
 
-def read_ports_darwin(errors: list):
+def read_ports_darwin(errors: list, endpoints: list | None = None):
     """macOS has no `ss`: `lsof` names the listening sockets and, in its
     field output, the login of each process. lsof exits 1 when nothing
     listens, which is an empty list, not an error."""
-    container_ports = container_published_ports(errors)
+    container_ports = container_published_ports(errors, endpoints or docker_endpoints("Darwin"))
 
     ok, out, _ = run(["lsof", "-nP", "-iTCP", "-sTCP:LISTEN", "-FpLn"])
     owners: dict = {}
@@ -504,6 +539,7 @@ def read_ports_darwin(errors: list):
 
 def collect(system: str | None = None) -> dict:
     darwin = (system or platform.system()) == "Darwin"
+    endpoints = docker_endpoints("Darwin" if darwin else "Linux")
     errors: list = []
     if darwin:
         memory, swap = read_memory_and_swap_darwin(errors)
@@ -515,9 +551,9 @@ def collect(system: str | None = None) -> dict:
         "swap": swap,
         "disk": read_disk_darwin(errors) if darwin else read_disk(errors),
         "load": read_load_darwin(errors) if darwin else read_load(errors),
-        "docker": read_docker(errors),
+        "docker": read_docker(errors, endpoints),
         "users": read_users(errors),
-        "ports": read_ports_darwin(errors) if darwin else read_ports(errors),
+        "ports": read_ports_darwin(errors, endpoints) if darwin else read_ports(errors),
         "errors": errors,
     }
 

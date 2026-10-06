@@ -52,6 +52,10 @@ On a Mac it prints the same document, read from `sysctl` (load, memory size,
 swap), `vm_stat` (memory used, counted as Activity Monitor does), `df` on the
 data volume `/System/Volumes/Data`, and `lsof` (listening ports). Homes are
 under `/Users/` there, so a container's owner comes from that folder.
+Each workspace account there runs its own colima VM, so `stats` asks every
+`/Users/*/.colima/default/docker.sock` it finds and merges the containers. A
+container with no folder label belongs to the account whose VM runs it. A
+stopped VM is simply not running, not an error.
 
 A part the machine cannot answer — Docker not installed, nothing listening —
 comes back as an empty list rather than a failure. The command only exits
@@ -90,7 +94,8 @@ Field notes:
   `docker.containers` is then `[]`, never missing.
 - A container's `owner` is the user its folder belongs to — read from
   the Compose or Supabase CLI working-directory label — or `null` when the
-  container carries neither label.
+  container carries neither label. On a Mac with colima, the account whose
+  VM runs it fills in when no label names one.
 - `users` sums RSS per user across every process, sorted by
   `rss_bytes` descending.
 - A port's `owner` is the user of the container publishing it, or otherwise
