@@ -49,7 +49,7 @@ rather than added on its own.
 - On macOS it installs tmux, mosh and ffmpeg from Homebrew or MacPorts;
   curl, git, zsh and the build toolchain come with the Command Line Tools. A
   Mac reached over SSH runs the play as root, so Homebrew installs run as the
-  account that owns Homebrew. `timezone` goes through `systemsetup`. `swap`
+  account that owns Homebrew, after a `brew update`. `timezone` goes through `systemsetup`. `swap`
   and `upgrade` do nothing there: macOS manages its own swap, and Software
   Update, Homebrew or MacPorts upgrade what they installed. `base` writes
   `/etc/tmux.conf` and `/usr/local/bin/resume`, so on your own Mac (a self

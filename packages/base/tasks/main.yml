@@ -79,10 +79,13 @@
   register: devmachine_base_brew
   when: ansible_facts['pkg_mgr'] == 'homebrew'
 
+# A brew with old code fails on today's formulae (e.g. "unknown keyword"); a
+# terminal `brew install` updates itself first, the module does not by default.
 - name: Install the base packages from Homebrew
-  ansible.builtin.package:
+  community.general.homebrew:
     name: "{{ devmachine_base_packages }}"
     state: present
+    update_homebrew: true
   become: "{{ devmachine_base_brew.stat.uid != ansible_facts['effective_user_id'] }}"
   become_user: "{{ devmachine_base_brew.stat.pw_name }}"
   when: ansible_facts['pkg_mgr'] == 'homebrew'

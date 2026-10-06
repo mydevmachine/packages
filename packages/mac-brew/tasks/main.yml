@@ -35,11 +35,14 @@
   become: "{{ devmachine_mac_brew_become }}"
   become_user: "{{ devmachine_mac_brew_owner }}"
 
+# A brew with old code fails on today's formulae (e.g. "unknown keyword"); a
+# terminal `brew install` updates itself first, the module does not by default.
 - name: Install the formulae
   community.general.homebrew:
     name: "{{ devmachine_mac_brew_formulae }}"
     state: present
     path: "{{ devmachine_mac_brew_prefix }}/bin"
+    update_homebrew: true
   when: devmachine_mac_brew_formulae | length > 0
   become: "{{ devmachine_mac_brew_become }}"
   become_user: "{{ devmachine_mac_brew_owner }}"
@@ -81,6 +84,7 @@
     name: "{{ devmachine_mac_brew_casks }}"
     state: present
     path: "{{ devmachine_mac_brew_prefix }}/bin"
+    update_homebrew: true
   when: devmachine_mac_brew_casks | length > 0
   become: "{{ devmachine_mac_brew_become }}"
   become_user: "{{ devmachine_mac_brew_owner }}"

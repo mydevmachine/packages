@@ -66,6 +66,9 @@ A failure exits non-zero with the step and what to do:
 - On a Mac reached over SSH the play runs as root, so every `brew` call runs
   as the account that owns the Homebrew folder. On your own Mac it runs as
   you, as before.
+- Installing formulae or casks runs `brew update` first, as `brew install`
+  in a terminal does. A Homebrew whose own code is older than the formulae it
+  reads fails with errors such as `unknown keyword`.
 
 - Only installs what you list; it never removes a formula or cask you took
   out of the list.

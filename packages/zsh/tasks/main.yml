@@ -42,10 +42,13 @@
   register: devmachine_zsh_brew
   when: ansible_facts['pkg_mgr'] == 'homebrew'
 
+# A brew with old code fails on today's formulae (e.g. "unknown keyword"); a
+# terminal `brew install` updates itself first, the module does not by default.
 - name: Install tmux from Homebrew
-  ansible.builtin.package:
+  community.general.homebrew:
     name: "{{ devmachine_zsh_packages }}"
     state: present
+    update_homebrew: true
   become: "{{ devmachine_zsh_brew.stat.uid != ansible_facts['effective_user_id'] }}"
   become_user: "{{ devmachine_zsh_brew.stat.pw_name }}"
   when:
