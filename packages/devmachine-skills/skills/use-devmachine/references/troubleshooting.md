@@ -281,6 +281,12 @@ connection you already trust, list every key with
 check the line of the same type. Only a mismatch of the same type means
 something changed.
 
+`--fingerprint` (`machines add`) and `--expect` (`machines trust`) take
+the fingerprint of any of the server's keys, so the one in your
+`known_hosts` works too: when it is not the type the CLI was shown, the
+CLI asks the server for that type, and trusts that key if it matches. A
+fingerprint none of the server's keys has is still refused.
+
 ## "the drop-in was written but sshd still allows passwords"
 
 ```
@@ -493,6 +499,28 @@ proxy's error, which lists every address and why.
 **What to do:** Run `devmachine resolve` to see which addresses were tried.
 If it says `devmachine: command not found` instead, the CLI moved since the
 alias was written: run `devmachine aliases --write` again.
+
+## `devmachine ssh <workspace>` on a Mac ends with "exit status 255" and "Remote Login may not allow"
+
+```
+exit status 255: the Mac's Remote Login may not allow alice; `devmachine doctor --machine studio` checks it
+```
+
+The Mac's own log (`log show --predicate 'process == "sshd"' --last 5m`)
+says `pam_sacl: denying 'alice' due to failed service ACL check`.
+
+**What it means:** Remote Login on that Mac is set to "Only these users",
+and the workspace account is not on the list (the group
+`com.apple.access_ssh`). macOS refuses the login before it checks the
+key, so `ssh` only sees the connection close. The CLI adds this hint only
+for a machine it last saw as a Mac; exit 255 has other causes too, such
+as an address that does not answer.
+
+**What to do:** Run `devmachine doctor --machine <name>`. An `ssh access:
+<workspace>` warning confirms it. Run `devmachine sync`, which adds each
+workspace account to the list, or, on the Mac, choose "All users" in
+System Settings > General > Sharing > Remote Login. See [what a machine
+needs](what-a-machine-needs.md#remote-login-set-to-only-these-users).
 
 ## `doctor` says an alias has "a fixed address, expected one resolved when ssh connects"
 
@@ -1269,7 +1297,9 @@ Remove it from whichever side should not own that host.
 ## `workspaces destroy` failed at userdel
 
 On a Mac the step is `sysadminctl -deleteUser`, as macOS has no `userdel`;
-the same applies.
+the same applies. Before it, `destroy` takes the account out of
+`com.apple.access_ssh`, the group Remote Login uses when it allows only
+some users, so no stale entry stays behind.
 
 **What it means:** Something is still running as that account — a process
 started outside its login session, or a container. `destroy` already

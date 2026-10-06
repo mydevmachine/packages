@@ -205,8 +205,13 @@ manager package's `bootstrap check` lists what the Mac lacks: one
 `prerequisite: <name>` warning per item (`devmachine setup` installs it
 once you agree), or one `prerequisites` check that passes when nothing is
 missing, or is skipped when no package manager is chosen yet. The script
-reaches the Mac on stdin, so doctor leaves nothing on it. See [what a
-machine needs](what-a-machine-needs.md).
+reaches the Mac on stdin, so doctor leaves nothing on it. Last, one
+`ssh access: <workspace>` check per workspace on the Mac: it passes when
+Remote Login allows all users or the account is in the list, warns when
+Remote Login allows only some users and the account is not one of them,
+and is skipped while the account does not exist yet. One SSH command
+answers for every workspace. See [what a machine
+needs](what-a-machine-needs.md).
 
 A missing or logged-out credential **warns**, with the fix (`devmachine
 login <credential>`, or `secrets set` then `credentials push`); so does a
@@ -405,7 +410,7 @@ one the way `setup` does — see [setup without a terminal](#setup):
 | `--user` | `root` | the admin login: root, or an account with passwordless sudo |
 | `--port` | `22` | the SSH port |
 | `--key` | `new` | a key of the CLI's own for this machine (made, or reused when it exists), a private key file, or `agent:<SHA256:…>` for a key your SSH agent holds |
-| `--fingerprint` | — | the host key to trust on first contact |
+| `--fingerprint` | — | the host key to trust on first contact, of any of its types (ED25519, ECDSA, RSA) |
 | `--tailscale` | off | also add the `tailscale` package |
 | `--domain` | — | the domain; only when there is no `config.yml` yet, and refused otherwise |
 | `--password-stdin` | off | read the admin password from stdin, for a server that takes nothing else yet |
@@ -460,8 +465,12 @@ before saving a new one, does nothing if it matches, refuses a changed
 one unless `--replace`. `--check` compares without writing and reports a
 changed key instead of refusing it; it exits 0 for every status, so a
 script reads `status`, not the exit code. `--expect <SHA256:…>` writes
-only if the presented key has that fingerprint — the key the operator
-verified, not whatever a second scan happens to meet. JSON fields:
+only the host key with that fingerprint — the key the operator verified,
+not whatever a second scan happens to meet. It may be the fingerprint of
+any of the server's keys, ED25519, ECDSA or RSA: when it is not the one
+negotiation showed, `trust` asks the server for each other type and
+writes the one that matches. A fingerprint none of them has is refused,
+and nothing is written. JSON fields:
 `machine`, `address`, `status` (`matching`, `changed`, `missing`),
 `key_type`, optional `current_key_type` and `current_fingerprint` (the
 pinned key), `presented_fingerprint`, `check`, `changed`, and, while the
@@ -482,7 +491,8 @@ for a key type with no standard file).
 
 `rm` takes a machine out of `config.yml` and **does nothing to the server
 itself**. Asks first unless `--yes`; refuses to leave a workspace
-pointing at a gone machine. **Not `delete-local`**: `rm` only forgets a
+pointing at a gone machine. It also deletes what the CLI last read from
+the machine (`state/machines/<name>.json`). **Not `delete-local`**: `rm` only forgets a
 server, `delete-local` erases a machine on your computer.
 
 `create-local` builds a machine on your computer, arriving password-only
@@ -538,7 +548,7 @@ devmachine workspaces rm <name> [--yes]
 devmachine workspaces destroy <name> [--confirm <name>] [--check] [--keep-dns]
 ```
 
-A workspace is one Linux account on one machine. See
+A workspace is one account on one machine. See
 [workspaces](concepts/machines-and-workspaces.md).
 
 These commands only edit `config.yml` — `devmachine sync` creates or
@@ -569,7 +579,7 @@ workspace:
 }
 ```
 
-`user` is the Linux account. `packages` is `[]` when there are none, and
+`user` is the account on the machine. `packages` is `[]` when there are none, and
 `settings` is left out. `credentials` is the workspace's own
 `credentials:` answer per login — `own` keeps its own login, `machine`
 shares the machine's — exactly what `edit --share` writes, and `{}` when
@@ -591,7 +601,7 @@ for a package the workspace does not install is refused.
 **Changing `--machine` does not move a workspace.** The next `sync`
 creates the account on the new machine; the old one keeps everything.
 
-**`rm` leaves the Linux account, home and files on the machine** — remove
+**`rm` leaves the account, home and files on the machine** — remove
 those by hand if you want them gone.
 
 `new`, `rm`, `destroy` and `edit --machine` all refresh `~/.ssh/config`'s
@@ -811,8 +821,10 @@ devmachine run --package <name> [--workspace w] -- <command> [args...]
 ```
 
 Runs one command on a machine and prints its output; exits with the same
-code. A failed command's output prints before the error, since it usually
-explains the failure.
+code. Its standard output goes to yours and its standard error to yours,
+as they arrive, so a program can parse stdout (`run --package
+devmachine-app -- stats` prints JSON there) while a warning or the
+reason a command failed still reaches the person, before the error.
 
 `--package` calls an installed package's entrypoint directly — everything
 after `--` goes to the package; `commands:` in its manifest can limit
