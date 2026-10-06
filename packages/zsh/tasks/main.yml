@@ -101,6 +101,27 @@
         set +a
       fi
 
+# A Mac gives an account that is not an admin only the system's PATH, without
+# MacPorts or Apple Silicon Homebrew, so the tmux below would not be found.
+- name: Put the package manager on the account's PATH
+  ansible.builtin.blockinfile:
+    path: "{{ devmachine_zsh_home }}/.zshenv"
+    marker: "# {mark} devmachine — package manager on PATH"
+    create: true
+    owner: "{{ devmachine_workspace.user }}"
+    group: "{{ devmachine_account.group | default(omit) }}"
+    mode: "0644"
+    block: |
+      for devmachine_dir in {{ devmachine_zsh_path_prefix | reverse | join(' ') }}; do
+        case ":$PATH:" in
+          *":$devmachine_dir:"*) ;;
+          *) PATH="$devmachine_dir:$PATH" ;;
+        esac
+      done
+      unset devmachine_dir
+      export PATH
+  when: devmachine_zsh_path_prefix | length > 0
+
 # A connection that drops loses nothing, because the work was never in the
 # connection. The second branch is what stops a new SSH login from stealing the
 # screen of one that is already attached: it gets a session of its own instead.
@@ -113,7 +134,7 @@
     group: "{{ devmachine_account.group | default(omit) }}"
     mode: "0644"
     block: |
-      if [ -z "$TMUX" ] && [ -n "$SSH_CONNECTION" ]; then
+      if [ -z "$TMUX" ] && [ -n "$SSH_CONNECTION" ] && command -v tmux >/dev/null 2>&1; then
         if tmux has-session -t main 2>/dev/null && [ -n "$(tmux list-clients -t main 2>/dev/null)" ]; then
           exec tmux new-session -s "ssh-$$"
         else

@@ -37,7 +37,11 @@ devmachine sync
   leaves copy mode. A tmux server that was already running picks this up
   after `tmux source-file ~/.tmux.conf`.
 - On macOS the login shell is the system's `/bin/zsh`, and only tmux is
-  installed, from Homebrew (as the account that owns it) or MacPorts.
+  installed, from Homebrew (as the account that owns it) or MacPorts. The
+  account's `~/.zshenv` puts that package manager's `bin` and `sbin` on its
+  `PATH`, which macOS leaves out for an account that is not an admin.
+- An SSH login opens tmux only when tmux is on the `PATH`; without it you get
+  a plain shell instead of a closed connection.
 
 ## Learn more
 
