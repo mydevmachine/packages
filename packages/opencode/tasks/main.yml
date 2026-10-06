@@ -27,7 +27,7 @@
   register: devmachine_opencode_account
   check_mode: false
 
-# --no-modify-path: the PATH line goes to .zshenv below, where every zsh reads
+# --no-modify-path: the PATH line goes to shellenv below, where every shell reads
 # it, rather than to whichever startup file the installer guesses.
 - name: Install the opencode CLI
   become: true
@@ -39,11 +39,24 @@
     creates: "{{ devmachine_opencode_home }}/.opencode/bin/opencode"
   when: not ansible_check_mode or devmachine_opencode_account.stat.exists
 
+# ~/.devmachine/shellenv is read by every shell, interactive or not.
 - name: Put opencode on the PATH
-  ansible.builtin.lineinfile:
-    path: "{{ devmachine_opencode_home }}/.zshenv"
-    line: 'export PATH="$HOME/.opencode/bin:$PATH"'
+  ansible.builtin.blockinfile:
+    path: "{{ devmachine_opencode_home }}/.devmachine/shellenv"
+    marker: "# {mark} devmachine — opencode on PATH"
     create: true
     owner: "{{ devmachine_workspace.user }}"
     group: "{{ devmachine_account.group | default(omit) }}"
     mode: "0644"
+    block: |
+      case ":$PATH:" in
+        *":$HOME/.opencode/bin:"*) ;;
+        *) PATH="$HOME/.opencode/bin:$PATH" ;;
+      esac
+      export PATH
+
+- name: Take the line an older release wrote out of ~/.zshenv
+  ansible.builtin.lineinfile:
+    path: "{{ devmachine_opencode_home }}/.zshenv"
+    line: 'export PATH="$HOME/.opencode/bin:$PATH"'
+    state: absent

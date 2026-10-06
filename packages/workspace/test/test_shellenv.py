@@ -135,5 +135,38 @@ class Hook(unittest.TestCase):
             self.assertIn(startup, hooked)
 
 
+def every_task():
+    packages = os.path.dirname(ROOT)
+    for package in sorted(os.listdir(packages)):
+        tasks = os.path.join(packages, package, "tasks", "main.yml")
+        if not os.path.isfile(tasks):
+            continue
+        for chunk in re.split(r"\n(?=- name: )", read(tasks)):
+            if chunk.startswith("- name: "):
+                yield package, chunk
+
+
+class Packages(unittest.TestCase):
+    def test_only_the_workspace_hook_writes_a_zsh_startup_file_for_the_environment(self):
+        for package, chunk in every_task():
+            if ".zshenv" not in chunk or "path:" not in chunk:
+                continue
+            with self.subTest(package=package, task=chunk.splitlines()[0]):
+                self.assertTrue("state: absent" in chunk or (package == "workspace" and "shellenv" in chunk))
+
+    def test_a_block_written_by_many_packages_is_the_same_in_each(self):
+        marker = 'marker: "# {mark} devmachine — ~/.local/bin on PATH"'
+        blocks = {package: chunk.split("block: |", 1)[1] for package, chunk in every_task() if marker in chunk}
+        self.assertGreater(len(blocks), 1)
+        self.assertEqual(len(set(blocks.values())), 1, blocks)
+
+    def test_dev_writes_that_block_the_same_way(self):
+        dev = os.path.join(os.path.dirname(ROOT), "dev", "tasks", "main.yml")
+        chunk = next(c for p, c in every_task() if p == "claude-code" and "~/.local/bin on PATH" in c)
+        shared = chunk.split("block: |", 1)[1].rstrip()
+        rendered = re.search(r"block: \|(.*?)\n  loop:", read(dev), re.S).group(1)
+        self.assertEqual(rendered.replace("{{ devmachine_dev_path_dir[2:] }}", ".local/bin"), shared)
+
+
 if __name__ == "__main__":
     unittest.main()

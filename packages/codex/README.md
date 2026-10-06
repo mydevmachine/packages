@@ -9,7 +9,8 @@ needs no Node. Logging in is a person's job, once, in each account.
 
 It runs OpenAI's own installer, which keeps the release under
 `~/.codex/packages/standalone` and puts a `codex` link in `~/.local/bin`.
-That folder goes on the PATH in `~/.zshenv`. Codex updates itself from then
+That folder goes on the PATH in `~/.devmachine/shellenv`, which every shell
+of the account reads, bash, zsh or sh. Codex updates itself from then
 on, so a later sync leaves it alone.
 
 ## Settings

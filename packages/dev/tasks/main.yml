@@ -66,22 +66,41 @@
     creates: "{{ devmachine_dev_home }}/.bun/bin/bun"
   when: not ansible_check_mode or devmachine_dev_account.stat.exists
 
-# .zshenv is read by every zsh, interactive or not, which is the only way a
-# non-interactive command gets the same PATH a person sees.
+# ~/.devmachine/shellenv is read by every shell, interactive or not, which is
+# the only way a non-interactive command gets the same PATH a person sees.
+# Other packages write the ~/.local/bin block under the same marker, and
+# writing it twice costs nothing: blockinfile finds it already there.
 - name: Put the account's own tools on the PATH
-  ansible.builtin.lineinfile:
-    path: "{{ devmachine_dev_home }}/.zshenv"
-    line: "{{ devmachine_dev_path_line }}"
+  ansible.builtin.blockinfile:
+    path: "{{ devmachine_dev_home }}/.devmachine/shellenv"
+    marker: "# {mark} devmachine — {{ devmachine_dev_path_dir }} on PATH"
     create: true
     owner: "{{ devmachine_workspace.user }}"
     group: "{{ devmachine_account.group | default(omit) }}"
     mode: "0644"
+    block: |
+      case ":$PATH:" in
+        *":$HOME/{{ devmachine_dev_path_dir[2:] }}:"*) ;;
+        *) PATH="$HOME/{{ devmachine_dev_path_dir[2:] }}:$PATH" ;;
+      esac
+      export PATH
+  loop:
+    - ~/.local/bin
+    - ~/.bun/bin
+  loop_control:
+    # Never `item`: the generated playbook already uses it for the workspace
+    # this role is running for.
+    loop_var: devmachine_dev_path_dir
+
+- name: Take the lines an older release wrote out of ~/.zshenv
+  ansible.builtin.lineinfile:
+    path: "{{ devmachine_dev_home }}/.zshenv"
+    line: "{{ devmachine_dev_path_line }}"
+    state: absent
   loop:
     - 'export PATH="$HOME/.local/bin:$PATH"'
     - 'export PATH="$HOME/.bun/bin:$PATH"'
   loop_control:
-    # Never `item`: the generated playbook already uses it for the workspace
-    # this role is running for.
     loop_var: devmachine_dev_path_line
 
 # `reshim` is what gives node, npm and npx an absolute path under

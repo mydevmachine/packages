@@ -9,7 +9,9 @@ each account.
 - **Needs:** `workspace`
 
 It runs opencode's own installer, which puts `opencode` in
-`~/.opencode/bin`, and adds that folder to the PATH in `~/.zshenv`.
+`~/.opencode/bin`, and adds that folder to the PATH in
+`~/.devmachine/shellenv`, which every shell of the account reads, bash, zsh
+or sh.
 
 ## Settings
 
