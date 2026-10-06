@@ -1,0 +1,33 @@
+README.md
+  s_87d72b62cfc5a1::t_df7c4aa02dd0b8 91
+packages/docker/README.md
+  s_87d72b62cfc5a1::t_5596990a12bfe3 3-4,34-38
+packages/docker/package.yml
+  s_87d72b62cfc5a1::t_8a553ec48dbbae 6-8
+packages/docker/tasks/Debian.yml
+  s_87d72b62cfc5a1::t_ca6dc0e04cb18a 2-16
+packages/docker/vars/Debian.yml
+  s_87d72b62cfc5a1::t_76a33bc26e729e 15-31,46
+packages/tailscale/README.md
+  s_87d72b62cfc5a1::t_1d0d467e71fc5d 16-24
+packages/tailscale/tasks/Debian.yml
+  s_87d72b62cfc5a1::t_99f8f1f1b36596 2-16
+packages/tailscale/vars/Debian.yml
+  s_87d72b62cfc5a1::t_e688e56a2e0e6c 15-31
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2b7d48ce1d4b454fcfa17c3f063ae2f9ab0f8db1",
+  "prompts": {},
+  "sessions": {
+    "s_87d72b62cfc5a1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5e69ca1d-9900-4500-8ba7-104b479b47eb",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Djalma Araujo <djalma@nossomos.cc>"
+    }
+  }
+}
