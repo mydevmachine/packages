@@ -13,8 +13,8 @@ devmachine_workspace_admin_home: "{{ devmachine_workspace_admin_account.home | d
 # Nobody joins it unless the operator asks.
 devmachine_workspace_groups: []
 
-# Empty means the one useradd would pick. The package that installs a shell
-# is the package that sets it.
+# Empty means the system's default for a new account. The package that
+# installs a shell is the package that sets it.
 devmachine_workspace_shell: ""
 
 devmachine_workspace_git_name: ""

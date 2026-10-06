@@ -35,6 +35,8 @@ devmachine credentials push
 - Once installed, use `devmachine dns list`, `devmachine dns add`, and
   `devmachine dns status` — not this package directly. `devmachine dns
   providers` shows which zones the token can see.
+- On macOS it uses the `python3` of the Command Line Tools and installs
+  nothing.
 
 ## Learn more
 

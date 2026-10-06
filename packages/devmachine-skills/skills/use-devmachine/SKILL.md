@@ -34,11 +34,17 @@ description: "Use when running, inspecting, or troubleshooting the Devmachine CL
 
 ## Setting up a machine: the person decides
 
-A machine runs Debian, Ubuntu, Arch Linux or macOS. `essentials`,
-`firewall` and `caddy` are Linux-only; `sync` refuses them on a Mac. Do not
-work around it: on a Mac, `setup` and `machines add` start the machine with
-`base`, `devmachine-app` and the package manager package instead of
-`essentials`, and say so. Never pass `--no-essentials` for that.
+A machine runs Debian, Ubuntu, Arch Linux or macOS. A system built on one
+of them, such as Linux Mint, Pop!_OS, Manjaro or EndeavourOS, is set up as
+its base; nobody has tested it, and `setup` and `doctor` say so.
+
+Some packages run only on Linux (`essentials`, `firewall`, `caddy`,
+`docker`, `tailscale` and more): `devmachine --format json packages list`
+shows each one's `platforms`, and `sync` refuses a package whose
+`platforms` leave out the machine's system. Do not work around it: on a
+Mac, `setup` and `machines add` start the machine with `base`,
+`devmachine-app` and the package manager package instead of `essentials`,
+and say so. Never pass `--no-essentials` for that.
 
 - To set up a machine, use `devmachine setup` (a person at a terminal) or
   `devmachine machines add` (you). Never install Ansible, Homebrew or

@@ -53,7 +53,7 @@
 
 # bun through its own installer and not through mise, so it lands at an
 # absolute and stable path. Anything that is not an interactive shell — a
-# systemd unit, a timer, a daemon — can call ~/.bun/bin/bun without a manager
+# service, a timer, a daemon — can call ~/.bun/bin/bun without a manager
 # having been activated first.
 - name: Install bun
   become: true

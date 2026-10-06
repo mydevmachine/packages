@@ -23,6 +23,8 @@ devmachine sync
 
 `git` is usually pulled in through [`essentials`](../essentials/README.md).
 
+On macOS it installs nothing: git comes with the Command Line Tools.
+
 ## Learn more
 
 - [Packages](https://mydevmachine.sh/packages/)

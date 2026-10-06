@@ -3,7 +3,9 @@ name: docker
 scope: machine
 platforms: [linux]
 category: Containers
-summary: Docker Engine and the Compose plugin, from Docker's own repository.
+summary: >-
+  Docker Engine and the Compose plugin, from Docker's own repository on Debian
+  and Ubuntu and from the system's own on Arch Linux.
 
 needs: [base]
 

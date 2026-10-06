@@ -88,7 +88,7 @@ What works on each system is on the
 
 | Package | Scope | What it does |
 | --- | --- | --- |
-| [`docker`](packages/docker/README.md) | machine | Docker Engine and the Compose plugin, from Docker's own repository. |
+| [`docker`](packages/docker/README.md) | machine | Docker Engine and the Compose plugin, from Docker's own repository on Debian and Ubuntu and from the system's own on Arch Linux. |
 | [`caddy`](packages/caddy/README.md) | machine | A reverse proxy that gets its own certificates. |
 
 ### Security

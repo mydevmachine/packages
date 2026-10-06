@@ -12,7 +12,23 @@ devmachine_docker_repo_file: /etc/apt/sources.list.d/docker.list
 
 # Docker publishes one tree per distribution, so Debian and Ubuntu do not share
 # a path. `ansible_facts['distribution']` is what tells them apart.
-devmachine_docker_repo_distro: "{{ ansible_facts['distribution'] | lower }}"
+# A system built on one of them, such as Linux Mint or Pop!_OS, has no tree of
+# its own: it uses its base's, under the release name its /etc/os-release gives
+# in UBUNTU_CODENAME or DEBIAN_CODENAME.
+devmachine_docker_own_tree: "{{ ansible_facts['distribution'] in ['Debian', 'Ubuntu'] }}"
+devmachine_docker_os_release: "{{ devmachine_docker_os_release_file.content | default('') | b64decode }}"
+devmachine_docker_ubuntu_codename: >-
+  {{ devmachine_docker_os_release | regex_findall('(?m)^UBUNTU_CODENAME="?([^"\s]+)') | first | default('') }}
+devmachine_docker_debian_codename: >-
+  {{ devmachine_docker_os_release | regex_findall('(?m)^DEBIAN_CODENAME="?([^"\s]+)') | first | default('') }}
+devmachine_docker_repo_distro: >-
+  {{ ansible_facts['distribution'] | lower if devmachine_docker_own_tree | bool
+     else 'ubuntu' if devmachine_docker_ubuntu_codename
+     else 'debian' if devmachine_docker_debian_codename
+     else '' }}
+devmachine_docker_repo_codename: >-
+  {{ ansible_facts['distribution_release'] if devmachine_docker_own_tree | bool
+     else devmachine_docker_ubuntu_codename or devmachine_docker_debian_codename }}
 devmachine_docker_key_url: "https://download.docker.com/linux/{{ devmachine_docker_repo_distro }}/gpg"
 # Debian names architectures its own way, and it is not what uname reports:
 # x86_64 is amd64 and aarch64 is arm64. A repository line carrying the uname
@@ -27,7 +43,7 @@ devmachine_docker_repo_line: >-
   deb [arch={{ devmachine_debian_architecture }}
   signed-by={{ devmachine_docker_keyring }}]
   https://download.docker.com/linux/{{ devmachine_docker_repo_distro }}
-  {{ ansible_facts['distribution_release'] }} stable
+  {{ devmachine_docker_repo_codename }} stable
 
 devmachine_docker_conflicting_packages:
   - docker.io

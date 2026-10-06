@@ -41,7 +41,7 @@ devmachine sync
 
 `devmachine run --package devmachine-app -- stats` prints one JSON document
 with the machine's health: memory, swap, disk, load, Docker containers, RAM
-by Linux user, and listening ports with their owner. It replaces a shell
+by user, and listening ports with their owner. It replaces a shell
 snippet the app used to send over SSH and parse itself.
 
 On a Mac it prints the same document, read from `sysctl` (load, memory size,
@@ -84,10 +84,10 @@ Field notes:
   `cpu_percent`, `load1`, `load5`, `load15` are floats.
 - `docker.available` is `false` when Docker is not installed or not running;
   `docker.containers` is then `[]`, never missing.
-- A container's `owner` is the Linux user its folder belongs to — read from
+- A container's `owner` is the user its folder belongs to — read from
   the Compose or Supabase CLI working-directory label — or `null` when the
   container carries neither label.
-- `users` sums RSS per Linux user across every process, sorted by
+- `users` sums RSS per user across every process, sorted by
   `rss_bytes` descending.
 - A port's `owner` is the user of the container publishing it, or otherwise
   the user of the process holding it, or `null` when neither is known.
@@ -103,6 +103,8 @@ as plain text on stdout — a log is read, not parsed, so this is not JSON.
 `--lines` defaults to 200. On a machine without Caddy, `journalctl` finds no
 entries: the output is `-- No entries --` and the exit is zero. A real failure
 (`journalctl` missing, a timeout) is reported on stderr with a non-zero exit.
+On a Mac, where the `caddy` package does not run, it prints
+`-- No entries --` and exits zero without calling anything.
 
 ## Learn more
 

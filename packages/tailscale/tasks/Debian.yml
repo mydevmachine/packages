@@ -1,4 +1,19 @@
 ---
+- name: Read which release this system is built on
+  ansible.builtin.slurp:
+    src: /etc/os-release
+  register: devmachine_tailscale_os_release_file
+  check_mode: false
+  when: not devmachine_tailscale_own_tree | bool
+
+- name: Stop where Tailscale has no packages to offer
+  ansible.builtin.fail:
+    msg: >-
+      Tailscale publishes packages for Debian and Ubuntu.
+      {{ ansible_facts['distribution'] }} is neither, and its /etc/os-release
+      names no UBUNTU_CODENAME or DEBIAN_CODENAME to take Tailscale's packages from.
+  when: devmachine_tailscale_repo_distro | length == 0
+
 - name: Create the keyring directory
   ansible.builtin.file:
     path: "{{ devmachine_tailscale_keyring | dirname }}"

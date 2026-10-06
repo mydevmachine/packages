@@ -47,8 +47,9 @@ time](https://mydevmachine.sh/how-it-works/trust-bootstrap/) for why the order m
 
 Works on **Debian, Ubuntu, Arch Linux and macOS**. Before it changes anything it
 asks the machine what it runs (`uname -s`, then `ID` in `/etc/os-release`,
-or `sw_vers` on a Mac);
-anything else is named and it stops, with the machine untouched. See [what
+or `sw_vers` on a Mac). A distribution based on one of them (`ID_LIKE`),
+such as Manjaro or Linux Mint, is set up as its base, with a note that it
+is not tested; anything else is named and it stops, with the machine untouched. See [what
 `setup` refuses](https://mydevmachine.sh/how-it-works/trust-bootstrap/#it-checks-what-the-machine-runs-first).
 The password is used once and written nowhere.
 
@@ -69,7 +70,9 @@ date on its own from then on; see [SSH
 aliases](https://mydevmachine.sh/concepts/reaching-your-server/#ssh-aliases)), and whether to
 reach the machine over Tailscale too (default no — adds the `tailscale`
 package; `devmachine login tailscale` finishes the job, see [private
-networks](https://mydevmachine.sh/concepts/private-networks/)).
+networks](https://mydevmachine.sh/concepts/private-networks/)). A Mac is not asked about
+Tailscale, since the `tailscale` package runs only on Linux, and
+`machines add --tailscale` says so and adds nothing.
 
 With no `config.yml` yet, it also writes `AGENTS.md` if none exists, telling
 a coding agent how to work in this folder — it never overwrites one already
@@ -796,7 +799,9 @@ devmachine stats [--machine m]
 ```
 
 Prints memory, swap, disk and load. The table rounds; JSON gives raw byte
-counts.
+counts. On Linux it reads `free`, `df` and `/proc/loadavg`. A Mac has none
+of those, so there it reads `sysctl`, `vm_stat` and `df -k` of the data
+volume; "available" memory is the free, inactive and speculative pages.
 
 ## ssh, mosh
 
@@ -1153,9 +1158,10 @@ edited here, so `rm` never needs to reach the machine.
 
 A sourceable file inside every workspace, `KEY='value'` per line,
 0600, owned by the workspace's own account. It holds every workspace
-secret delivered with no `--env-file`. A workspace's shell is expected
-to source it on login — the `zsh` package does — so `export`ing
-anything more is never necessary.
+secret delivered with no `--env-file`. The `workspace` package makes
+every shell source it on login (zsh, bash and sh, through
+`~/.devmachine/shellenv`), so `export`ing anything more is never
+necessary.
 
 ## login
 
@@ -1278,7 +1284,8 @@ per package:
 [DNS provider](https://mydevmachine.sh/how-it-works/dns-providers/) — and is left out for an
 ordinary package. `platforms` are the operating systems it runs on
 (`linux`, `macos`), and `[]` means any — a package that says `["macos"]`
-is for your own computer, never for a server. `needs` are the packages
+runs only on a Mac machine, one reached over SSH or your own computer as a
+self machine. `needs` are the packages
 it brings in before itself, `[]` when none: for `essentials` that is the
 list it is made of. `category` is the manifest's grouping, left out when it
 has none. `credentials` lists what the package declares, always an array:

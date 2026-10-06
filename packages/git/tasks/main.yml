@@ -1,5 +1,8 @@
 ---
+# macOS ships git with its Command Line Tools. Homebrew would also refuse the
+# root this play runs as on a Mac reached over SSH.
 - name: Install git
   ansible.builtin.package:
     name: git
     state: present
+  when: ansible_facts['system'] != 'Darwin'

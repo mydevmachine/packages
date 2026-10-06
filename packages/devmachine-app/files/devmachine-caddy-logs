@@ -11,6 +11,7 @@ shell over SSH. Prints plain text, not JSON: a log is read, not parsed.
 from __future__ import annotations
 
 import argparse
+import platform
 import subprocess
 import sys
 
@@ -22,6 +23,12 @@ def main():
 
     if args.lines <= 0:
         ap.error("--lines must be a positive number")
+
+    # The caddy package runs only on Linux, and a Mac has no journal: the answer
+    # is the one journalctl gives on a Linux machine without Caddy.
+    if platform.system() == "Darwin":
+        print("-- No entries --")
+        return 0
 
     try:
         result = subprocess.run(

@@ -13,6 +13,15 @@ Joins the machine to a tailnet, so it is reachable without a public address.
 | `exit_node` | `false` | Advertise this machine as an exit node. Off unless asked for. |
 | `login_server` | *(empty)* | The control server `devmachine login tailscale` joins. Empty means Tailscale's own; a URL means your own, such as Headscale. |
 
+## Where Tailscale comes from
+
+On Debian and Ubuntu from Tailscale's own apt repository, and on Arch Linux
+from the system's own. A system built on Debian or Ubuntu, such as Linux
+Mint or Pop!_OS, uses the repository of the release it is built on, which
+`/etc/os-release` names in `UBUNTU_CODENAME` or `DEBIAN_CODENAME`. A system
+that names neither stops the sync with a message saying so, before anything
+is installed.
+
 ## Credentials
 
 | Name | Kind | Scope | Shareable | How to provide it |

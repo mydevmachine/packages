@@ -24,13 +24,14 @@ variables:
     default: /root
   groups:
     summary: >-
-      Extra Linux groups the account joins. The docker group is one of them and
-      it is effectively root, so nobody joins it by accident.
+      Extra groups the account joins. The docker group is one of them and it
+      is effectively root, so nobody joins it by accident.
     default: []
   shell:
     summary: >-
-      The login shell. Empty means whatever useradd would pick, and the package
-      that installs a shell is the one that sets it.
+      The login shell. Empty means the system's default for a new account
+      (useradd's on Linux, /bin/bash on macOS), and the package that installs
+      a shell is the one that sets it.
     default: ""
   git_name:
     summary: The name on this workspace's commits.
