@@ -22,6 +22,18 @@ Mint or Pop!_OS, uses the repository of the release it is built on, which
 that names neither stops the sync with a message saying so, before anything
 is installed.
 
+On macOS from Homebrew, as the account that owns it, because Homebrew refuses
+root. tailscaled then runs as a launch daemon this package writes,
+`/Library/LaunchDaemons/devmachine.tailscaled.plist`, rather than through
+`tailscaled install-system-daemon`. That keeps the state at
+`/var/lib/tailscale/tailscaled.state`, the path `stored_at` names on Linux too,
+and runs the binary Homebrew upgrades instead of a copy of it.
+
+A Mac that already runs Tailscale, through the Tailscale app or a tailscaled
+installed by hand, is left as it is: a second tailscaled beside it fights it for
+the tunnel, which is often the one the Mac is reached through. Log in through
+what is already there. `exit_node` turns on IP forwarding only on Linux.
+
 ## Credentials
 
 | Name | Kind | Scope | Shareable | How to provide it |

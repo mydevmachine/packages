@@ -1,0 +1,89 @@
+---
+# The Tailscale app runs a network extension of its own, and a second
+# tailscaled beside it fights it for the tunnel — often the tunnel this Mac is
+# reached through. So does a tailscaled somebody already installed by hand.
+- name: Look for a Tailscale this package did not install
+  ansible.builtin.stat:
+    path: "{{ item }}"
+  loop:
+    - /Applications/Tailscale.app
+    - /Library/LaunchDaemons/com.tailscale.tailscaled.plist
+  register: devmachine_tailscale_other
+
+- name: Say the Tailscale already here is left alone
+  ansible.builtin.debug:
+    msg: >-
+      {{ devmachine_tailscale_other.results | selectattr('stat.exists') | map(attribute='item') | join(' and ') }}
+      already runs Tailscale on this Mac, so nothing is installed beside it.
+  when: devmachine_tailscale_other.results | selectattr('stat.exists') | list | length > 0
+
+- name: Install and run tailscaled
+  when: devmachine_tailscale_other.results | selectattr('stat.exists') | list | length == 0
+  block:
+    - name: Look for Homebrew
+      ansible.builtin.stat:
+        path: "{{ devmachine_tailscale_brew_prefix }}/bin/brew"
+      register: devmachine_tailscale_brew
+
+    - name: Refuse a Mac without Homebrew
+      ansible.builtin.fail:
+        msg: >-
+          tailscale installs from Homebrew on macOS, and Homebrew is not at
+          {{ devmachine_tailscale_brew_prefix }}. Install it from https://brew.sh,
+          then sync again.
+      when: not devmachine_tailscale_brew.stat.exists
+
+    # Homebrew refuses to run as root, which is what this play runs as on a Mac
+    # reached over SSH, so the install becomes the account that owns Homebrew.
+    - name: Install Tailscale from Homebrew
+      community.general.homebrew:
+        name: tailscale
+        state: present
+        path: "{{ devmachine_tailscale_brew_prefix }}/bin"
+      become: "{{ devmachine_tailscale_brew.stat.uid != ansible_facts['effective_user_id'] }}"
+      become_user: "{{ devmachine_tailscale_brew.stat.pw_name }}"
+
+    # The same state file as on Linux, which is where `stored_at` says the
+    # login lives. `tailscaled install-system-daemon` would keep it in
+    # /Library/Tailscale instead, and copy the binary out of Homebrew's reach.
+    - name: Create the state directory
+      ansible.builtin.file:
+        path: /var/lib/tailscale
+        state: directory
+        owner: root
+        group: wheel
+        mode: "0700"
+
+    - name: Install the tailscaled launch daemon
+      ansible.builtin.template:
+        src: tailscaled.plist.j2
+        dest: "{{ devmachine_tailscale_plist }}"
+        owner: root
+        group: wheel
+        mode: "0644"
+      register: devmachine_tailscale_unit
+
+    - name: Ask launchd whether tailscaled is loaded
+      ansible.builtin.command:
+        argv: [launchctl, print, "system/{{ devmachine_tailscale_label }}"]
+      register: devmachine_tailscale_loaded
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    # launchd reads a plist only when it loads it, so a changed one is unloaded
+    # and loaded again. Loading right after an unload can fail with
+    # "Input/output error" while the old job is still going away.
+    - name: Start tailscaled
+      ansible.builtin.shell:
+        cmd: |
+          launchctl bootout system/{{ devmachine_tailscale_label | quote }} 2>/dev/null || true
+          launchctl bootstrap system {{ devmachine_tailscale_plist | quote }}
+      register: devmachine_tailscale_started
+      until: devmachine_tailscale_started.rc == 0
+      retries: 3
+      delay: 2
+      changed_when: true
+      when:
+        - not ansible_check_mode
+        - devmachine_tailscale_unit is changed or devmachine_tailscale_loaded.rc != 0

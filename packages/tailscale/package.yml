@@ -1,7 +1,7 @@
 format: 1
 name: tailscale
 scope: machine
-platforms: [linux]
+platforms: [linux, macos]
 category: Network
 kind: vpn
 summary: Joins the machine to a tailnet, so it is reachable without a public address.
