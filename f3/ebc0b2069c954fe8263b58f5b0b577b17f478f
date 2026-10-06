@@ -1,0 +1,45 @@
+packages/dev/tasks/main.yml
+  s_87d72b62cfc5a1::t_3917f25138cd9a 69-72,74-76,81-86,88-89,93-103
+packages/workspace/test/test_shellenv.py
+  s_87d72b62cfc5a1::t_25d3cae34fe966 138-170
+packages/antigravity/tasks/main.yml
+  s_87d72b62cfc5a1::t_e89369de1c5aa1 41-43,45-47,52-63
+packages/claude-code/tasks/main.yml
+  s_87d72b62cfc5a1::t_3b5a4db18e14ef 41-43,45-47,52-63
+packages/cline/tasks/main.yml
+  s_87d72b62cfc5a1::t_c1089c5c4042ff 34-36,38-40,45-56
+packages/codex/README.md
+  s_87d72b62cfc5a1::t_690839561267ae 12-13
+packages/codex/tasks/main.yml
+  s_87d72b62cfc5a1::t_d4d8b390f1a2a2 31,47-49,51-53,58-69
+packages/glab/tasks/main.yml
+  s_87d72b62cfc5a1::t_48d863c3dfbdd2 49-51,53-55,60-71
+packages/kimi-code/README.md
+  s_87d72b62cfc5a1::t_706cd5f94d81c0 11-12
+packages/kimi-code/tasks/main.yml
+  s_87d72b62cfc5a1::t_9bfa1a6896c16c 29,42,44-46,51-62
+packages/opencode/README.md
+  s_87d72b62cfc5a1::t_6ddb79158484f2 12-14
+packages/opencode/tasks/main.yml
+  s_87d72b62cfc5a1::t_0d9e61ca168209 30,42,44-46,51-62
+packages/pi/tasks/main.yml
+  s_87d72b62cfc5a1::t_79682208968165 55-57,59-61,66-77
+packages/sentry/tasks/main.yml
+  s_87d72b62cfc5a1::t_82067277b546e8 45-47,49-51,56-67
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f3ebc0b2069c954fe8263b58f5b0b577b17f478f",
+  "prompts": {},
+  "sessions": {
+    "s_87d72b62cfc5a1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5e69ca1d-9900-4500-8ba7-104b479b47eb",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Djalma Araujo <djalma@nossomos.cc>"
+    }
+  }
+}
