@@ -18,6 +18,13 @@
       # to know which terminal it is talking to needs the rest listed here, and
       # SendEnv on the client.
       AcceptEnv TERM_PROGRAM TERM_PROGRAM_VERSION COLORTERM
+      {% if devmachine_password_login_keep | default([]) | length > 0 %}
+      # These accounts still log in with a password (password_login_keep in
+      # config.yml). A Match block runs to the end of its file, so it stays last.
+      Match User {{ devmachine_password_login_keep | join(',') }}
+      	PasswordAuthentication yes
+      	KbdInteractiveAuthentication yes
+      {% endif %}
     validate: >-
       /bin/sh -c 'c=$(mktemp) || exit 1;
       echo "Include $0" > "$c";
