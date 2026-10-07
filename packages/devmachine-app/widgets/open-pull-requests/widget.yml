@@ -1,0 +1,15 @@
+format: 1
+name: open-pull-requests
+summary: How many of your pull requests are open, hidden when there are none.
+requires: {engine: ">= 1.4"}
+fits: [slot]
+context: {}
+source:
+  kind: provider
+  name: app/open-pull-requests
+  with: {}
+  every: 60s
+view: {kind: number, hide_zero: true}
+sizes: [small]
+default_size: small
+places: [menubar]

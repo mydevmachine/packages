@@ -1,0 +1,15 @@
+format: 1
+name: brand
+summary: The Devmachine mark, the first thing in the menu bar.
+requires: {engine: ">= 1.4"}
+fits: [slot]
+context: {}
+source:
+  kind: provider
+  name: app/brand
+  with: {}
+  every: 1h
+view: {kind: app.brand}
+sizes: [small]
+default_size: small
+places: [menubar]
