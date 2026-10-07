@@ -134,6 +134,15 @@
     hidden: "{{ true if ansible_facts['system'] == 'Darwin' else omit }}"
   register: devmachine_account
 
+- name: Say the account comes with a real sync
+  ansible.builtin.debug:
+    msg: >-
+      {{ devmachine_workspace.user }} does not exist yet. A real sync creates
+      it; this dry run skips what would go into its home.
+  when:
+    - ansible_check_mode
+    - devmachine_account.home is not defined
+
 # With Remote Login set to "Only these users", sshd lets in only members of
 # this group, and refuses a new account with "failed service ACL check".
 - name: Let the account in through Remote Login

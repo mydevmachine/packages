@@ -1,4 +1,4 @@
 ---
-devmachine_glab_home: "{{ devmachine_account.home | default('/home/' ~ devmachine_workspace.user) }}"
+devmachine_glab_home: "{{ devmachine_account.home | default(('/Users/' if ansible_facts['system'] == 'Darwin' else '/home/') ~ devmachine_workspace.user) }}"
 
 devmachine_glab_version: "1.111.0"

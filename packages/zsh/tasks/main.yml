@@ -123,6 +123,8 @@
     - "# {mark} devmachine — package manager on PATH"
   loop_control:
     loop_var: devmachine_zsh_old_marker
+  # A dry run for an account a real sync has yet to create has no ~/.zshenv.
+  when: not ansible_check_mode or devmachine_zsh_account.stat.exists
 
 # A connection that drops loses nothing, because the work was never in the
 # connection. The second branch is what stops a new SSH login from stealing the

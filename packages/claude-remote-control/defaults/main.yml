@@ -1,5 +1,5 @@
 ---
-devmachine_claude_remote_control_home: "{{ devmachine_account.home | default('/home/' ~ devmachine_workspace.user) }}"
+devmachine_claude_remote_control_home: "{{ devmachine_account.home | default(('/Users/' if ansible_facts['system'] == 'Darwin' else '/home/') ~ devmachine_workspace.user) }}"
 
 # Empty means the workspace's name. Two workspaces both running this otherwise
 # appear in the phone app under names nothing tells apart.
