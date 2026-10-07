@@ -1,0 +1,29 @@
+packages/devmachine-app/widgets/todo/widget.yml
+  s_c1c985d7f57ab9::t_16875c1e781839 1-15
+packages/devmachine-app/widgets/pull-requests/widget.yml
+  s_c1c985d7f57ab9::t_352549dd955358 1-15
+packages/devmachine-app/widgets/links/widget.yml
+  s_c1c985d7f57ab9::t_4c76a94924034e 1-15
+packages/devmachine-app/widgets/sub-agents/widget.yml
+  s_c1c985d7f57ab9::t_48b71ea2c616ca 1-15
+packages/devmachine-app/widgets/monitors/widget.yml
+  s_c1c985d7f57ab9::t_eccd8120ed0249 1-15
+packages/devmachine-app/widgets/shells/widget.yml
+  s_c1c985d7f57ab9::t_1cefb863f4e664 1-15
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "92f9e0660491d4d081b157585118e44672787a58",
+  "prompts": {},
+  "sessions": {
+    "s_c1c985d7f57ab9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b5256304-4a81-480d-a568-f8cf11d8ddcc",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Djalma Araujo <djalma@nossomos.cc>"
+    }
+  }
+}
