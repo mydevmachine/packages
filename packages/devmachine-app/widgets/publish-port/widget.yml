@@ -1,0 +1,15 @@
+format: 1
+name: publish-port
+summary: A button that publishes a port of the selected workspace on a subdomain, when a machine runs Caddy.
+requires: {engine: ">= 1.2"}
+fits: [stack]
+context: {session: required, workspace: optional}
+source:
+  kind: provider
+  name: app/publish-port
+  with: {}
+  every: 60s
+view: {kind: app.publish-port}
+sizes: [medium, large]
+default_size: large
+places: [context-sidebar]
