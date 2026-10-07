@@ -20,7 +20,7 @@ None.
 ## Widgets
 
 The macOS app draws its Home, its sidebar and the Context tab of a session
-from these. They read only what the app already knows, so they work
+from these. Most read only what the app already knows, so they work
 without adding or syncing this package.
 
 Home:
@@ -30,6 +30,18 @@ Home:
 | `devmachine-app/clock` | medium | The time, the date and the computer the app runs on. |
 | `devmachine-app/summary` | wide | How many sessions, coding-harness sessions and workspaces are open. |
 | `devmachine-app/machines` | large | Each machine, online or not, with its CPU, memory, disk and readiness. |
+
+On a machine (needs this package added to that machine and synced):
+
+| Widget | Default size | What it shows |
+| --- | --- | --- |
+| `devmachine-app/machine-stats` | small | How full one machine's disk is, read on the machine every minute. |
+
+Add it with `devmachine widgets add devmachine-app/machine-stats --set
+machine=<name>`. It reads the `stats` command, which this package declares
+as a provider: `devmachine-app/stats` answers one JSON document with the
+machine's memory, swap, disk, load, containers, users and ports, at most
+every 10 seconds. A widget written in a board can read it too.
 
 Sidebar (one per board):
 

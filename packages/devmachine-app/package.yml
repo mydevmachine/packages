@@ -17,5 +17,9 @@ variables:
 
 entrypoint: bin/devmachine-app
 commands: [context, stats, caddy-logs]
+providers:
+  stats:
+    returns: {collected_at: string, memory: object, swap: object, disk: object, load: object, docker: object, users: list, ports: list, errors: list}
+    min_every: 10s
 
 widgets: widgets

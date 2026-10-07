@@ -347,3 +347,41 @@ def test_collect_on_darwin_has_the_linux_shape(monkeypatch):
     assert list(darwin) == list(linux)
     for key in ("memory", "swap", "disk", "load", "docker"):
         assert list(darwin[key]) == list(linux[key])
+
+
+PACKAGE_YML = Path(__file__).parent.parent / "package.yml"
+
+PY_TYPES = {"string": str, "number": (int, float), "bool": bool, "list": list, "object": dict}
+
+
+def declared_returns(provider):
+    """The returns of one provider, read from package.yml's flow mapping
+    `returns: {a: t, b: t}` under `providers.<provider>`, without a YAML
+    library: CI's Python has none."""
+    lines = PACKAGE_YML.read_text().splitlines()
+    start = lines.index("providers:")
+    inside = False
+    for line in lines[start + 1:]:
+        if line and not line.startswith(" "):
+            break
+        if line.strip() == provider + ":":
+            inside = True
+            continue
+        if inside and line.strip().startswith("returns:"):
+            body = line.split("{", 1)[1].rsplit("}", 1)[0]
+            return {k.strip(): v.strip() for k, v in (pair.split(":", 1) for pair in body.split(","))}
+    raise AssertionError("no returns for provider %s in package.yml" % provider)
+
+
+def test_stats_answer_matches_the_declared_provider(monkeypatch):
+    m = devmachine_stats
+    monkeypatch.setattr(m, "run", lambda cmd, timeout=10: (False, "", None))
+    answer = m.collect(system="Linux")
+    returns = declared_returns("stats")
+    assert set(answer) == set(returns)
+    for field, kind in returns.items():
+        optional = kind.endswith("?")
+        value = answer[field]
+        if optional and value is None:
+            continue
+        assert isinstance(value, PY_TYPES[kind.rstrip("?")]), (field, kind, value)

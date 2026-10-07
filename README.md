@@ -157,6 +157,14 @@ tab; `claude-code` and `codex` each ship `usage`. A widget that reads only
 what the app already knows works without adding its package. The format
 is in the [widget format reference](https://mydevmachine.sh/reference/widget-format/).
 
+A package can also feed its widgets with one of its own commands, run on a
+machine: `providers:` in `package.yml` names the command and what its JSON
+answer holds, and a widget reads it as `<package>/<command>`.
+`devmachine-app/machine-stats` reads `devmachine-app/stats` this way.
+Anybody can publish a package with widgets in a git repository;
+`devmachine packages install <address>` brings it in, and its widgets that
+run code ask before they run.
+
 ## A pin is a tag, never a branch
 
 The CLI is pointed at a release (`packages: v23`), not at `main`. A branch
