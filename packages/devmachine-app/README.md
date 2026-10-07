@@ -112,8 +112,11 @@ as plain text on stdout — a log is read, not parsed, so this is not JSON.
 `--lines` defaults to 200. On a machine without Caddy, `journalctl` finds no
 entries: the output is `-- No entries --` and the exit is zero. A real failure
 (`journalctl` missing, a timeout) is reported on stderr with a non-zero exit.
-On a Mac, where the `caddy` package does not run, it prints
-`-- No entries --` and exits zero without calling anything.
+A Mac has no journal. There it prints the last lines of the log the `caddy`
+package writes, `/var/log/devmachine-caddy.log` (JSON, one entry per line).
+When Caddy failed before it could open that log, its startup output in
+`/var/log/devmachine-caddy.launchd.log` is newer, and that is what it prints.
+With neither file, Caddy is not there: `-- No entries --`, exit zero.
 
 ## Learn more
 

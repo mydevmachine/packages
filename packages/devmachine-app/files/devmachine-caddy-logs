@@ -6,7 +6,9 @@ Usage:
 
 Runs `journalctl -u caddy -n N --no-pager` on the machine and prints its
 output verbatim — the same read the Devmachine macOS app used to send as raw
-shell over SSH. Prints plain text, not JSON: a log is read, not parsed.
+shell over SSH. A Mac has no journal: there it prints the last N lines of the
+log the caddy package writes. Prints plain text, not JSON: a log is read, not
+parsed.
 """
 from __future__ import annotations
 
@@ -14,6 +16,46 @@ import argparse
 import platform
 import subprocess
 import sys
+from collections import deque
+from pathlib import Path
+
+DARWIN_LOG = Path("/var/log/devmachine-caddy.log")
+# What Caddy prints before its own logging is configured, such as a Caddyfile
+# it cannot load.
+DARWIN_LAUNCHD_LOG = Path("/var/log/devmachine-caddy.launchd.log")
+NO_ENTRIES = "-- No entries --\n"
+
+
+def tail(path: Path, lines: int) -> str:
+    with path.open(encoding="utf-8", errors="replace") as f:
+        return "".join(deque(f, maxlen=lines))
+
+
+def darwin_logs(lines: int) -> int:
+    """The tail of whichever log Caddy wrote to last: its own log, or its
+    startup output when it failed before it could open that log, which leaves
+    the older log behind untouched. Neither file is a machine without Caddy."""
+    newest, newest_time = None, None
+    for path in (DARWIN_LOG, DARWIN_LAUNCHD_LOG):
+        try:
+            info = path.stat()
+        except FileNotFoundError:
+            continue
+        except OSError as e:
+            print("%s: %s" % (path, e.strerror or e), file=sys.stderr)
+            return 1
+        if info.st_size and (newest_time is None or info.st_mtime > newest_time):
+            newest, newest_time = path, info.st_mtime
+    if newest is None:
+        sys.stdout.write(NO_ENTRIES)
+        return 0
+    try:
+        text = tail(newest, lines)
+    except OSError as e:
+        print("%s: %s" % (newest, e.strerror or e), file=sys.stderr)
+        return 1
+    sys.stdout.write(text if text.endswith("\n") else text + "\n")
+    return 0
 
 
 def main():
@@ -24,11 +66,8 @@ def main():
     if args.lines <= 0:
         ap.error("--lines must be a positive number")
 
-    # The caddy package runs only on Linux, and a Mac has no journal: the answer
-    # is the one journalctl gives on a Linux machine without Caddy.
     if platform.system() == "Darwin":
-        print("-- No entries --")
-        return 0
+        return darwin_logs(args.lines)
 
     try:
         result = subprocess.run(
