@@ -1,0 +1,53 @@
+packages/antigravity/defaults/main.yml
+  s_5ccc211ae481bf::t_5322b1531fdec1 2
+packages/claude-code/defaults/main.yml
+  s_5ccc211ae481bf::t_1bacc9f77ab1ed 2
+packages/claude-plugins/defaults/main.yml
+  s_5ccc211ae481bf::t_735849274b9b68 2
+packages/claude-remote-control/defaults/main.yml
+  s_5ccc211ae481bf::t_df9f0765615798 2
+packages/cline/defaults/main.yml
+  s_5ccc211ae481bf::t_a3909e879754a8 2
+packages/codex/defaults/main.yml
+  s_5ccc211ae481bf::t_6464d4450d9ee6 2
+packages/dev/defaults/main.yml
+  s_5ccc211ae481bf::t_9a21a127b4031e 2
+packages/git-key/defaults/main.yml
+  s_5ccc211ae481bf::t_3a8c522fd7ab84 2
+packages/glab/defaults/main.yml
+  s_5ccc211ae481bf::t_5e9f876a5de616 2
+packages/kimi-code/defaults/main.yml
+  s_5ccc211ae481bf::t_57ff47b6059484 2
+packages/mise/defaults/main.yml
+  s_5ccc211ae481bf::t_933a8415ad20c7 2
+packages/opencode/defaults/main.yml
+  s_5ccc211ae481bf::t_e3598b82f0ff04 2
+packages/pi/defaults/main.yml
+  s_5ccc211ae481bf::t_26607a17cbb859 2
+packages/sentry/defaults/main.yml
+  s_5ccc211ae481bf::t_1687e7fa1b59ea 2
+packages/workspace/defaults/main.yml
+  s_5ccc211ae481bf::t_b79cb3e3b19448 4
+packages/workspace/tasks/main.yml
+  s_5ccc211ae481bf::t_d23a1cf91d2a64 137-145
+packages/zsh/defaults/main.yml
+  s_5ccc211ae481bf::t_3dc41df1e6a3b3 2
+packages/zsh/tasks/main.yml
+  s_5ccc211ae481bf::t_dfc9a2714d0a97 126-127
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e4db7eb62253f722137542aad214e6435fefa32f",
+  "prompts": {},
+  "sessions": {
+    "s_5ccc211ae481bf": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "570a9526-d48d-41cd-8528-3a3200e0855a",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Djalma Araujo <djalma@nossomos.cc>"
+    }
+  }
+}
