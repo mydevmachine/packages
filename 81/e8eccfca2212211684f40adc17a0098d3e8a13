@@ -1,0 +1,23 @@
+packages/devmachine-app/README.md
+  s_5ccc211ae481bf::t_ffbcf7559ac8f2 117-121
+packages/devmachine-app/files/devmachine-caddy-logs
+  s_5ccc211ae481bf::t_d1b41e4ea2b569 34-46,48-51,53-58,60,62-65
+packages/devmachine-app/test/test_devmachine_caddy_logs.py
+  s_5ccc211ae481bf::t_69e557e534b39e 125-144
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "81e8eccfca2212211684f40adc17a0098d3e8a13",
+  "prompts": {},
+  "sessions": {
+    "s_5ccc211ae481bf": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "570a9526-d48d-41cd-8528-3a3200e0855a",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Djalma Araujo <djalma@nossomos.cc>"
+    }
+  }
+}
