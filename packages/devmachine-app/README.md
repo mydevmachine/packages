@@ -38,7 +38,8 @@ On a machine (needs this package added to that machine and synced):
 | `devmachine-app/machine-stats` | small | How full one machine's disk is, read on the machine every minute. |
 
 Add it with `devmachine widgets add devmachine-app/machine-stats --set
-machine=<name>`. It reads the `stats` command, which this package declares
+machine=<name>`. The app never places it on its own, because it needs the
+`machine` input. It reads the `stats` command, which this package declares
 as a provider: `devmachine-app/stats` answers one JSON document with the
 machine's memory, swap, disk, load, containers, users and ports, at most
 every 10 seconds. A widget written in a board can read it too.

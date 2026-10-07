@@ -8,6 +8,8 @@ description: "Use when the person wants to change what the Devmachine macOS app 
 The app draws three areas, each from one board file in the person's
 configuration. You change boards through the CLI, which checks every rule
 and never writes a broken board. The app picks up the change on its own.
+The one exception is a widget written in the board (see below): `widgets
+add` cannot create one, so that is the only edit you make by hand.
 
 ## The areas
 
@@ -17,7 +19,9 @@ and never writes a broken board. The app picks up the change on its own.
 | `sidebar` | `<config>/boards/sidebar.yml` | stack: an ordered list | the selected workspace, when there is one |
 | `context-sidebar` | `<config>/boards/context-sidebar.yml` | stack: an ordered list | the selected session, its machine, workspace, path, repo and branch |
 
-Find the configuration with `devmachine config path`. Never guess it.
+Find the configuration with `devmachine config path`: use the path it
+prints, without the note in parentheses after it (such as `(from env)`).
+Never guess it.
 
 ## Read before you change
 
@@ -54,11 +58,29 @@ devmachine widgets remove <id> --board <area>
 ## A widget written in the board
 
 When no widget fits, write one straight into the board: an entry with
-`id`, `title`, `source`, `view` and `sizes` (on Home also `frame`, `size`,
-`minimized`, `z`). Read `references/widget-format.md` first; it has every
-source kind, view and rule.
+`id`, `title`, `source`, `view` and `sizes`. On Home it also needs
+`frame`, `size`, `minimized` and `z`; in a sidebar it has none of those.
+Read `references/widget-format.md` first; it has every source kind, view
+and rule.
+
+This is the only hand edit, so make it with care:
+
+1. Read the board file right before you edit it.
+2. Add or edit only your own entry under `widgets:`. Never touch the
+   other entries, `format: 1` or `surface:`.
+3. Run `devmachine widgets validate` on that file at once.
+4. If it fails, put the file back exactly as it was before your edit.
+
+A context sidebar board with one widget written in it (the entry is
+`disk-main`; the board's other lines were already there):
 
 ```yaml
+format: 1
+surface: context-sidebar
+widgets:
+  - id: todo
+    type: devmachine-app/todo
+    size: auto
   - id: disk-main
     title: Disk on main
     source: {kind: command, run: df, args: [-h, /], target: {machine: main}, every: 60s}
@@ -72,8 +94,8 @@ Then always run:
 devmachine widgets validate <config>/boards/<area>.yml
 ```
 
-and fix every problem it reports before you stop. A board with a problem
-is one the CLI refuses to change later.
+and fix every problem it reports before you stop, or restore the file. A
+board with a problem is one the CLI refuses to change later.
 
 - `run` names one program; its arguments go in `args`. A template such
   as `{{context.workspace}}` may fill an argument, never the program.
