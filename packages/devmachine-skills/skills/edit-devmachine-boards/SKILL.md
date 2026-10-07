@@ -1,6 +1,6 @@
 ---
 name: edit-devmachine-boards
-description: "Use when the person wants to change what the Devmachine macOS app shows: add, move, remove or resize a widget on Home, the sidebar, a session's context sidebar or the menu bar, or make a new widget that shows a command's output, a web page, a coding harness's answer, a session's screen or a package's data. Triggers on requests like \"add a widget showing disk usage on main to my context sidebar\", \"put the clock on my Home\", \"move usage above shortcuts\", \"show my open pull requests in the menu bar\", \"remove the links section\", \"show my site's health on Home\", or \"what widgets can I add\". Not for writing a package's widget.yml for publishing (see create-devmachine-package) or for other CLI work (see use-devmachine)."
+description: "Use when the person wants to change what the Devmachine macOS app shows: add, move, remove, resize, rename or retime a widget on Home, the sidebar, a session's context sidebar or the menu bar, or make a new widget that shows a command's output, a web page, a coding harness's answer, a session's screen or a package's data. Triggers on requests like \"add a widget showing disk usage on main to my context sidebar\", \"put the clock on my Home\", \"move usage above shortcuts\", \"show my open pull requests in the menu bar\", \"show only main in my machines widget\", \"refresh usage every 2 minutes\", \"remove the links section\", \"show my site's health on Home\", or \"what widgets can I add\". Not for writing a package's widget.yml for publishing (see create-devmachine-package) or for other CLI work (see use-devmachine)."
 ---
 
 # Edit Devmachine boards
@@ -39,7 +39,9 @@ Never guess it.
   `available` (`unavailable_reason` names the command that fixes it). Its
   `providers` lists every package provider a widget may read.
 - `devmachine widgets help <package/widget>` — one widget's inputs, sizes
-  and areas.
+  and areas. An input shown as `choice of machines`, `choice of
+  workspaces` or `choice of harnesses` takes names from that list; `many`
+  means a list of names.
 - Read the board file itself to see what is there and each widget's `id`.
 - `devmachine widgets schema --json` — the engine contract: every
   provider, view, size and rule.
@@ -52,6 +54,7 @@ devmachine widgets add <package/widget> --board sidebar|context-sidebar|menubar|
 devmachine widgets add <package/widget> [--at x,y]          # Home only, in points
 devmachine widgets move <id> --after <id> | --before <id> --board sidebar|context-sidebar|menubar|menubar-panel
 devmachine widgets remove <id> --board <area>
+devmachine widgets set <id> --board <area> [--title t] [--every d] [--set name=value]...
 ```
 
 - Prefer a widget from `widgets list` over writing one: it is checked,
@@ -66,6 +69,18 @@ devmachine widgets remove <id> --board <area>
 - When a widget is `available: false`, tell the person the command in
   `unavailable_reason` (usually `devmachine packages add …` and `sync`).
   Do not run `sync` on their behalf without asking: it changes machines.
+- Change a widget already on a board with `widgets set`, never by
+  editing its entry: `--title` is the title that copy shows, `--every`
+  how often it runs (`2m`; `manual` for any source but a provider), and
+  `--title ""` or `--every ""` puts the widget's own back. The CLI
+  refuses an `every` below what the widget's source allows and says the
+  minimum; pass that on, do not guess.
+- A choice input takes names: `devmachine machines list` and
+  `devmachine workspaces list` give the machines and workspaces, and the
+  harnesses are `claude` and `codex`. A choice of many takes
+  `--set machines=main,backup`; `--set machines=` means all of them. A
+  name the configuration lacks only prints a `warning:`: tell the person
+  the app leaves it out.
 
 ## A widget written in the board
 
@@ -118,6 +133,10 @@ board with a problem is one the CLI refuses to change later.
   target: {machine: <name>}, every: <at least its min_every>}`, with a view
   that takes `json` and `view.value: "{{json.<field>}}"`. Its package must
   be added to that machine and synced.
+- How often it runs is `source.every`. Never put `every` next to
+  `source`: the CLI refuses it. `widgets set` changes only its title;
+  anything else is a hand edit by the rules above, and the app asks the
+  person to approve the new source.
 
 ## Approval: tell the person, never work around it
 
@@ -161,6 +180,16 @@ remove <name>` manage it later.
 If no widget fit, write the `disk-main` entry above into
 `context-sidebar.yml`, run `widgets validate`, and tell the person it
 waits for their approval in the app.
+
+"Show only main in my machines widget":
+
+1. Read `<config>/boards/home.yml` and find the entry whose `type` is
+   `devmachine-app/machines`; say its `id` is `machines`.
+2. `devmachine widgets help devmachine-app/machines` says `input machines
+   (choice of machines, many, default all)`; `devmachine machines list`
+   shows `main`.
+3. `devmachine widgets set machines --board home --set machines=main`.
+4. To show every machine again later: `--set machines=`.
 
 ## References
 
