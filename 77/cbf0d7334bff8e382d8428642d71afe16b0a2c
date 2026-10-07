@@ -1,0 +1,21 @@
+packages/devmachine-app/widgets/brand/widget.yml
+  s_c1c985d7f57ab9::t_4ffc7cedcf09db 1-15
+packages/devmachine-app/widgets/open-pull-requests/widget.yml
+  s_c1c985d7f57ab9::t_81edf82551fec3 1-15
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "77cbf0d7334bff8e382d8428642d71afe16b0a2c",
+  "prompts": {},
+  "sessions": {
+    "s_c1c985d7f57ab9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b5256304-4a81-480d-a568-f8cf11d8ddcc",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Djalma Araujo <djalma@nossomos.cc>"
+    }
+  }
+}
