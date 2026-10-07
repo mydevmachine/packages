@@ -1,0 +1,16 @@
+format: 1
+name: workspaces
+summary: Your machines and workspaces with their sessions, in the order you drag them.
+requires: {engine: ">= 1.2"}
+fits: [stack]
+context: {}
+source:
+  kind: provider
+  name: app/workspaces
+  with: {}
+  every: 5s
+view: {kind: app.workspaces}
+sizes: [medium, large]
+default_size: large
+single: true
+places: [sidebar]
