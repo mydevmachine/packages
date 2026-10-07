@@ -32,6 +32,11 @@ devmachine sync
 
 - Only turns password login off; the key `setup` installed is proven to work
   first, so a `sync` never locks you out of a working key-based login.
+- Accounts listed in the machine's `password_login_keep:` in `config.yml` keep
+  their password, through a `Match User` block at the end of the same file.
+  `setup` asks for them, and `devmachine machines password-login` changes them.
+  The sync then asks `sshd -T` for each of them, and stops if one still has no
+  password. A machine without the list gets the same file as before.
 
 ## On macOS
 
