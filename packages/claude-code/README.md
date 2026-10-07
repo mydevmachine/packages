@@ -32,6 +32,15 @@ differ between workspaces — one person's own, one client's — but it can be
 shared across workspaces if you work under a single account and say so in
 your own configuration.
 
+## Widgets
+
+| Widget | Default size | What it shows |
+| --- | --- | --- |
+| `claude-code/usage` | medium | Claude Code usage windows, how much of each is used and when it resets. |
+
+The macOS app reads this from the `claude` it finds on your computer, so the
+widget works without adding this package to a workspace.
+
 ## Add it
 
 ```bash

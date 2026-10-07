@@ -10,7 +10,7 @@ summary: >-
 needs: [workspace]
 
 requires:
-  cli: ">= 0.4.0"
+  cli: ">= 0.9.0"
 
 credentials:
   # scope: workspace because accounts usually differ between workspaces — one
@@ -61,3 +61,5 @@ variables:
       Show the task list under the footer. Unset leaves whatever Claude Code
       has, and the same condition applies.
     default: null
+
+widgets: widgets

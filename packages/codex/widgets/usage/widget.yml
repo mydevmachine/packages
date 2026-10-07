@@ -1,0 +1,15 @@
+format: 1
+name: usage
+summary: Codex usage windows, how much of each is used and when it resets.
+requires: {engine: ">= 1.0"}
+fits: [canvas, stack, slot]
+context: {}
+source:
+  kind: provider
+  name: app/harness-usage
+  with: {harness: codex}
+  every: 60s
+view: {kind: app.harness-usage}
+sizes: [small, medium, wide]
+default_size: medium
+places: [home]
