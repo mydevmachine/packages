@@ -1,0 +1,15 @@
+format: 1
+name: links
+summary: The links the selected session mentioned.
+requires: {engine: ">= 1.2"}
+fits: [stack]
+context: {session: required}
+source:
+  kind: provider
+  name: app/session-context
+  with: {}
+  every: 5s
+view: {kind: app.links}
+sizes: [medium, large]
+default_size: large
+places: [context-sidebar]

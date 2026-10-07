@@ -1,0 +1,15 @@
+format: 1
+name: pull-requests
+summary: The pull requests of the selected session, with their checks and review state.
+requires: {engine: ">= 1.2"}
+fits: [stack]
+context: {session: required}
+source:
+  kind: provider
+  name: app/session-context
+  with: {}
+  every: 5s
+view: {kind: app.pull-requests}
+sizes: [medium, large]
+default_size: large
+places: [context-sidebar]

@@ -5,7 +5,7 @@ category: macOS
 summary: What the Devmachine macOS app asks a machine for, reached through `devmachine run --package devmachine-app`.
 
 requires:
-  cli: ">= 0.7.1"
+  cli: ">= 0.10.0"
 
 variables:
   github_hosts:
@@ -17,3 +17,9 @@ variables:
 
 entrypoint: bin/devmachine-app
 commands: [context, stats, caddy-logs]
+providers:
+  stats:
+    returns: {collected_at: string, memory: object, swap: object, disk: object, load: object, docker: object, users: list, ports: list, errors: list}
+    min_every: 10s
+
+widgets: widgets

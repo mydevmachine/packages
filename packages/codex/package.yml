@@ -9,7 +9,7 @@ summary: >-
 needs: [workspace]
 
 requires:
-  cli: ">= 0.4.0"
+  cli: ">= 0.10.0"
 
 credentials:
   # scope: workspace because ChatGPT accounts usually differ between
@@ -27,3 +27,5 @@ variables:
   home:
     summary: Where the account's home is.
     default: <the account's own home>
+
+widgets: widgets

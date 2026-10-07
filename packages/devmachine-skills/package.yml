@@ -2,7 +2,7 @@ format: 1
 name: devmachine-skills
 scope: workspace
 category: Coding agents
-summary: Agent skills for operating Devmachine.
+summary: Agent skills for operating Devmachine and editing its app's boards.
 requires:
   cli: ">= 0.7.5"
 skills:

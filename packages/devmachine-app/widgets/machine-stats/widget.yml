@@ -1,0 +1,17 @@
+format: 1
+name: machine-stats
+summary: How full one machine's disk is, read on the machine every minute.
+requires: {engine: ">= 1.3"}
+fits: [canvas, stack]
+context: {}
+inputs:
+  machine: {type: string, summary: The machine to read.}
+source:
+  kind: provider
+  name: devmachine-app/stats
+  with: {}
+  target: {machine: "{{inputs.machine}}"}
+  every: 60s
+view: {kind: gauge, value: "{{json.disk.used_percent}}", unit: "%", warn: 80, crit: 90}
+sizes: [small, medium]
+default_size: small

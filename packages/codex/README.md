@@ -37,6 +37,19 @@ elsewhere, and then `credentials list` calls a working login missing.
 Codex reads `~/.agents/skills`, where every package's skills already land,
 so it needs no link.
 
+## Widgets
+
+| Widget | Default size | What it shows |
+| --- | --- | --- |
+| `codex/usage` | medium | Codex usage windows, how much of each is used and when it resets. |
+
+The macOS app reads this from the `codex` it finds on your computer, so the
+widget works without adding this package to a workspace.
+
+`devmachine-app/usage` shows the same card for any harness you pick, and
+is the one the app puts on Home. This widget keeps working wherever it
+already is.
+
 ## Add it
 
 ```bash

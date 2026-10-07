@@ -74,7 +74,7 @@ What works on each system is on the
 | [`antigravity`](packages/antigravity/README.md) | workspace | Google's Antigravity CLI (`agy`) for one account. |
 | [`kimi-code`](packages/kimi-code/README.md) | workspace | Moonshot AI's Kimi Code CLI (`kimi`) for one account. |
 | [`cline`](packages/cline/README.md) | workspace | The Cline CLI for one account. |
-| [`devmachine-skills`](packages/devmachine-skills/README.md) | workspace | Teaches supported agents to operate Devmachine and create packages. |
+| [`devmachine-skills`](packages/devmachine-skills/README.md) | workspace | Teaches supported agents to operate Devmachine, create packages and edit the app's boards. |
 
 ### Developer tools
 
@@ -127,9 +127,10 @@ An Ansible role, with one extra file beside it:
 
 ```
 packages/<name>/
-  package.yml        what this is, what it needs, what it offers
-  tasks/main.yml     required
-  skills/*/SKILL.md  optional Agent Skills contributed by this package
+  package.yml          what this is, what it needs, what it offers
+  tasks/main.yml       required
+  skills/*/SKILL.md    optional Agent Skills contributed by this package
+  widgets/*/widget.yml optional widgets for the macOS app's Home, sidebars and menu bar
   defaults/, vars/, files/, templates/, handlers/
 ```
 
@@ -137,6 +138,36 @@ Nothing is translated. What is written here is what runs on the machine, so a
 failure points at a line somebody wrote rather than at generated YAML they have
 never seen. The full format is in the
 [package format reference](https://mydevmachine.sh/reference/package-format/).
+
+## Widgets
+
+A package can carry widgets for the
+[Devmachine macOS app](https://mydevmachine.sh/app/): cards on its Home,
+sections of its sidebar and of a session's Context tab, and the title and
+tabs of its menu bar item, each one `widget.yml` that names what to read
+and how to show it. There is no code in a widget. `package.yml` points
+at the folder:
+
+```yaml
+widgets: widgets
+```
+
+`devmachine-app` ships the clock, summary and machines widgets for Home,
+a usage card for any coding harness, which you pick in the app, the
+workspace list for the sidebar, the eight sections of the Context tab,
+and the mark, pull request count and two tabs of the menu bar.
+`claude-code` and `codex` each still ship their own `usage`. A widget
+that reads only what the app already knows works without adding its
+package. The format is in the
+[widget format reference](https://mydevmachine.sh/reference/widget-format/).
+
+A package can also feed its widgets with one of its own commands, run on a
+machine: `providers:` in `package.yml` names the command and what its JSON
+answer holds, and a widget reads it as `<package>/<command>`.
+`devmachine-app/machine-stats` reads `devmachine-app/stats` this way.
+Anybody can publish a package with widgets in a git repository;
+`devmachine packages install <address>` brings it in, and its widgets that
+run code ask before they run.
 
 ## A pin is a tag, never a branch
 

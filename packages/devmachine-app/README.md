@@ -21,6 +21,85 @@ synced without root, keeps them in `~/.config/devmachine-app/config.json`.
 
 None.
 
+## Widgets
+
+The macOS app draws its Home, its sidebar, the Context tab of a session
+and its menu bar item from these. Most read only what the app already
+knows, so they work without adding or syncing this package.
+
+Home:
+
+| Widget | Default size | What it shows |
+| --- | --- | --- |
+| `devmachine-app/clock` | medium | The time, the date and the computer the app runs on. |
+| `devmachine-app/summary` | wide | How many sessions, coding-harness sessions and workspaces are open. |
+| `devmachine-app/machines` | large | Each machine, online or not, with its CPU, memory, disk and readiness. |
+| `devmachine-app/usage` | medium | One coding harness's usage windows, how much of each is used and when it resets. |
+
+`machines` and `usage` let you choose what they show: in the app, ⋯ →
+**Choose machines…** picks some machines (none picked shows them all),
+and ⋯ → **Choose harness…** picks the harness. From the terminal:
+`devmachine widgets set machines --board home --set machines=main,backup`.
+The app puts one `usage` card on Home for each harness you use.
+
+On a machine (needs this package added to that machine and synced):
+
+| Widget | Default size | What it shows |
+| --- | --- | --- |
+| `devmachine-app/machine-stats` | small | How full one machine's disk is, read on the machine every minute. |
+
+Add it with `devmachine widgets add devmachine-app/machine-stats --set
+machine=<name>`. The app never places it on its own, because it needs the
+`machine` input. It reads the `stats` command, which this package declares
+as a provider: `devmachine-app/stats` answers one JSON document with the
+machine's memory, swap, disk, load, containers, users and ports, at most
+every 10 seconds. A widget written in a board can read it too.
+
+Sidebar (one per board):
+
+| Widget | What it shows |
+| --- | --- |
+| `devmachine-app/workspaces` | Your machines and workspaces with their sessions, in the order you drag them. |
+
+Context sidebar, in the order the app puts them there (each reads the
+selected session):
+
+| Widget | What it shows |
+| --- | --- |
+| `devmachine-app/shortcuts` | Skill buttons for the machine or workspace of the selected session. |
+| `devmachine-app/publish-port` | A button that publishes a port of the selected workspace on a subdomain, when a machine runs Caddy. |
+| `devmachine-app/monitors` | The monitors running in the selected session. |
+| `devmachine-app/shells` | The background shells of the selected session. |
+| `devmachine-app/sub-agents` | The sub-agents the selected session started, and whether each still runs. |
+| `devmachine-app/todo` | The plan of the selected session and its to-do list. |
+| `devmachine-app/pull-requests` | The pull requests of the selected session, with their checks and review state. |
+| `devmachine-app/links` | The links the selected session mentioned. |
+
+Menu bar title, left to right (at most three widgets, each one line):
+
+| Widget | What it shows |
+| --- | --- |
+| `devmachine-app/brand` | The Devmachine mark, the first thing in the menu bar. |
+| `devmachine-app/open-pull-requests` | How many of your pull requests are open, hidden when there are none. |
+
+Menu bar popover, one tab each:
+
+| Widget | What it shows |
+| --- | --- |
+| `devmachine-app/pull-requests-panel` | Your open pull requests by owner, with their checks and review state. It fits Home and the sidebars too (`large` or `tall`). |
+| `devmachine-app/usage-panel` | Every coding harness's usage windows side by side, how much is used and when each resets. |
+
+The sidebar widgets grow with their content (`size: auto`). Remove one in
+the app or with `devmachine widgets remove <id> --board context-sidebar`,
+and bring it back from the gallery or with `devmachine widgets add
+devmachine-app/<name> --board context-sidebar`. `devmachine widgets list
+--board sidebar` shows what fits each area.
+
+The menu bar works the same way with `--board menubar` and `--board
+menubar-panel`, for example `devmachine widgets move usage-panel
+--before pull-requests-panel --board menubar-panel` to open the popover
+on Usage.
+
 ## Add it
 
 `devmachine setup` gives a new machine [`essentials`](../essentials/README.md),

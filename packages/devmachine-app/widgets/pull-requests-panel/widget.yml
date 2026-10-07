@@ -1,0 +1,15 @@
+format: 1
+name: pull-requests-panel
+summary: Your open pull requests by owner, with their checks and review state.
+requires: {engine: ">= 1.5"}
+fits: [tabs, canvas, stack]
+context: {}
+source:
+  kind: provider
+  name: app/pull-requests-panel
+  with: {}
+  every: 60s
+view: {kind: app.pull-requests-panel}
+sizes: [large, tall]
+default_size: large
+places: [menubar-panel]

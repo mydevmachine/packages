@@ -78,6 +78,7 @@ sync_skill() {
 
 sync_skill "skills/use-devmachine" "use-devmachine"
 sync_skill "skills/create-devmachine-package" "create-devmachine-package"
+sync_skill "skills/edit-devmachine-boards" "edit-devmachine-boards"
 
 if [[ "$CHECK" -eq 1 ]]; then
   if [[ "$STATUS" -eq 0 ]]; then
