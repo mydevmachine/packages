@@ -1,2 +1,7 @@
 ---
 devmachine_devmachine_app_github_hosts: []
+
+# Your own Mac is synced without root and cannot write /etc; every other
+# machine runs this play as root.
+devmachine_devmachine_app_shared_config: >-
+  {{ ansible_facts['system'] == 'Linux' or ansible_facts['effective_user_id'] | int == 0 }}

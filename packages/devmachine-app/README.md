@@ -13,6 +13,10 @@ What the Devmachine macOS app asks a machine for, reached through
 | --- | --- | --- |
 | `github_hosts` | `[]` | GitHub Enterprise hosts the context panel resolves pull requests on, each as `{host, proxy}` with `proxy` optional. `github.com` always works; this adds more. |
 
+The settings land in `/etc/devmachine-app/config.json`, which every workspace
+account reads. A Mac reached over SSH keeps them there too. Only your own Mac,
+synced without root, keeps them in `~/.config/devmachine-app/config.json`.
+
 ## Credentials
 
 None.
@@ -48,6 +52,10 @@ On a Mac it prints the same document, read from `sysctl` (load, memory size,
 swap), `vm_stat` (memory used, counted as Activity Monitor does), `df` on the
 data volume `/System/Volumes/Data`, and `lsof` (listening ports). Homes are
 under `/Users/` there, so a container's owner comes from that folder.
+Each workspace account there runs its own colima VM, so `stats` asks every
+`/Users/*/.colima/default/docker.sock` it finds and merges the containers. A
+container with no folder label belongs to the account whose VM runs it. A
+stopped VM is simply not running, not an error.
 
 A part the machine cannot answer — Docker not installed, nothing listening —
 comes back as an empty list rather than a failure. The command only exits
@@ -86,7 +94,8 @@ Field notes:
   `docker.containers` is then `[]`, never missing.
 - A container's `owner` is the user its folder belongs to — read from
   the Compose or Supabase CLI working-directory label — or `null` when the
-  container carries neither label.
+  container carries neither label. On a Mac with colima, the account whose
+  VM runs it fills in when no label names one.
 - `users` sums RSS per user across every process, sorted by
   `rss_bytes` descending.
 - A port's `owner` is the user of the container publishing it, or otherwise
@@ -103,8 +112,13 @@ as plain text on stdout — a log is read, not parsed, so this is not JSON.
 `--lines` defaults to 200. On a machine without Caddy, `journalctl` finds no
 entries: the output is `-- No entries --` and the exit is zero. A real failure
 (`journalctl` missing, a timeout) is reported on stderr with a non-zero exit.
-On a Mac, where the `caddy` package does not run, it prints
-`-- No entries --` and exits zero without calling anything.
+A Mac has no journal. There it prints the last lines of the log the `caddy`
+package writes, `/var/log/devmachine-caddy.log` (JSON, one entry per line).
+It prints Caddy's startup output, `/var/log/devmachine-caddy.launchd.log`,
+instead only when that log does not exist yet, or when the startup output is
+newer and ends in the `Error:` line Caddy exits with. A start that fails never
+reaches the older log. With neither file, Caddy is not there: `-- No entries --`,
+exit zero.
 
 ## Learn more
 
