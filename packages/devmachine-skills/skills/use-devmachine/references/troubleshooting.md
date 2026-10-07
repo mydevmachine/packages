@@ -1752,7 +1752,7 @@ a `command` source with no `parse`), and a rule uses `<`, `<=`, `>` or
 output is a number, say so: `parse: number` on a `command` source, or
 leave `parse` out on a `url` source to compare its status code.
 
-## "requires engine >= 1.4, and this CLI implements engine 1.3"
+## "requires engine >= 1.5, and this CLI implements engine 1.4"
 
 **What it means:** The widget says it needs a newer engine than this CLI
 has. Nothing else in it was checked.
@@ -1801,13 +1801,15 @@ checked.
 widget folder, or one board file. To check every board and every widget of
 your own packages, run `devmachine widgets validate` with no path.
 
-## "X does not fit the home area" (or the sidebar, or the context sidebar)
+## "X does not fit the home area" (or another area)
 
 **What it means:** The widget's `fits` does not include the area's layout
-(`canvas` for Home, `stack` for both sidebars), or it requires a context
-key the area does not give. `widgets add` says it before writing;
-`widgets validate` says it for a board you wrote by hand.
-`devmachine widgets help <name>` lists the areas it fits.
+(`canvas` for Home, `stack` for both sidebars, `slot` for the menu bar,
+`tabs` for its popover), or it requires a context key the area does not
+give. `widgets add` says it before writing; `widgets validate` says it for
+a board you wrote by hand. `devmachine widgets help <name>` lists the
+areas it fits. In the menu bar the view must also draw one line: "does
+not fit the menubar area: the X view cannot be drawn in the menu bar".
 
 **What to do:** Pick a widget that fits the area, or, for your own widget,
 add the layout to `fits`. A widget that needs `session` fits only the
@@ -1835,12 +1837,13 @@ devmachine-app/workspaces --board sidebar`.
 ## "--at places a widget on Home's canvas" or "--after and --before order a sidebar's list"
 
 **What it means:** Home is a canvas: a widget there has a position, given
-with `--at`. The sidebars are lists: a widget there has a turn, given with
-`--after` or `--before`. Each flag only means something in its own kind of
-area.
+with `--at`. The sidebars, the menu bar and its popover are lists: a
+widget there has a turn, given with `--after` or `--before`. Each flag
+only means something in its own kind of area.
 
-**What to do:** On Home use `--at x,y` or nothing; in a sidebar use
-`--after <id>`, `--before <id>` or nothing (the end of the list).
+**What to do:** On Home use `--at x,y` or nothing; in a sidebar, the menu bar or its
+popover use `--after <id>`, `--before <id>` or nothing (the end of the
+list).
 
 ## "the home area is a canvas: a widget there has a place, not a turn in a list"
 
@@ -2006,6 +2009,69 @@ out to get the widget's `default_size`.
 `sizes`. `custom` exists only on Home, after a free resize.
 
 **What to do:** Pick a size from the list in the message.
+
+## "the menubar holds 3 widgets"
+
+**What it means:** `menubar.yml` has more than three entries, or `widgets
+add` would make it four. The menu bar title shares a thin strip with the
+clock and every other app's items, so it holds three short widgets.
+`widgets add` adds "take one off first with `devmachine widgets remove
+<id> --board menubar`"; on a missing `menubar.yml` it counts the two
+default widgets.
+
+**What to do:** Take one off with `devmachine widgets remove <id> --board
+menubar`, or put the widget in the popover instead (`--board
+menubar-panel`) if it fits there.
+
+## "a widget in the menu bar has no size: it is one line of text, so it takes no --size" or "a tab fills the menu bar popover, so it takes no --size"
+
+**What it means:** `widgets add --size` sets how big a widget is on Home
+or in a sidebar. A menu bar widget is one line and a tab fills the
+popover, so neither has a size.
+
+**What to do:** Leave `--size` out.
+
+## "a widget in the menu bar has no size: it is one line of text"
+
+**What it means:** A menu bar widget is one line, so it has no `size`.
+It has no `frame` or `z` either (its place is its turn in the list), and
+it does not fold (`collapsed`, `minimized`). The message names the key
+it found.
+
+**What to do:** Delete that line. To change the order, move the entry in
+the file or run `devmachine widgets move <id> --before <other> --board
+menubar`; to hide a widget, remove it.
+
+## "the X view cannot be drawn in the menu bar"
+
+**What it means:** The menu bar title draws text and at most one symbol,
+so only the `text`, `number`, `status` and `app.brand` views work there.
+A widget written for engine 1.0 may list `slot` in its `fits` with
+another view, such as `app.clock`; it is still a good widget, it just
+does not fit the menu bar. A widget with no `view.kind` at all gets "a
+widget with no view cannot be drawn in the menu bar" instead.
+
+**What to do:** Put it on Home, a sidebar or the popover
+(`devmachine widgets help <name>` lists where it fits), or write a widget
+with one of those four views.
+
+## "a tab in the menu bar popover has no frame; its place is its position in the list"
+
+**What it means:** Each widget in `menubar-panel.yml` is a tab, in the
+order written. `frame` and `z` place a widget on Home and mean nothing
+here; a tab does not fold either, so `collapsed` and `minimized` are
+refused with "does not fold".
+
+**What to do:** Delete the line. Reorder with `devmachine widgets move
+<id> --before <other> --board menubar-panel`.
+
+## "warning: … size is ignored in the menu bar popover: a tab fills it"
+
+**What it means:** A tab always fills the popover, so its `size` does
+nothing. It is only a warning: the board is valid, and the CLI keeps the
+line when it rewrites the file.
+
+**What to do:** Delete the `size` line if you want the warning gone.
 
 ## "source.target names machine "…", which config.yml does not have"
 
