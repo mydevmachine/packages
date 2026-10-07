@@ -1,0 +1,165 @@
+packages/antigravity/defaults/main.yml
+  s_c1c985d7f57ab9::t_8151f82ee22278 2
+packages/caddy/README.md
+  s_c1c985d7f57ab9::t_385b7b3998166d 51-53,93-109
+packages/caddy/defaults/main.yml
+  s_c1c985d7f57ab9::t_bedda554bce55c 23-26
+packages/caddy/handlers/main.yml
+  s_c1c985d7f57ab9::t_336295b3971a8b 6-29
+packages/caddy/package.yml
+  s_c1c985d7f57ab9::t_0f3ce81f8ff4cb 4,52-53
+packages/caddy/tasks/Darwin-service.yml
+  s_c1c985d7f57ab9::t_89c027e081a8a1 1-67
+packages/caddy/tasks/Darwin.yml
+  s_c1c985d7f57ab9::t_f7c36c429a98f1 1-40
+packages/caddy/tasks/main.yml
+  s_c1c985d7f57ab9::t_13ab74f5c9f1c8 32-35,40,49,57,66,75,87-93
+packages/caddy/templates/Caddyfile.j2
+  s_c1c985d7f57ab9::t_001d27084c2e04 4,12-19
+packages/caddy/templates/devmachine.caddy.plist.j2
+  s_c1c985d7f57ab9::t_3344a065027d90 1-33
+packages/caddy/vars/Darwin.yml
+  s_c1c985d7f57ab9::t_fbc144f35873e8 1-22
+packages/claude-code/defaults/main.yml
+  s_c1c985d7f57ab9::t_334f02b25ed66d 2
+packages/claude-plugins/defaults/main.yml
+  s_c1c985d7f57ab9::t_80be415b88c96c 2
+packages/claude-remote-control/README.md
+  s_c1c985d7f57ab9::t_9c22b284a42921 4-5,34-46
+packages/claude-remote-control/defaults/main.yml
+  s_c1c985d7f57ab9::t_b5a4f58a988387 2,11-14
+packages/claude-remote-control/package.yml
+  s_c1c985d7f57ab9::t_8b245ecf16b848 4,8-9,33
+packages/claude-remote-control/tasks/Darwin.yml
+  s_c1c985d7f57ab9::t_87dc41c12ad380 1-62
+packages/claude-remote-control/tasks/Linux.yml
+  s_c1c985d7f57ab9::t_7a359637bd9978 1-66
+packages/claude-remote-control/tasks/main.yml
+  s_c1c985d7f57ab9::t_07550435931a3e 37-43
+packages/claude-remote-control/templates/claude-rc.plist.j2
+  s_c1c985d7f57ab9::t_515a4ff5e676d1 1-38
+packages/cline/defaults/main.yml
+  s_c1c985d7f57ab9::t_d4fe706a2e7efa 2
+packages/codex/defaults/main.yml
+  s_c1c985d7f57ab9::t_c0b38086dcfe51 2
+packages/dev/defaults/main.yml
+  s_c1c985d7f57ab9::t_2a62709cc6848f 2
+packages/devmachine-app/README.md
+  s_c1c985d7f57ab9::t_f99cedf17275fd 16-19,134-137,176-177,194-200
+packages/devmachine-app/defaults/main.yml
+  s_c1c985d7f57ab9::t_3336bf546bd063 3-7
+packages/devmachine-app/files/devmachine-caddy-logs
+  s_c1c985d7f57ab9::t_5244a6dcb6d06a 9-11,19-66,78
+packages/devmachine-app/files/devmachine-infer
+  s_c1c985d7f57ab9::t_ea495c26e89e3a 49,57-62
+packages/devmachine-app/files/devmachine-stats
+  s_c1c985d7f57ab9::t_bb834432d17baf 22,280-307,309-311,313,315,325,331,333-339,341-342,344,347,438,440-454,514,518,542,554,556
+packages/devmachine-app/tasks/main.yml
+  s_c1c985d7f57ab9::t_c13e12a301c0a8 19,22-24,30-40,42,47,49,54
+packages/devmachine-app/test/test_devmachine_caddy_logs.py
+  s_c1c985d7f57ab9::t_029d9a95e9be02 2,82-83,91-146,150-157
+packages/devmachine-app/test/test_devmachine_infer.py
+  s_c1c985d7f57ab9::t_4f3f0c036a825d 1054-1108
+packages/devmachine-app/test/test_devmachine_stats.py
+  s_c1c985d7f57ab9::t_13bf64ff8d81d7 388-471
+packages/devmachine-skills/skills/use-devmachine/references/troubleshooting.md
+  s_c1c985d7f57ab9::t_8b4db049013086 1938
+packages/docker/README.md
+  s_c1c985d7f57ab9::t_d2fd4e255bc78f 4-6,14-52,69,73-74
+packages/docker/defaults/main.yml
+  s_c1c985d7f57ab9::t_c9ec2f484eb983 1-5
+packages/docker/package.yml
+  s_c1c985d7f57ab9::t_f77afafe800bf4 4,8-9,15-27
+packages/docker/tasks/Darwin.yml
+  s_c1c985d7f57ab9::t_741e56ffa374f7 1-116
+packages/docker/tasks/main.yml
+  s_c1c985d7f57ab9::t_d012ffe4b1cf8e 28,38-44
+packages/docker/templates/colima.plist.j2
+  s_c1c985d7f57ab9::t_eb758d7c1856ef 1-29
+packages/docker/vars/Darwin.yml
+  s_c1c985d7f57ab9::t_bad9dd042b4b69 1-21
+packages/fail2ban/README.md
+  s_c1c985d7f57ab9::t_175d6d9cc76a75 35-46
+packages/firewall/README.md
+  s_c1c985d7f57ab9::t_73f65b8f34b777 4-5,41-57
+packages/firewall/package.yml
+  s_c1c985d7f57ab9::t_c63beeafee49bc 4,8-9
+packages/firewall/tasks/Darwin.yml
+  s_c1c985d7f57ab9::t_e39f3add16b26e 1-123
+packages/firewall/tasks/main.yml
+  s_c1c985d7f57ab9::t_fda51f42763311 2-18,20-22,24-36,38-46,48-51,53-58,60-73,75-78,80-86,88-108
+packages/firewall/vars/Darwin.yml
+  s_c1c985d7f57ab9::t_99f937ab8fd7eb 1-11
+packages/git-key/defaults/main.yml
+  s_c1c985d7f57ab9::t_70a61238866962 2
+packages/glab/defaults/main.yml
+  s_c1c985d7f57ab9::t_c8be708c55a0b7 2
+packages/hostinger/README.md
+  s_c1c985d7f57ab9::t_5c7a25c16816ab 48-49
+packages/hostinger/package.yml
+  s_c1c985d7f57ab9::t_73c96f110953e1 4
+packages/hostinger/tasks/main.yml
+  s_c1c985d7f57ab9::t_da75691b0733b7 2-4,6,9,12,16,20,24
+packages/kimi-code/defaults/main.yml
+  s_c1c985d7f57ab9::t_62a6bcb772aa55 2
+packages/mise/defaults/main.yml
+  s_c1c985d7f57ab9::t_e7bb8d7996c288 2
+packages/opencode/defaults/main.yml
+  s_c1c985d7f57ab9::t_780359ad6441ba 2
+packages/pi/defaults/main.yml
+  s_c1c985d7f57ab9::t_0ef93ced134ad2 2
+packages/sentry/defaults/main.yml
+  s_c1c985d7f57ab9::t_602946e1c19f1c 2
+packages/ssh_hardening/README.md
+  s_c1c985d7f57ab9::t_e2786d11331734 15,35-50
+packages/ssh_hardening/handlers/main.yml
+  s_c1c985d7f57ab9::t_bd8f50cfb796f2 6-7
+packages/ssh_hardening/package.yml
+  s_c1c985d7f57ab9::t_3ed2dd466358b4 4,17-19
+packages/ssh_hardening/tasks/Darwin.yml
+  s_c1c985d7f57ab9::t_788fb9fa26d1cd 1-53
+packages/ssh_hardening/tasks/main.yml
+  s_c1c985d7f57ab9::t_78bdad5a9beaf4 20-27,29-74,76-86,88-102
+packages/tailscale/README.md
+  s_c1c985d7f57ab9::t_4ded4b12cba6c6 25-36
+packages/tailscale/package.yml
+  s_c1c985d7f57ab9::t_9c7a9333b5136d 4
+packages/tailscale/tasks/Darwin.yml
+  s_c1c985d7f57ab9::t_cf08381bfcdbac 1-91
+packages/tailscale/tasks/main.yml
+  s_c1c985d7f57ab9::t_420ceceb1bb3a1 28,38-44,58-69
+packages/tailscale/templates/tailscaled.plist.j2
+  s_c1c985d7f57ab9::t_c6aaacec758292 1-17
+packages/tailscale/vars/Darwin.yml
+  s_c1c985d7f57ab9::t_6e485f76cab0d0 1-5
+packages/workspace/README.md
+  s_c1c985d7f57ab9::t_2b6eaea0b9b2b1 17,23,44-47
+packages/workspace/defaults/main.yml
+  s_c1c985d7f57ab9::t_1e6c6ed90fb5af 4,26-29
+packages/workspace/package.yml
+  s_c1c985d7f57ab9::t_eadd5cc196a5de 10,50-68
+packages/workspace/tasks/main.yml
+  s_c1c985d7f57ab9::t_11bcb76cbdf47c 101-120,124,126,137-145,314-387
+packages/workspace/vars/main.yml
+  s_c1c985d7f57ab9::t_2dfe59c9feda35 5-10
+packages/zsh/defaults/main.yml
+  s_c1c985d7f57ab9::t_4f3fbcbb6cb6d6 2
+packages/zsh/tasks/main.yml
+  s_c1c985d7f57ab9::t_049e7f47d62af8 126-127
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "52cba45409a2f95542e36e8a3744006484297e3e",
+  "prompts": {},
+  "sessions": {
+    "s_c1c985d7f57ab9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b5256304-4a81-480d-a568-f8cf11d8ddcc",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Djalma Araujo <djalma@nossomos.cc>"
+    }
+  }
+}
