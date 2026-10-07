@@ -1,0 +1,15 @@
+format: 1
+name: machines
+summary: Each machine, online or not, with its CPU, memory, disk and readiness.
+requires: {engine: ">= 1.0"}
+fits: [canvas, stack]
+context: {}
+source:
+  kind: provider
+  name: app/machines
+  with: {}
+  every: 90s
+view: {kind: app.machines}
+sizes: [medium, large, wide, tall]
+default_size: large
+places: [home]

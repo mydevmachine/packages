@@ -1,0 +1,15 @@
+format: 1
+name: summary
+summary: How many sessions, coding-harness sessions and workspaces are open.
+requires: {engine: ">= 1.0"}
+fits: [canvas, stack, slot]
+context: {}
+source:
+  kind: provider
+  name: app/summary
+  with: {}
+  every: 5s
+view: {kind: app.summary}
+sizes: [medium, wide]
+default_size: wide
+places: [home]

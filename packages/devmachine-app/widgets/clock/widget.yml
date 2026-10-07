@@ -1,0 +1,15 @@
+format: 1
+name: clock
+summary: The time, the date and the computer the app runs on.
+requires: {engine: ">= 1.0"}
+fits: [canvas, stack, slot]
+context: {}
+source:
+  kind: provider
+  name: app/clock
+  with: {}
+  every: 5s
+view: {kind: app.clock}
+sizes: [medium, wide]
+default_size: medium
+places: [home]

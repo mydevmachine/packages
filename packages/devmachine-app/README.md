@@ -17,6 +17,20 @@ What the Devmachine macOS app asks a machine for, reached through
 
 None.
 
+## Widgets
+
+The macOS app draws its Home from these. They read only what the app
+already knows, so they work without adding or syncing this package.
+
+| Widget | Default size | What it shows |
+| --- | --- | --- |
+| `devmachine-app/clock` | medium | The time, the date and the computer the app runs on. |
+| `devmachine-app/summary` | wide | How many sessions, coding-harness sessions and workspaces are open. |
+| `devmachine-app/machines` | large | Each machine, online or not, with its CPU, memory, disk and readiness. |
+
+`devmachine widgets list` shows them; `devmachine widgets add devmachine-app/clock`
+puts one on Home.
+
 ## Add it
 
 `devmachine setup` gives a new machine [`essentials`](../essentials/README.md),
