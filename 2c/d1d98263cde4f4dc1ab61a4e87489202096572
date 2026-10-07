@@ -1,0 +1,29 @@
+packages/codex/README.md
+  s_c1c985d7f57ab9::t_3a2d39c7aac7d8 40-48
+packages/claude-code/widgets/usage/widget.yml
+  s_c1c985d7f57ab9::t_ab18df87367707 1-15
+packages/codex/widgets/usage/widget.yml
+  s_c1c985d7f57ab9::t_97f7e4f56d170c 1-15
+packages/claude-code/README.md
+  s_c1c985d7f57ab9::t_6a5b66b4315ba1 35-43
+packages/claude-code/package.yml
+  s_c1c985d7f57ab9::t_2e1f5198f49048 13,64-65
+packages/codex/package.yml
+  s_c1c985d7f57ab9::t_0af5b88d532bb3 12,30-31
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2cd1d98263cde4f4dc1ab61a4e87489202096572",
+  "prompts": {},
+  "sessions": {
+    "s_c1c985d7f57ab9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b5256304-4a81-480d-a568-f8cf11d8ddcc",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Djalma Araujo <djalma@nossomos.cc>"
+    }
+  }
+}
