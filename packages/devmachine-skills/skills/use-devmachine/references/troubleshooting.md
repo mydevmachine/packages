@@ -2195,6 +2195,22 @@ computer, for instance — to every machine the package is added to.
 **What to do:** Do not install it. Tell its author: a package holds its
 own files.
 
+## "the package at … has a character that moves or hides text in a terminal in …"
+
+**What it means:** A file name in the repository, or the package's
+summary, a command, a provider, a credential or a package it needs, holds
+a control character (ESC, a carriage return, DEL and the like) or a
+Unicode bidirectional mark or override, or a file name is not UTF-8.
+Printed as it is, such a name can move
+the cursor and erase the lines above it — the list of tasks, or the
+warning that they run as root — so the prompt would show less than the
+package brings. The message prints the name with the character written
+as an escape, such as `\x1b` or `\u202e`. Nothing was written.
+
+**What to do:** Do not install it. Tell its author which name it is: a
+package names its files and what it brings in plain text. A
+repository that does this on purpose is not one to trust with root.
+
 ## "fetching …: …"
 
 **What it means:** `git` could not fetch that address or ref. Its own
@@ -2306,6 +2322,22 @@ the version you had, move `.install-…/.previous` back to
 `<config>/packages/X`. To take the new one, move `.install-…/X` there
 instead; it was already checked and records its new commit. Then delete
 the `.install-…` folder.
+
+## "X is installed from …, and packages release vN has an official X"
+
+**What it means:** `sync` found a package installed from a git address
+whose name the pinned release now has too: a `packages pin` brought a
+release that added it after you installed yours. A package in your own
+folder always wins over the release's, so your copy would replace the
+official one on the machine without a word. `sync` stops before it
+connects instead of picking one, since the two share a name, not an
+author.
+
+**What to do:** To use the official one, take the third-party one off
+with `devmachine packages rm X --machine <name>` (or `--workspace
+<name>`), delete it with `devmachine packages remove X`, then add the
+official one back and sync. To keep the third-party one for now, pin the
+release you had before with `devmachine packages pin <release>`.
 
 ## "… now holds a package named Y, not X"
 

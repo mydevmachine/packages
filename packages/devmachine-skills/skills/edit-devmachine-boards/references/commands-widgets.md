@@ -96,7 +96,9 @@ or package provider — waits for your approval in the app, like a widget
 written in a board (see [where a public widget comes
 from](https://mydevmachine.sh/how-it-works/where-a-public-widget-comes-from/)). A third-party
 widget also has `package_source`: `{"url", "ref", "commit"}`, where its
-package was fetched from. A widget that reads a package provider has
+package was fetched from. When its `.devmachine-source.yml` cannot be
+read, the widget is still third-party but has no `package_source`, and
+`problems` says why. A widget that reads a package provider has
 `provider`: that provider's `returns` and `min_every`. `providers` lists
 every package provider a widget may read, by `<package>/<command>`, with
 its package's `scope` and `trust` — a widget written in a board names one
