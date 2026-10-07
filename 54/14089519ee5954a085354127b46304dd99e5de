@@ -1,0 +1,25 @@
+packages/workspace/README.md
+  s_6f8b16387eb036::t_bddb70035a0af5 23,44-47
+packages/workspace/defaults/main.yml
+  s_6f8b16387eb036::t_58409f0147a0c7 26-29
+packages/workspace/package.yml
+  s_6f8b16387eb036::t_44ae267683a5b5 10,50-68
+packages/workspace/tasks/main.yml
+  s_6f8b16387eb036::t_520c5041207d9c 314-387
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5414089519ee5954a085354127b46304dd99e5de",
+  "prompts": {},
+  "sessions": {
+    "s_6f8b16387eb036": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a8777da7-b0cf-49e8-ad24-ab1cfdf8da4c",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Djalma Araujo <djalma@nossomos.cc>"
+    }
+  }
+}
