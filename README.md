@@ -130,7 +130,7 @@ packages/<name>/
   package.yml          what this is, what it needs, what it offers
   tasks/main.yml       required
   skills/*/SKILL.md    optional Agent Skills contributed by this package
-  widgets/*/widget.yml optional widgets for the macOS app's Home and sidebars
+  widgets/*/widget.yml optional widgets for the macOS app's Home, sidebars and menu bar
   defaults/, vars/, files/, templates/, handlers/
 ```
 
@@ -143,17 +143,19 @@ never seen. The full format is in the
 
 A package can carry widgets for the
 [Devmachine macOS app](https://mydevmachine.sh/app/): cards on its Home,
-and sections of its sidebar and of a session's Context tab, each one
-`widget.yml` that names what to read and how to show it. There is no code
-in a widget. `package.yml` points at the folder:
+sections of its sidebar and of a session's Context tab, and the title and
+tabs of its menu bar item, each one `widget.yml` that names what to read
+and how to show it. There is no code in a widget. `package.yml` points
+at the folder:
 
 ```yaml
 widgets: widgets
 ```
 
 `devmachine-app` ships the clock, summary and machines widgets for Home,
-the workspace list for the sidebar and the eight sections of the Context
-tab; `claude-code` and `codex` each ship `usage`. A widget that reads only
+the workspace list for the sidebar, the eight sections of the Context
+tab, and the mark, pull request count and two tabs of the menu bar;
+`claude-code` and `codex` each ship `usage`. A widget that reads only
 what the app already knows works without adding its package. The format
 is in the [widget format reference](https://mydevmachine.sh/reference/widget-format/).
 

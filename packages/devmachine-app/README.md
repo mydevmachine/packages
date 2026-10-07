@@ -19,9 +19,9 @@ None.
 
 ## Widgets
 
-The macOS app draws its Home, its sidebar and the Context tab of a session
-from these. Most read only what the app already knows, so they work
-without adding or syncing this package.
+The macOS app draws its Home, its sidebar, the Context tab of a session
+and its menu bar item from these. Most read only what the app already
+knows, so they work without adding or syncing this package.
 
 Home:
 
@@ -64,11 +64,30 @@ selected session):
 | `devmachine-app/pull-requests` | The pull requests of the selected session, with their checks and review state. |
 | `devmachine-app/links` | The links the selected session mentioned. |
 
+Menu bar title, left to right (at most three widgets, each one line):
+
+| Widget | What it shows |
+| --- | --- |
+| `devmachine-app/brand` | The Devmachine mark, the first thing in the menu bar. |
+| `devmachine-app/open-pull-requests` | How many of your pull requests are open, hidden when there are none. |
+
+Menu bar popover, one tab each:
+
+| Widget | What it shows |
+| --- | --- |
+| `devmachine-app/pull-requests-panel` | Your open pull requests by owner, with their checks and review state. |
+| `devmachine-app/usage-panel` | Every coding harness's usage windows side by side, how much is used and when each resets. |
+
 The sidebar widgets grow with their content (`size: auto`). Remove one in
 the app or with `devmachine widgets remove <id> --board context-sidebar`,
 and bring it back from the gallery or with `devmachine widgets add
 devmachine-app/<name> --board context-sidebar`. `devmachine widgets list
 --board sidebar` shows what fits each area.
+
+The menu bar works the same way with `--board menubar` and `--board
+menubar-panel`, for example `devmachine widgets move usage-panel
+--before pull-requests-panel --board menubar-panel` to open the popover
+on Usage.
 
 ## Add it
 
