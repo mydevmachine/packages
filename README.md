@@ -74,7 +74,7 @@ What works on each system is on the
 | [`antigravity`](packages/antigravity/README.md) | workspace | Google's Antigravity CLI (`agy`) for one account. |
 | [`kimi-code`](packages/kimi-code/README.md) | workspace | Moonshot AI's Kimi Code CLI (`kimi`) for one account. |
 | [`cline`](packages/cline/README.md) | workspace | The Cline CLI for one account. |
-| [`devmachine-skills`](packages/devmachine-skills/README.md) | workspace | Teaches supported agents to operate Devmachine and create packages. |
+| [`devmachine-skills`](packages/devmachine-skills/README.md) | workspace | Teaches supported agents to operate Devmachine, create packages and edit the app's boards. |
 
 ### Developer tools
 

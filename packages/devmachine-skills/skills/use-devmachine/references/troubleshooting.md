@@ -537,6 +537,39 @@ workspace account to the list, or, on the Mac, choose "All users" in
 System Settings > General > Sharing > Remote Login. See [what a machine
 needs](what-a-machine-needs.md#remote-login-set-to-only-these-users).
 
+## `devmachine run` exits 255
+
+**What it means:** The command never ran: `run` could not find the
+machine or workspace, could not connect, found a changed host key, or
+the package is not installed there. The line after `error:` says which.
+`ssh` uses 255 for the same thing, so a script can tell it apart from
+the command's own failure. A command that exits 255 by itself, or that
+was stopped with Ctrl-C or SIGTERM, also ends with 255.
+
+**What to do:** Read the `error:` line. For a connection, `devmachine
+doctor --machine <name>` checks the way in.
+
+## "with --argv, the program and its arguments follow `--`"
+
+**What it means:** With `--argv`, everything after `--` is the program
+and its arguments. Without `--`, the arguments would be read as flags of
+`devmachine` itself.
+
+**What to do:** `devmachine run --argv -- df -h /`.
+
+## "--script "…" names a file inside the package" or "… has no file …"
+
+**What it means:** `run --package <name> --script <path>` runs a file of
+that package, relative to its `package.yml`. A path that leaves the
+package (`../`, or starting with `/`) is refused before anything
+connects, and `run` exits 1. "has no file" means
+your copy of the package does not have that file, so the machine's copy,
+which `sync` made from yours, does not either.
+
+**What to do:** Use the path as it appears inside the package folder,
+for example `widgets/disk/check.sh`. If you just added the file, run
+`devmachine sync` so the machine gets it.
+
 ## `doctor` says an alias has "a fixed address, expected one resolved when ssh connects"
 
 **What it means:** The alias was written with the address itself, by an
@@ -1608,3 +1641,687 @@ wrong: `devmachine update` moves the pin, and `devmachine update
 --no-machines` does it without touching a machine. The line shows at most
 once a day; `DEVMACHINE_NO_UPDATE_HINT=1` turns it off. See
 [Updating](https://mydevmachine.sh/how-it-works/updating/#why-the-cli-tells-you-a-newer-packages-release-is-out).
+
+## "source.run "…" has spaces"
+
+**What it means:** Without `shell: true`, `run` names one program, and
+`args` holds its arguments, each passed as it is. `df -h /` is read as a
+program called `df -h /`, which does not exist. Nothing ran.
+
+**What to do:** Write `run: df` and `args: [-h, /]`. If you need a pipe
+or `&&`, set `shell: true`; then `run` is a shell line.
+
+## "source.run is a shell line, so it cannot hold {{…}}"
+
+**What it means:** A value written into a shell line becomes part of the
+code the shell runs, so a value such as `a; rm -rf ~` or `$(id)` would
+run as a command. No way of quoting it is safe in every case, so a shell
+line holds no templates at all.
+
+**What to do:** Read the value from the environment variable the app
+sets, in double quotes: `{{inputs.max_lines}}` becomes
+`"$DM_INPUT_MAX_LINES"`, `{{context.workspace}}` becomes
+`"$DM_CONTEXT_WORKSPACE"` (the workspace's name). The name is upper case,
+and any character other than A–Z and 0–9 turns into `_`. Do not pass that
+variable on to `eval`, `sh -c`, `ssh <host> …`, `awk` or `xargs`: they run
+their argument as code. Bash arithmetic does too — `$(( ))`, `(( ))`,
+`let`, `[[ … -gt … ]]`, `declare -i` run a value such as `a[$(id)]` — and
+`/bin/sh` on a Mac is bash. Check a number with `case` or `[ … ]` first:
+`case $DM_INPUT_MAX_LINES in ''|*[!0-9]*) exit 1;; esac`.
+
+## "a shell line takes no source.args"
+
+**What it means:** With `shell: true`, `run` is the whole line, so there
+is no program for `args` to go to.
+
+**What to do:** Write the words in `run`, and read values from
+`$DM_INPUT_<NAME>` or `$DM_CONTEXT_<KEY>`. Or drop `shell: true` and keep
+`run` as the program and `args` as its arguments.
+
+## "source.run cannot hold {{…}}: a value must not pick the program"
+
+**What it means:** Without `shell: true`, `run` is the program that
+starts. If a value could fill it in, whoever sets the value would choose
+what runs.
+
+**What to do:** Name the program in `run` and put the value in `args`:
+`run: du`, `args: [-sh, --, "{{inputs.path}}"]`. The `--` stops a value
+that starts with `-` from being read as an option.
+
+## "source.run "…" starts with -" or "has ="
+
+**What it means:** Without `shell: true`, `run` names the program to
+start. A first word that starts with `-` reads as an option, and a word
+with `=` as a variable to set, so the program you meant would not run.
+
+**What to do:** Put the program's name in `run` and options in `args`.
+To set a variable for the program, set `shell: true` and write
+`run: LC_ALL=C df -h /`.
+
+## "source.script "…" is not executable" or "only its owner can run it"
+
+**What it means:** The file a package widget runs is copied to the
+machine with the same mode it has in the package. Without the execute
+bit nobody can run it; with `chmod 700` only the machine's admin can,
+and a workspace runs it as its own account.
+
+**What to do:** `chmod 755 <the file>`, then run `devmachine sync` so the
+machine gets the new copy.
+
+## "a stream runs while the widget is on screen: remove source.every"
+
+**What it means:** `mode: stream` keeps one command running and shows its
+lines as they come, so "how often" and "how long" do not apply. A stream
+also reads line by line, so `number` and `json` do not apply either.
+
+**What to do:** Remove `every` and `timeout`, and use `parse: text`,
+`lines` or `ansi`. For a value checked every so often, leave out `mode`.
+
+## "view.kind "…" takes …, and this … source gives …"
+
+**What it means:** Each view draws some kinds of output. A `gauge` needs
+a number; a command parsed as `text` gives text. `devmachine widgets
+schema` lists what every view takes.
+
+**What to do:** Set `source.parse` to what the view takes, or pick a view
+that takes what the source gives.
+
+## "view.value picks what to show out of the JSON"
+
+**What it means:** The source parses its output as JSON, which can hold
+many values, and the view shows one. It needs to be told which.
+
+**What to do:** Add `value: "{{json.<field>}}"` to the view, for example
+`value: "{{json.disk.used}}"` for `{"disk": {"used": 41}}`.
+
+## "view.ok … is not a rule"
+
+**What it means:** A status rule is a comparison and a value: `< 300`,
+`>= 99.5`, `== "up"`. Text can only be compared with `==` or `!=`.
+
+**What to do:** Rewrite the rule in one of those shapes. Quote the whole
+rule in YAML when it holds a quote: `ok: '== "up"'`.
+
+## "view.ok … compares by size, and this … source gives text"
+
+**What it means:** The status view's source gives text (`parse: text`, or
+a `command` source with no `parse`), and a rule uses `<`, `<=`, `>` or
+`>=`. Text has no size to compare, so the rule could never hold.
+
+**What to do:** Compare with `==` or `!=`, like `ok: '== "up"'`. If the
+output is a number, say so: `parse: number` on a `command` source, or
+leave `parse` out on a `url` source to compare its status code.
+
+## "requires engine >= 1.4, and this CLI implements engine 1.3"
+
+**What it means:** The widget says it needs a newer engine than this CLI
+has. Nothing else in it was checked.
+
+**What to do:** `devmachine update`.
+
+## "source.target: app/… is the app's own data, so it takes no target"
+
+**What it means:** The widget reads one of the app's own providers, such
+as `app/clock`. The app has that data itself, so there is nothing to run on
+a machine and no time limit to set.
+
+**What to do:** Remove `source.target` and `source.timeout`. To read data
+from a machine, use a package provider (`<package>/<command>`) or a
+`command` source.
+
+## "a package with widgets needs requires.cli above 0.8.1"
+
+**What it means:** The package has `widgets:`, but its `requires.cli` lets
+a CLI older than 0.9.0 use it. That CLI ignores `widgets:` without a word,
+so the widgets would never be checked or listed.
+
+**What to do:** Add `requires: {cli: ">= 0.9.0"}` to `package.yml`.
+
+## `widgets list` fails with "finding the latest packages release"
+
+**What it means:** Nothing is pinned in `config.yml`, or there is no
+`config.yml` yet, so the CLI asked GitHub for the latest packages release
+to read widgets from, and could not reach it. The app shows this as "could
+not fetch packages".
+
+**What to do:** Check the network and run it again. Once a release is
+pinned — `setup` pins one, and so does `devmachine packages pin` — and in
+the cache, `widgets list` works offline.
+
+## `widgets validate` says "… is neither a widget, a package nor a board"
+
+**What it means:** The path exists, but `validate` cannot tell what to
+check. It knows a path by what it holds: a file named `widget.yml`, a folder
+with a `widget.yml`, a folder with a `package.yml`, or any other file, which
+it reads as a board. This is a folder with none of those in it, such as a
+package's `widgets/` folder or `<config>/boards/` itself. Nothing was
+checked.
+
+**What to do:** Pass the package folder (the one with `package.yml`), one
+widget folder, or one board file. To check every board and every widget of
+your own packages, run `devmachine widgets validate` with no path.
+
+## "X does not fit the home area" (or the sidebar, or the context sidebar)
+
+**What it means:** The widget's `fits` does not include the area's layout
+(`canvas` for Home, `stack` for both sidebars), or it requires a context
+key the area does not give. `widgets add` says it before writing;
+`widgets validate` says it for a board you wrote by hand.
+`devmachine widgets help <name>` lists the areas it fits.
+
+**What to do:** Pick a widget that fits the area, or, for your own widget,
+add the layout to `fits`. A widget that needs `session` fits only the
+context sidebar.
+
+## "X needs context.session, which the sidebar area does not give"
+
+**What it means:** The widget reads the selected session, and only the
+context sidebar has one. The same goes for a widget written in a board
+whose provider needs it ("which this board's area does not give").
+
+**What to do:** Put it on the context sidebar instead.
+
+## "X goes on a board once"
+
+**What it means:** The widget says `single: true`: the app's workspace
+list is one, since two copies would fight over the same selection and
+order. On a missing `sidebar.yml` the CLI reads the default board, which
+already holds the workspace list.
+
+**What to do:** Keep one. To move it, use `devmachine widgets move`; to
+bring it back after removing it, `devmachine widgets add
+devmachine-app/workspaces --board sidebar`.
+
+## "--at places a widget on Home's canvas" or "--after and --before order a sidebar's list"
+
+**What it means:** Home is a canvas: a widget there has a position, given
+with `--at`. The sidebars are lists: a widget there has a turn, given with
+`--after` or `--before`. Each flag only means something in its own kind of
+area.
+
+**What to do:** On Home use `--at x,y` or nothing; in a sidebar use
+`--after <id>`, `--before <id>` or nothing (the end of the list).
+
+## "the home area is a canvas: a widget there has a place, not a turn in a list"
+
+**What it means:** `widgets move` orders a sidebar. Home has no order:
+each widget has its own position, and they may overlap.
+
+**What to do:** Drag it in the app, or change its `frame` in
+`home.yml`. To move a widget in a sidebar, pass `--board sidebar` or
+`--board context-sidebar`.
+
+## "X cannot move next to itself"
+
+**What it means:** `--after` or `--before` named the widget being moved.
+
+**What to do:** Name the widget it should sit next to.
+
+## "--after needs an id" or "--before needs an id"
+
+**What it means:** The flag was given with an empty value, often from an
+unset shell variable (`--after "$ID"`). The CLI does not read that as "not
+given": it would put the widget at the end without a word.
+
+**What to do:** Give the id, or leave the flag out.
+
+## "no widget with id "X" on the sidebar board"
+
+**What it means:** `--after`, `--before`, `move` or `remove` named an id
+the board does not have. On a missing sidebar board the ids are those of
+the default board (`workspaces`; `shortcuts`, `todo` and the others).
+
+**What to do:** Check the ids in the board file, or with `devmachine
+widgets validate`, and run the command again.
+
+## "port: the X view is drawn only in stack, and this board's area is laid out as canvas"
+
+**What it means:** A widget written in a board uses one of the app's
+sidebar views, such as `app.publish-port`, and those are drawn only in a
+list. Home is a canvas.
+
+**What to do:** Move the widget to a sidebar board, or pick a view that
+is drawn anywhere, such as `list` or `text`.
+
+## "source.name app/session-context needs context.session"
+
+**What it means:** The provider reads the session that is selected in the
+app, so it only works in the context sidebar, which hands every widget
+there that session. A widget only sees the context keys it declares.
+
+**What to do:** Add `context: {session: required}` to the `widget.yml`.
+The widget then fits only the context sidebar, which is right: there is
+no session to read anywhere else.
+
+## "fits canvas, and the X view is drawn only in stack"
+
+**What it means:** The view is one of the app's sidebar views
+(`app.workspaces`, `app.todo` and the others). They are lists, drawn as
+tall as their content, so they have no shape on Home's canvas.
+
+**What to do:** Write `fits: [stack]`.
+
+## "places "X": the widget does not fit that area"
+
+**What it means:** `places` asks the app to add the widget to an area
+once. The widget cannot sit there: its `fits` lacks the area's layout, or
+it requires a context key the area does not give (`session`, for example,
+only the context sidebar gives). The app would skip it without a word.
+
+**What to do:** Remove the area from `places`, or change `fits` or
+`context` so the widget fits it. `devmachine widgets validate` lists the
+areas it fits.
+
+## "X is not available yet: add the package"
+
+**What it means:** The widget reads something its package installs, and
+that package is not on any machine or workspace in `config.yml` — or it
+is, and no sync has applied it yet (`packages.lock` does not list it).
+
+**What to do:** Run the command the message names: `devmachine packages
+add <package> --machine <name>`, then `devmachine sync`.
+
+## "the board has a problem, so it was not changed"
+
+**What it means:** `widgets add` or `widgets remove` read the board and
+found a mistake, listed under the message with its line. The CLI never
+rewrites a broken board: it would replace your text with its guess and
+could drop widgets.
+
+**What to do:** Fix the lines it names, check with `devmachine widgets
+validate`, and run the command again. The app keeps the last good layout
+meanwhile.
+
+## "the board changed on disk since it was read; run the command again"
+
+**What it means:** Something else — usually the app, after you moved a
+widget — wrote the board between the moment the CLI read it and the moment
+it was about to write. Writing anyway would have lost that change.
+
+**What to do:** Run the same command again.
+
+## "there is no home board at …"
+
+**What it means:** `widgets remove` found no Home board file, so there
+is nothing to take off. Nobody has placed a widget there from the CLI, or
+the app has not saved a layout yet. `widgets add` creates the file;
+`remove` never does on Home. A missing sidebar board is different: it is
+read as the default board, so `remove` and `move` work on it.
+
+**What to do:** Check `--board` and the config directory the path names.
+To see what is on a board, open `<config>/boards/<board>.yml`.
+
+## "a widget written in the board needs a title"
+
+**What it means:** A board entry with a `source` or a `view` and no
+`type` is a widget written in place. It needs a `title` (what the card
+shows), a `source` and a `view`. An entry with a `type` and a `source`
+mixes the two kinds and is refused too.
+
+**What to do:** Add the missing key, or, for a widget from the gallery,
+keep only `type` and `with`.
+
+## "a widget written in a board names an absolute path on the target"
+
+**What it means:** A widget in a board belongs to no package, so a
+relative `script` has nothing to be relative to.
+
+**What to do:** Write the full path on the target, for example
+`/home/alice/bin/check-disk`, or use `run` with `args`.
+
+## "a widget in a sidebar has no frame; its place is its position in the list"
+
+**What it means:** A sidebar board is a list: the first widget is drawn at
+the top, the next under it. `frame` and `z` place a widget on Home's
+canvas and mean nothing here. The same message says `z` for a `z` key.
+
+**What to do:** Delete the `frame` (or `z`) line. To change the order,
+move the entry in the file, drag its header in the app, or run
+`devmachine widgets move <id> --before <other> --board <area>`.
+
+## "a widget in a sidebar folds with collapsed: true, not minimized"
+
+**What it means:** Home folds a widget into a pill (`minimized`); a
+sidebar folds it to its header (`collapsed`). Each area takes only its own
+key. The opposite message, "a widget on a canvas folds with minimized:
+true, not collapsed", is the same mistake on Home.
+
+**What to do:** Rename the key.
+
+The same message comes for `minimized: false`: a stack refuses the
+`minimized` key whatever its value. Delete the line.
+
+## "size auto follows the content, and the X view does not grow"
+
+**What it means:** `auto` makes a widget as tall as what it shows. Only
+the app's sidebar views (`app.workspaces`, `app.todo` and the others) work
+that way; every other view has a fixed shape and needs a preset.
+
+**What to do:** Use one of the sizes the message lists, or leave `size`
+out to get the widget's `default_size`.
+
+## "size "X" in a sidebar is auto or one of …"
+
+**What it means:** A sidebar widget takes `auto` or a preset it lists in
+`sizes`. `custom` exists only on Home, after a free resize.
+
+**What to do:** Pick a size from the list in the message.
+
+## "source.target names machine "…", which config.yml does not have"
+
+**What it means:** A widget written in a board runs on a machine or a
+workspace your configuration does not have — removed, renamed, or a
+typo. The app shows the widget's error instead of data. For a package
+widget this is only a warning: its author's names are not yours.
+
+**What to do:** Point `target` at a name `devmachine machines list` or
+`devmachine workspaces list` shows, or remove the widget. `widgets add`
+and `remove` still work on the board in the meantime.
+
+## "provider X is not one of commands"
+
+**What it means:** `package.yml` lists X under `providers`, but not in
+`commands`. `devmachine run --package` refuses a command that is not in
+`commands`, so a widget reading X would never get an answer.
+
+**What to do:** Add X to `commands`, or remove it from `providers`.
+
+## "provider "X": use lower case letters, digits, dashes and underscores, starting with a letter"
+
+**What it means:** A key under `providers` in `package.yml` is not a name
+a widget can use. A widget names a provider as `<package>/<command>`, and
+the app runs it as `devmachine run --package <package> <command>`, so the
+key must be a plain command word: no capital, space, dot, slash or leading
+dash.
+
+**What to do:** Rename the provider and the matching entry in `commands`,
+for example `disk-usage` instead of `Disk Usage`.
+
+## "`providers` are commands of an `entrypoint`, and this package declares none"
+
+**What it means:** `package.yml` has a `providers` key but no
+`entrypoint`. A provider is one command of the package's entrypoint: the
+app runs the entrypoint with that command and reads the JSON it prints.
+Without one there is nothing to run.
+
+**What to do:** Add `entrypoint: bin/<name>` pointing at an executable in
+the package, with each provider listed in `commands`. `devmachine packages
+new` writes one. If the package has no command to offer, remove
+`providers`.
+
+## `package.yml` says "did not find expected ',' or '}'"
+
+**What it means:** A line written between `{` and `}` holds a value YAML
+cannot read there. The usual one is an optional type in `returns`:
+`{note: string?}`. Inside braces, `?` needs quotes.
+
+**What to do:** Write `{note: "string?"}`, or put each field on its own
+line under `returns:`, where no quotes are needed.
+
+## "provider X min_every … is below the 5s floor"
+
+**What it means:** A widget may run a package's command at most every 5
+seconds; a provider cannot promise more, because each run is a connection to
+a machine.
+
+**What to do:** Write `min_every: 5s` or more. Pick what the command can
+really afford: one that reads every container on a machine wants `30s`.
+
+## "a package widget reads only its own package's providers"
+
+**What it means:** A widget in package A names `B/<command>`. The app
+shows a widget only when its package is on the machine, so a widget that
+read another package's command could look ready while that package is
+missing.
+
+**What to do:** Ship the widget in package B, or write it straight into a
+board: a widget written in a board may read any package's provider.
+
+## "X has no provider C" or "no package X"
+
+**What it means:** The widget names `X/C`, and package X does not list C
+under `providers` in its `package.yml` — or there is no package X in the
+pinned release or your own packages. A board widget is checked by
+`devmachine widgets validate`; `widgets add` and `remove` keep working, so
+removing a package never locks a board.
+
+**What to do:** Check the name against `devmachine widgets list --format
+json` (its `providers` lists every one), or add C to the package's
+`providers`.
+
+## "a package provider runs on a machine or workspace"
+
+**What it means:** A package's command lives on the machine its package
+was synced to. There is nothing to run on your own computer.
+
+**What to do:** Add `target: {machine: <name>}` or `target: {workspace:
+<name>}`. To run something on your computer, use a `command` source.
+
+## "source.with.X: … gets it as --X"
+
+**What it means:** Each key of `with` becomes a flag, `--X`, before its
+value. A key with capitals, spaces or a leading dash would turn into a
+different flag than the one you wrote.
+
+**What to do:** Write the key in lower case letters, digits, dashes and
+underscores, starting with a letter. The value can be any text.
+
+## "a widget reading a package provider needs requires.engine \">= 1.3\""
+
+**What it means:** The app's engine 1.2 does not know package providers,
+and its `requires.engine` lets that app try.
+
+**What to do:** Write `requires: {engine: ">= 1.3"}`.
+
+## "source.name X: is written <package>/<command>, …"
+
+**What it means:** A provider name with a slash that does not start with
+`app/` names a package's command. The CLI and the app turn that name into
+a package folder and a command to run on a machine, so it must look like
+one: a package name and a command name, each in lower case letters,
+digits, dashes and underscores, starting with a letter. A template, a
+space, a capital or a leading dash is refused. Unlike "no package X",
+`widgets add`, `move` and `remove` refuse this too, because a board that
+holds such a name is unsafe to hand to the app.
+
+**What to do:** Fix the name in the board, for example
+`devmachine-app/stats`. `devmachine widgets list --format json` lists
+every provider under `providers`.
+
+## Installing from a `git@` address fails with "Host key verification failed" or "Permission denied (publickey)"
+
+**What it means:** A `git@host:path` address goes through `ssh`, and `ssh`
+would normally ask its own questions: whether to trust a host it has
+never seen, or the passphrase of your key. The CLI runs it with
+`BatchMode=yes`, so it never asks — nobody may be at a terminal to answer,
+the macOS app included — and fails at once instead. It also ignores a
+`GIT_SSH_COMMAND` set in your shell for the same reason; `~/.ssh/config`
+still applies.
+
+**What to do:** Run `ssh -T git@<host>` once to trust the host, and load
+your key into the SSH agent with `ssh-add`. Then install again. An
+`https://` address of a public repository never needs either.
+
+## "… its widgets are treated as third-party"
+
+**What it means:** A package in `<config>/packages/` has a
+`.devmachine-source.yml`, the file `packages install` writes, and it does
+not read. The CLI cannot tell where the package came from, so it treats
+it as the least trusted kind: its widgets that run code ask first.
+
+**What to do:** Run `devmachine packages update <name>` to fetch it again
+and rewrite the file. If you wrote the package yourself, delete the file.
+
+## "X is an official package: a package from a git address cannot take its name"
+
+**What it means:** The pinned packages release already has a package
+called X. A package in your own folder always wins over the release's of
+the same name, so installing this one would quietly replace the official
+X on every machine that has it.
+
+**What to do:** Ask the package's author to rename it. If you wrote it,
+rename it: `name` in `package.yml`.
+
+## "you already have your own package X"
+
+**What it means:** `<config>/packages/X/` exists and you wrote it — it has
+no `.devmachine-source.yml`. `install` never writes over your own work.
+
+**What to do:** Rename one of the two, or move yours away first.
+
+## "X is already installed from …"
+
+**What it means:** You installed X from a git address before. When the
+message says only "from a git address", its `.devmachine-source.yml` does
+not read, but it is there, so the folder is still not yours to overwrite.
+
+**What to do:** `devmachine packages update X` fetches it again.
+
+## "… has no package.yml at its top"
+
+**What it means:** The repository is not one package: `package.yml` is
+not in its top folder. A repository holding several packages, or a
+package in a subfolder, cannot be installed.
+
+**What to do:** Ask the author to publish the package in its own
+repository, or copy its folder into `<config>/packages/` yourself.
+
+## "… is a link leading outside the package"
+
+**What it means:** The repository holds a symbolic link to a file outside
+the package. `sync` would copy whatever it points at — a key on your
+computer, for instance — to every machine the package is added to.
+
+**What to do:** Do not install it. Tell its author: a package holds its
+own files.
+
+## "fetching …: …"
+
+**What it means:** `git` could not fetch that address or ref. Its own
+message follows: a repository that does not exist, a ref that is not
+there, no access to a private repository (git does not ask for a password
+here, and `ssh` does not ask anything), or no network.
+
+**What to do:** Check the address and the ref in a browser or with `git
+ls-remote <address>`. For a private repository, use a `git@` address with
+an SSH key that has access, loaded in your SSH agent.
+
+## "git is not installed"
+
+**What it means:** `packages install` and `update` fetch with `git`, and
+it is not on your PATH.
+
+**What to do:** Install git (on a Mac, `xcode-select --install`).
+
+## "the package at … has N problem(s)"
+
+**What it means:** The fetched package does not pass `packages validate`.
+Every problem is listed with its file and line. Nothing was written.
+
+**What to do:** Tell the package's author; each line says what to fix.
+
+## "… appeared while X was being fetched: nothing was written"
+
+**What it means:** `packages install` checked that `<config>/packages/X/`
+did not exist, fetched the package, and found the folder there when it
+went to move it in: another command or you made it in the meantime.
+Install never writes over a folder, so it stopped.
+
+**What to do:** Look at what is in `<config>/packages/X/`. If it is a
+copy you do not want, delete it and install again.
+
+## "checking whether X is an official package: …"
+
+**What it means:** Before installing, the CLI reads the pinned packages
+release to make sure X is not one of its names, and that read failed for
+a reason other than "no package named X" — a damaged download in
+`<config>/cache/`, for instance. Not knowing, it refuses rather than risk
+replacing an official package.
+
+**What to do:** Fix what the rest of the message names. For a damaged
+cache, delete `<config>/cache/packages/<release>/` and run the command
+again; it downloads the release afresh.
+
+## "… putting the old copy back failed: …; it is in …"
+
+**What it means:** An update moved the old copy of a package aside, could
+not move the new one in, and then could not move the old one back. Both
+moves are renames inside the same folder, so this means the disk or its
+permissions changed under the command. The old copy is not deleted: it
+stays at the path the message names, and the next fetch never sweeps it.
+
+**What to do:** Fix the disk or the permissions, then move that folder
+back to `<config>/packages/X/` yourself.
+
+## "X is your own package, not one installed from a git address"
+
+**What it means:** `packages update` and `packages remove` work only on a
+package installed with `packages install`, which leaves a
+`.devmachine-source.yml` in its folder. X has none: you wrote it, and the
+CLI never fetches over it or deletes it.
+
+**What to do:** Edit your package in `<config>/packages/X/`. To delete
+it, delete the folder yourself.
+
+## "X is still on machine …: take it off first"
+
+**What it means:** `config.yml` still lists X on that machine or
+workspace. Deleting the package would make the next `sync` fail to find
+it.
+
+**What to do:** `devmachine packages rm X --machine <name>` (or
+`--workspace <name>`), `devmachine sync`, then `devmachine packages remove
+X`.
+
+## "X is in the future workspace defaults"
+
+**What it means:** `defaults.workspace` in `config.yml` lists X, so every
+workspace you create from now on starts with it. Deleting the package
+would make creating the next workspace fail to find it.
+
+**What to do:** `devmachine workspaces defaults --rm X`, then
+`devmachine packages remove X`.
+
+## "the fetched copy of X was swept away while waiting for your answer"
+
+**What it means:** `packages install` or `update` fetches into
+`<config>/packages/.install-…/` and then asks. A fetch folder older than
+an hour is taken as one a Ctrl-C left behind, and the next `install` or
+`update` deletes it. The question stayed open long enough for that to
+happen, so there is nothing left to install.
+
+**What to do:** Run the command again and answer the question.
+
+## A package is gone after a Ctrl-C during packages update
+
+**What it means:** `update` swaps the new copy in with two renames: the
+old folder moves to `<config>/packages/.install-…/.previous`, then the new
+one moves into its place. A Ctrl-C between the two leaves neither in
+`<config>/packages/X/`. Nothing is lost: both copies are inside that
+`.install-…` folder, and the hourly sweep never deletes a folder that holds
+a `.previous`.
+
+**What to do:** Find the folder with `ls -a <config>/packages/`. To keep
+the version you had, move `.install-…/.previous` back to
+`<config>/packages/X`. To take the new one, move `.install-…/X` there
+instead; it was already checked and records its new commit. Then delete
+the `.install-…` folder.
+
+## "… now holds a package named Y, not X"
+
+**What it means:** The repository X was installed from now holds a
+package with another name. Updating would leave the configuration naming
+X while the folder holds Y.
+
+**What to do:** `devmachine packages remove X`, then `devmachine packages
+install <address>`, and change X to Y wherever `config.yml` names it.
+
+## "the address recorded in …/.devmachine-source.yml: …"
+
+**What it means:** `packages update` checks the address it finds in the
+package's `.devmachine-source.yml` the same way `packages install` checks
+the one you type, and that address is not an `https://` or `git@` one.
+Somebody edited the file by hand, so nothing was fetched.
+
+**What to do:** Put back the address the package came from, or
+`devmachine packages remove X` and install it again.

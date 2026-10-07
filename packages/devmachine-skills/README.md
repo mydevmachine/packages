@@ -1,8 +1,9 @@
 # devmachine-skills
 
 Agent Skills for operating Devmachine: `use-devmachine` (running, inspecting
-and troubleshooting the CLI) and `create-devmachine-package` (writing a new
-package).
+and troubleshooting the CLI), `create-devmachine-package` (writing a new
+package) and `edit-devmachine-boards` (changing what the macOS app shows on
+Home and its sidebars, through `devmachine widgets`).
 
 - **Scope:** workspace
 - **Category:** Coding agents
