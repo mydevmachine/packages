@@ -210,7 +210,8 @@ in the board file, and the app asks for your approval again. `--board`
 is required; a missing sidebar or menu bar board is read as its default
 board, and a missing Home board is an error. It prints `changed <id> on
 the <board> board: <what>`, then any `warning:` about a choice your
-`config.yml` lacks.
+`config.yml` lacks. A `set` that changes nothing prints the same line but
+does not touch the file, so its comments stay.
 
 All four re-read the board first and write it in one step (a temporary file,
 then a rename). A board with a problem is refused and left as it is; so is
@@ -220,7 +221,7 @@ when the CLI rewrites it. `--format json` prints
 there are some; for a widget in a list, which is a sidebar, the menu bar
 or its popover, `frame`, `minimized` and `z` are zero and mean nothing,
 and in the menu bar and its popover `size` is `""`; `collapsed` appears
-when true), `{"board", "path", "removed"}` for `remove`, and
-`{"board", "path", "moved", "order"}` for `move`, `order` being every id after the move, and `{"board", "path", "widget", "warnings"}` for
-`set`.
+when true), `{"board", "path", "removed"}` for `remove`,
+`{"board", "path", "moved", "order"}` for `move`, `order` being every id
+after the move, and `{"board", "path", "widget", "warnings"}` for `set`.
 
