@@ -1,0 +1,28 @@
+packages/devmachine-skills/skills/edit-devmachine-boards/SKILL.md
+  s_c1c985d7f57ab9::t_1ef722082470ec 74-76
+  s_675ee4b9be7e9a::t_8521e68d745828 3,8,21-29,51,53,63-65
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1ea7e3929253aa7d9f5f49079cbd74fa8c063a82",
+  "prompts": {},
+  "sessions": {
+    "s_675ee4b9be7e9a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "agent-aabe67f18de8dfb7d",
+        "model": "unknown"
+      },
+      "human_author": "Djalma Araujo <djalma@nossomos.cc>"
+    },
+    "s_c1c985d7f57ab9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b5256304-4a81-480d-a568-f8cf11d8ddcc",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Djalma Araujo <djalma@nossomos.cc>"
+    }
+  }
+}
