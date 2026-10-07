@@ -7,7 +7,7 @@ summary: >-
   identity, ~/dev, and one environment every shell of the account reads.
 
 requires:
-  cli: ">= 0.4.0"
+  cli: ">= 0.9.0"
 
 variables:
   home:
@@ -47,3 +47,22 @@ variables:
       The hosts whose SSH host key is trusted in advance, so the first clone
       does not stop to ask a question nobody is there to answer.
     default: ["github.com"]
+  repos:
+    summary: >-
+      Repositories cloned into ~/dev/<name>, once. A clone is never pulled,
+      reset or removed afterwards, and a folder already at ~/dev/<name> is left
+      as it is. A clone over SSH waits for the workspace's key, which a package
+      such as git-key delivers after this one runs, so it happens on the second
+      pass of the same sync.
+    type: list
+    default: []
+    items:
+      fields:
+        name:
+          summary: The folder under ~/dev. Letters, digits, dot, dash and underscore.
+          required: true
+        url:
+          summary: Where it is cloned from, over SSH or HTTPS.
+          required: true
+        branch:
+          summary: The branch checked out on the clone. Left out, the remote's default.

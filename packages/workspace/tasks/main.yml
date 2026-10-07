@@ -311,6 +311,80 @@
     group: "{{ devmachine_account.group | default(omit) }}"
     mode: "0755"
 
+# A name is a folder under ~/dev, so nothing in it may walk out of ~/dev. The
+# CLI checks the shape of each entry; only the recipe knows what a name becomes.
+- name: Refuse a repository name that leaves ~/dev
+  ansible.builtin.assert:
+    that:
+      - devmachine_workspace_repo.name is match('^[A-Za-z0-9._-]+$')
+      - devmachine_workspace_repo.name not in ['.', '..']
+    fail_msg: >-
+      workspace.repos: {{ devmachine_workspace_repo.name | to_json }} is not a
+      folder name: use letters, digits, dot, dash and underscore
+    quiet: true
+  loop: "{{ devmachine_workspace_repos }}"
+  loop_control:
+    loop_var: devmachine_workspace_repo
+    label: "{{ devmachine_workspace_repo.name }}"
+
+- name: Look for each repository's folder
+  ansible.builtin.stat:
+    path: "{{ devmachine_workspace_home }}/dev/{{ devmachine_workspace_repo.name }}"
+  loop: "{{ devmachine_workspace_repos }}"
+  loop_control:
+    loop_var: devmachine_workspace_repo
+    label: "{{ devmachine_workspace_repo.name }}"
+  register: devmachine_workspace_repo_dirs
+  check_mode: false
+
+# A clone over SSH needs a key the forge knows. git-key and the CLI deliver it
+# after this package has run, and the CLI runs every workspace package a second
+# time once they have, so the clone waits for that pass rather than failing
+# the first one.
+- name: Look for a key a clone over SSH can use
+  ansible.builtin.find:
+    paths: "{{ devmachine_workspace_home }}/.ssh"
+    patterns: ["id_*"]
+    excludes: ["*.pub"]
+  register: devmachine_workspace_ssh_keys
+  check_mode: false
+  when: devmachine_workspace_repos | length > 0
+
+- name: Clone each repository that is not there yet
+  become: true
+  become_user: "{{ devmachine_workspace.user }}"
+  environment:
+    HOME: "{{ devmachine_workspace_home }}"
+  ansible.builtin.git:
+    repo: "{{ devmachine_workspace_repo_dir.devmachine_workspace_repo.url }}"
+    dest: "{{ devmachine_workspace_home }}/dev/{{ devmachine_workspace_repo_dir.devmachine_workspace_repo.name }}"
+    version: "{{ devmachine_workspace_repo_dir.devmachine_workspace_repo.branch | default(omit) }}"
+    update: false
+  loop: "{{ devmachine_workspace_repo_dirs.results | default([]) }}"
+  loop_control:
+    loop_var: devmachine_workspace_repo_dir
+    label: "{{ devmachine_workspace_repo_dir.devmachine_workspace_repo.name }}"
+  when:
+    - not devmachine_workspace_repo_dir.stat.exists
+    - devmachine_workspace_repo_dir.devmachine_workspace_repo.url is match('^(https?|file)://')
+      or devmachine_workspace_ssh_keys.matched | default(0) > 0
+    - not ansible_check_mode or devmachine_workspace_account.stat.exists
+
+- name: Say which repositories wait for a key
+  ansible.builtin.debug:
+    msg: >-
+      {{ devmachine_workspace_repo_dir.devmachine_workspace_repo.name }} is
+      cloned over SSH and this workspace has no key in ~/.ssh yet: it is cloned
+      once one arrives, on the second pass of this sync or a later one
+  loop: "{{ devmachine_workspace_repo_dirs.results | default([]) }}"
+  loop_control:
+    loop_var: devmachine_workspace_repo_dir
+    label: "{{ devmachine_workspace_repo_dir.devmachine_workspace_repo.name }}"
+  when:
+    - not devmachine_workspace_repo_dir.stat.exists
+    - devmachine_workspace_repo_dir.devmachine_workspace_repo.url is not match('^(https?|file)://')
+    - devmachine_workspace_ssh_keys.matched | default(0) == 0
+
 # The CLI delivers the workspace's secrets into this directory and keeps it at
 # 0700 itself, so any other mode here would be undone on every push.
 - name: Create ~/.devmachine
