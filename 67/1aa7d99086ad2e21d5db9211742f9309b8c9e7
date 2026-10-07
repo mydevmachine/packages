@@ -1,0 +1,27 @@
+packages/devmachine-skills/skills/edit-devmachine-boards/references/commands-widgets.md
+  s_c1c985d7f57ab9::t_5b278ee178283e 12-13,27,149-150,157-163,201-215,219-225
+packages/devmachine-skills/skills/edit-devmachine-boards/references/concepts/widgets.md
+  s_c1c985d7f57ab9::t_b0efb2e37d03b9 139-147
+packages/devmachine-skills/skills/edit-devmachine-boards/references/widget-format.md
+  s_c1c985d7f57ab9::t_676fa12035d560 53,64-86,299-301,312-314,396,447,486-498,506,542,569,582-591,593,610,653-657
+packages/devmachine-skills/skills/use-devmachine/references/commands.md
+  s_c1c985d7f57ab9::t_6d809ddb2deb50 671-672,686,808-809,816-822,860-874,878-884
+packages/devmachine-skills/skills/use-devmachine/references/troubleshooting.md
+  s_c1c985d7f57ab9::t_8dfd71ce388353 1755,1762-1871
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "671aa7d99086ad2e21d5db9211742f9309b8c9e7",
+  "prompts": {},
+  "sessions": {
+    "s_c1c985d7f57ab9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b5256304-4a81-480d-a568-f8cf11d8ddcc",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Djalma Araujo <djalma@nossomos.cc>"
+    }
+  }
+}
