@@ -1,0 +1,25 @@
+scripts/lib/test_render_references.py
+  s_c1c985d7f57ab9::t_f40362a97030a9 1-110
+scripts/lib/render_references.py
+  s_c1c985d7f57ab9::t_a0f6dbfd43d323 6-7,17-18,40-44,48-86,96-103,116-118,120-122,125-129,131,133-139,144-151
+scripts/sync-skill-references.sh
+  s_c1c985d7f57ab9::t_39b35ec1ca935b 81
+.github/workflows/ci.yml
+  s_c1c985d7f57ab9::t_a37447bec3052f 40-44
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "51af645ecf104d443ffef27ad2dc8c006ed0e675",
+  "prompts": {},
+  "sessions": {
+    "s_c1c985d7f57ab9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b5256304-4a81-480d-a568-f8cf11d8ddcc",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Djalma Araujo <djalma@nossomos.cc>"
+    }
+  }
+}
