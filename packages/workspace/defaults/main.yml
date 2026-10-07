@@ -23,3 +23,7 @@ devmachine_workspace_sign_commits: true
 
 devmachine_workspace_known_hosts:
   - github.com
+
+# Cloned once into ~/dev/<name>. Never pulled: a pull on somebody's working
+# tree is the one thing convergence must not do.
+devmachine_workspace_repos: []

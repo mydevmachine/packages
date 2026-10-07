@@ -20,6 +20,7 @@ other workspace-scoped package needs this one first.
 | `git_email` | `""` | The address on this workspace's commits. |
 | `sign_commits` | `true` | Sign every commit and rebase, once a package such as `git-key` sets up a key. |
 | `known_hosts` | `["github.com"]` | The hosts whose SSH host key is trusted in advance, so the first clone does not stop to ask a question nobody is there to answer. |
+| `repos` | `[]` | Repositories cloned into `~/dev/<name>`, once: each entry is `name` and `url`, and optionally `branch`. A clone is never pulled, reset or removed, and a folder already there is left alone. A clone over SSH waits for the workspace's key, which arrives on the second pass of the same sync. |
 
 ## Credentials
 
@@ -40,6 +41,10 @@ devmachine sync
 
 - **The `docker` group is effectively root.** Add it to `groups` only for a
   workspace that genuinely needs it.
+- **`repos` is set as YAML**, and the CLI checks each entry before it
+  writes it:
+  `devmachine workspaces edit alice --set 'workspace.repos=[{name: app, url: git@github.com:example/app.git}]'`.
+  A name is a folder under `~/dev`, so one with a `/` is refused.
 - `sign_commits` only takes effect once a key exists — pair it with
   [`git-key`](../git-key/README.md) or a key set up by hand.
 - **On macOS** the account is created hidden: it is not on the login window
