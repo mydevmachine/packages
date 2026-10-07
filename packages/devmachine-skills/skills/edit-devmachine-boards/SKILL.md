@@ -1,6 +1,6 @@
 ---
 name: edit-devmachine-boards
-description: "Use when the person wants to change what the Devmachine macOS app shows: add, move, remove, resize, rename or retime a widget on Home, the sidebar, a session's context sidebar or the menu bar, or make a new widget that shows a command's output, a web page, a coding harness's answer, a session's screen or a package's data. Triggers on requests like \"add a widget showing disk usage on main to my context sidebar\", \"put the clock on my Home\", \"move usage above shortcuts\", \"show my open pull requests in the menu bar\", \"show only main in my machines widget\", \"refresh usage every 2 minutes\", \"remove the links section\", \"show my site's health on Home\", or \"what widgets can I add\". Not for writing a package's widget.yml for publishing (see create-devmachine-package) or for other CLI work (see use-devmachine)."
+description: "Use when the person wants to change what the Devmachine macOS app shows: add, move, remove, resize, rename or retime a widget on Home, the sidebar, a session's context sidebar or the menu bar, or make a new widget that shows a command's output, a web page, a coding harness's answer, a session's screen or a package's data. Triggers on requests like \"add a widget showing disk usage on main to my context sidebar\", \"put the clock on my Home\", \"move usage above shortcuts\", \"show my open pull requests in the menu bar\", \"show only main in my machines widget\", \"refresh usage every 2 minutes\", \"remove the links section\", \"show my site's health on Home\", \"let my prompt widget search the web\", or \"what widgets can I add\". Not for writing a package's widget.yml for publishing (see create-devmachine-package) or for other CLI work (see use-devmachine)."
 ---
 
 # Edit Devmachine boards
@@ -137,6 +137,22 @@ board with a problem is one the CLI refuses to change later.
   `source`: the CLI refuses it. `widgets set` changes only its title;
   anything else is a hand edit by the rules above, and the app asks the
   person to approve the new source.
+- A `prompt` source answers without tools unless it has
+  `permission_mode`, so a widget asked to search the web says it has no
+  permission. The values are the harness's own names:
+  - `claude`: `manual`, `dontAsk`, `plan`, `acceptEdits`, `auto`,
+    `bypassPermissions`.
+  - `codex`: `read-only`, `workspace-write`, `danger-full-access`,
+    `approve-for-me`, `dangerously-bypass-approvals-and-sandbox`.
+
+  Leave it out for the harness's default. To let the widget use tools,
+  write `auto` (Claude) or `workspace-write` (Codex). `bypassPermissions`,
+  `danger-full-access` and `dangerously-bypass-approvals-and-sandbox` run
+  without any check: write one only when the person names it, and then
+  `every` must be `manual` (the default for a prompt). The CLI refuses a
+  timer on one, in `source.every`, in a board entry's `every` and in
+  `widgets set --every`; pass the message on, never change the mode to
+  get past it.
 
 ## Approval: tell the person, never work around it
 
@@ -147,6 +163,9 @@ widget from a third-party package (`trust: third-party`).
 
 - After adding such a widget, tell the person it waits for their approval
   in the app, and what it will run.
+- A prompt widget's `permission_mode` is part of what the person
+  approves: changing it asks again. A mode that runs without any check
+  shows a red warning on the card; tell the person before they see it.
 - Never edit, create or delete the app's approvals file, and never try to
   approve a widget yourself. The approval exists so that you cannot.
 
@@ -190,6 +209,25 @@ waits for their approval in the app.
    shows `main`.
 3. `devmachine widgets set machines --board home --set machines=main`.
 4. To show every machine again later: `--set machines=`.
+
+"Let my prompt widget search the web":
+
+1. Read the board file and find the entry; say it is `news` on Home,
+   written in the board with `source: {kind: prompt, harness: claude,
+   prompt: …}`.
+2. Add `permission_mode: auto` to its `source`, next to `harness`:
+
+   ```yaml
+       source:
+         kind: prompt
+         harness: claude
+         permission_mode: auto
+         prompt: Search the web for this week's Go release notes and summarise them.
+   ```
+
+3. `devmachine widgets validate <config>/boards/home.yml`.
+4. Tell the person the widget waits for their approval again in the app,
+   because what it runs changed, and that it can now use Claude's tools.
 
 ## References
 
