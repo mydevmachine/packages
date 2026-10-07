@@ -9,7 +9,7 @@ summary: >-
 needs: [workspace]
 
 requires:
-  cli: ">= 0.9.0"
+  cli: ">= 0.10.0"
 
 credentials:
   # scope: workspace because ChatGPT accounts usually differ between
