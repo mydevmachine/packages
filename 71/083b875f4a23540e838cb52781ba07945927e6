@@ -1,0 +1,21 @@
+packages/tailscale/README.md
+  s_5ccc211ae481bf::t_3cb8ddd980f52c 32-33
+packages/tailscale/tasks/Darwin.yml
+  s_5ccc211ae481bf::t_8efcbbbc62a302 4-5,12
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "71083b875f4a23540e838cb52781ba07945927e6",
+  "prompts": {},
+  "sessions": {
+    "s_5ccc211ae481bf": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "570a9526-d48d-41cd-8528-3a3200e0855a",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Djalma Araujo <djalma@nossomos.cc>"
+    }
+  }
+}
