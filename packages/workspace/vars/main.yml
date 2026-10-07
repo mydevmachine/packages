@@ -2,3 +2,9 @@
 # Only a Mac needs it: there an account that is not an admin gets the system's
 # PATH alone, without MacPorts or Apple Silicon Homebrew.
 devmachine_workspace_path_prefix: []
+
+devmachine_workspace_joined_groups: >-
+  {{ devmachine_workspace_groups if ansible_facts['system'] != 'Darwin'
+     else devmachine_workspace_mac_groups.results | default([])
+          | selectattr('rc', 'defined') | selectattr('rc', 'equalto', 0)
+          | map(attribute='item') | list }}

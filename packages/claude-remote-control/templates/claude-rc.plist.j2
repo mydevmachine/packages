@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>{{ devmachine_claude_remote_control_label | e }}</string>
+  <key>UserName</key>
+  <string>{{ devmachine_workspace.user | e }}</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>{{ devmachine_claude_remote_control_home | e }}/.local/bin/claude</string>
+    <string>remote-control</string>
+    <string>--name</string>
+    <string>{{ devmachine_claude_remote_control_name | e }}</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>{{ devmachine_claude_remote_control_working_directory | e }}</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>HOME</key>
+    <string>{{ devmachine_claude_remote_control_home | e }}</string>
+    <key>USER</key>
+    <string>{{ devmachine_workspace.user | e }}</string>
+    <key>PATH</key>
+    <string>{{ devmachine_claude_remote_control_home | e }}/.local/bin:/usr/local/bin:/usr/bin:/bin</string>
+  </dict>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+  <key>ThrottleInterval</key>
+  <integer>{{ devmachine_claude_remote_control_restart_seconds | int }}</integer>
+  <key>StandardOutPath</key>
+  <string>{{ devmachine_claude_remote_control_home | e }}/Library/Logs/claude-rc.log</string>
+  <key>StandardErrorPath</key>
+  <string>{{ devmachine_claude_remote_control_home | e }}/Library/Logs/claude-rc.log</string>
+</dict>
+</plist>

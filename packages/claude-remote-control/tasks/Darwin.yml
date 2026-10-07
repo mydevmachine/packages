@@ -1,0 +1,62 @@
+---
+# A LaunchDaemon, not a LaunchAgent: an agent loads only inside a session of
+# the account, and nobody ever logs into a workspace at the Mac's own screen.
+# UserName makes launchd run it as the account, at boot, with nobody logged in,
+# which is what linger gives the systemd unit on Linux.
+- name: Create ~/Library/Logs
+  ansible.builtin.file:
+    path: "{{ devmachine_claude_remote_control_home }}/Library/Logs"
+    state: directory
+    owner: "{{ devmachine_workspace.user }}"
+    group: "{{ devmachine_account.group | default(omit) }}"
+    mode: "0755"
+  when: devmachine_claude_remote_control_account.stat.exists
+
+- name: Install the launch daemon
+  vars:
+    devmachine_claude_remote_control_name: >-
+      {{ devmachine_claude_remote_control_session_name
+         | default(devmachine_workspace.name, true) }}
+  ansible.builtin.template:
+    src: claude-rc.plist.j2
+    dest: "{{ devmachine_claude_remote_control_plist }}"
+    owner: root
+    group: wheel
+    mode: "0644"
+  become: true
+  register: devmachine_claude_remote_control_unit
+  when: devmachine_claude_remote_control_account.stat.exists
+
+- name: Ask launchd whether the session is loaded
+  ansible.builtin.command:
+    argv: [launchctl, print, "system/{{ devmachine_claude_remote_control_label }}"]
+  register: devmachine_claude_remote_control_loaded
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  become: true
+  when:
+    - devmachine_claude_remote_control_account.stat.exists
+    - devmachine_claude_remote_control_login.stat.exists
+
+# Started only once the login exists, for the same reason as on Linux: KeepAlive
+# would restart a session with nothing to connect for ever. launchd reads a
+# plist only when it loads it, so a changed one is unloaded and loaded again.
+# Loading right after an unload can fail with "Input/output error" while the old
+# job is still going away, hence the retries.
+- name: Start the Remote Control session
+  ansible.builtin.shell:
+    cmd: |
+      launchctl bootout system/{{ devmachine_claude_remote_control_label | quote }} 2>/dev/null || true
+      launchctl bootstrap system {{ devmachine_claude_remote_control_plist | quote }}
+  become: true
+  register: devmachine_claude_remote_control_started
+  until: devmachine_claude_remote_control_started.rc == 0
+  retries: 3
+  delay: 2
+  changed_when: true
+  when:
+    - not ansible_check_mode
+    - devmachine_claude_remote_control_account.stat.exists
+    - devmachine_claude_remote_control_login.stat.exists
+    - devmachine_claude_remote_control_unit is changed or devmachine_claude_remote_control_loaded.rc != 0

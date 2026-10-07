@@ -1,0 +1,5 @@
+---
+# macOS only. Empty means every workspace on the machine.
+devmachine_docker_workspaces: []
+devmachine_docker_vm_cpus: 2
+devmachine_docker_vm_memory: 2

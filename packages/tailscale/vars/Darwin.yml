@@ -1,0 +1,5 @@
+---
+devmachine_tailscale_brew_prefix: "{{ '/opt/homebrew' if ansible_facts['architecture'] == 'arm64' else '/usr/local' }}"
+
+devmachine_tailscale_label: devmachine.tailscaled
+devmachine_tailscale_plist: "/Library/LaunchDaemons/{{ devmachine_tailscale_label }}.plist"
