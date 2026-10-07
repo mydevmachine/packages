@@ -46,6 +46,10 @@ so it needs no link.
 The macOS app reads this from the `codex` it finds on your computer, so the
 widget works without adding this package to a workspace.
 
+`devmachine-app/usage` shows the same card for any harness you pick, and
+is the one the app puts on Home. This widget keeps working wherever it
+already is.
+
 ## Add it
 
 ```bash

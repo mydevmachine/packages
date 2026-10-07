@@ -30,6 +30,13 @@ Home:
 | `devmachine-app/clock` | medium | The time, the date and the computer the app runs on. |
 | `devmachine-app/summary` | wide | How many sessions, coding-harness sessions and workspaces are open. |
 | `devmachine-app/machines` | large | Each machine, online or not, with its CPU, memory, disk and readiness. |
+| `devmachine-app/usage` | medium | One coding harness's usage windows, how much of each is used and when it resets. |
+
+`machines` and `usage` let you choose what they show: in the app, ⋯ →
+**Choose machines…** picks some machines (none picked shows them all),
+and ⋯ → **Choose harness…** picks the harness. From the terminal:
+`devmachine widgets set machines --board home --set machines=main,backup`.
+The app puts one `usage` card on Home for each harness you use.
 
 On a machine (needs this package added to that machine and synced):
 
@@ -75,7 +82,7 @@ Menu bar popover, one tab each:
 
 | Widget | What it shows |
 | --- | --- |
-| `devmachine-app/pull-requests-panel` | Your open pull requests by owner, with their checks and review state. |
+| `devmachine-app/pull-requests-panel` | Your open pull requests by owner, with their checks and review state. It fits Home and the sidebars too (`large` or `tall`). |
 | `devmachine-app/usage-panel` | Every coding harness's usage windows side by side, how much is used and when each resets. |
 
 The sidebar widgets grow with their content (`size: auto`). Remove one in

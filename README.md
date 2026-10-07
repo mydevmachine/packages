@@ -155,8 +155,9 @@ widgets: widgets
 `devmachine-app` ships the clock, summary and machines widgets for Home,
 the workspace list for the sidebar, the eight sections of the Context
 tab, and the mark, pull request count and two tabs of the menu bar;
-`claude-code` and `codex` each ship `usage`. A widget that reads only
-what the app already knows works without adding its package. The format
+a usage card for any coding harness, which you pick in the app;
+`claude-code` and `codex` each still ship their own `usage`. A widget that
+reads only what the app already knows works without adding its package. The format
 is in the [widget format reference](https://mydevmachine.sh/reference/widget-format/).
 
 A package can also feed its widgets with one of its own commands, run on a
