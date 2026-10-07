@@ -19,8 +19,11 @@ None.
 
 ## Widgets
 
-The macOS app draws its Home from these. They read only what the app
-already knows, so they work without adding or syncing this package.
+The macOS app draws its Home, its sidebar and the Context tab of a session
+from these. They read only what the app already knows, so they work
+without adding or syncing this package.
+
+Home:
 
 | Widget | Default size | What it shows |
 | --- | --- | --- |
@@ -28,8 +31,31 @@ already knows, so they work without adding or syncing this package.
 | `devmachine-app/summary` | wide | How many sessions, coding-harness sessions and workspaces are open. |
 | `devmachine-app/machines` | large | Each machine, online or not, with its CPU, memory, disk and readiness. |
 
-`devmachine widgets list` shows them; `devmachine widgets add devmachine-app/clock`
-puts one on Home.
+Sidebar (one per board):
+
+| Widget | What it shows |
+| --- | --- |
+| `devmachine-app/workspaces` | Your machines and workspaces with their sessions, in the order you drag them. |
+
+Context sidebar, in the order the app puts them there (each reads the
+selected session):
+
+| Widget | What it shows |
+| --- | --- |
+| `devmachine-app/shortcuts` | Skill buttons for the machine or workspace of the selected session. |
+| `devmachine-app/publish-port` | A button that publishes a port of the selected workspace on a subdomain, when a machine runs Caddy. |
+| `devmachine-app/monitors` | The monitors running in the selected session. |
+| `devmachine-app/shells` | The background shells of the selected session. |
+| `devmachine-app/sub-agents` | The sub-agents the selected session started, and whether each still runs. |
+| `devmachine-app/todo` | The plan of the selected session and its to-do list. |
+| `devmachine-app/pull-requests` | The pull requests of the selected session, with their checks and review state. |
+| `devmachine-app/links` | The links the selected session mentioned. |
+
+The sidebar widgets grow with their content (`size: auto`). Remove one in
+the app or with `devmachine widgets remove <id> --board context-sidebar`,
+and bring it back from the gallery or with `devmachine widgets add
+devmachine-app/<name> --board context-sidebar`. `devmachine widgets list
+--board sidebar` shows what fits each area.
 
 ## Add it
 
