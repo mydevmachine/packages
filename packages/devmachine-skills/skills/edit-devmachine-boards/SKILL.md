@@ -18,7 +18,7 @@ add` cannot create one, so that is the only edit you make by hand.
 | `home` | `<config>/boards/home.yml` | canvas: each widget has a frame in points | nothing from the app |
 | `sidebar` | `<config>/boards/sidebar.yml` | stack: an ordered list | the selected workspace, when there is one |
 | `context-sidebar` | `<config>/boards/context-sidebar.yml` | stack: an ordered list | the selected session, its machine, workspace, path, repo and branch |
-| `menubar` | `<config>/boards/menubar.yml` | slot: at most 3 one-line widgets, left to right | nothing from the app |
+| `menubar` | `<config>/boards/menubar.yml` | slot: at most 3 one-line widgets (text up to 24 characters), left to right | nothing from the app |
 | `menubar-panel` | `<config>/boards/menubar-panel.yml` | tabs: each widget is one tab of the popover | nothing from the app |
 
 The menu bar title draws only the `text`, `number`, `status` and
@@ -71,7 +71,7 @@ devmachine widgets remove <id> --board <area>
 
 When no widget fits, write one straight into the board: an entry with
 `id`, `title`, `source`, `view` and `sizes`. On Home it also needs
-`frame`, `size`, `minimized` and `z`; in a sidebar or the menu bar it
+`frame`, `size`, `minimized` and `z`; in a sidebar, the menu bar or its popover it
 has none of those. Read `references/widget-format.md` first; it has
 every source kind, view and rule.
 
