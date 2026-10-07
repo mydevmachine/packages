@@ -2,7 +2,7 @@ format: 1
 name: summary
 summary: How many sessions, coding-harness sessions and workspaces are open.
 requires: {engine: ">= 1.0"}
-fits: [canvas, stack, slot]
+fits: [canvas, stack]
 context: {}
 source:
   kind: provider

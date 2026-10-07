@@ -2,7 +2,7 @@ format: 1
 name: usage
 summary: Claude Code usage windows, how much of each is used and when it resets.
 requires: {engine: ">= 1.0"}
-fits: [canvas, stack, slot]
+fits: [canvas, stack]
 context: {}
 source:
   kind: provider
