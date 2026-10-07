@@ -668,6 +668,8 @@ devmachine widgets add <package/widget> [--board home|sidebar|context-sidebar|me
     [--id x] [--set name=value]... [--size s] [--at x,y | --after id | --before id]
 devmachine widgets remove <id> [--board home|sidebar|context-sidebar|menubar|menubar-panel]
 devmachine widgets move <id> (--after id | --before id) --board sidebar|context-sidebar|menubar|menubar-panel
+devmachine widgets set <id> --board home|sidebar|context-sidebar|menubar|menubar-panel
+    [--title t] [--every d] [--set name=value]...
 ```
 
 The widgets the app draws, and the boards they sit on. Local only: these
@@ -681,7 +683,7 @@ prints:
 
 ```json
 {
-  "engine": "1.4",
+  "engine": "1.5",
   "packages_release": "v40",
   "widgets": [
     {
@@ -803,17 +805,21 @@ underscores. A package widget that names one
 by its literal name is only a warning (`warning: …` lines, and
 `"warnings"` in `--format json`), because a published widget is written
 for many configurations. A name that holds a template, such as
-`{{inputs.machine}}`, is not checked. `widgets add` and `remove` never
-check names, so removing a machine does not lock a board.
+`{{inputs.machine}}`, is not checked. `widgets add`, `move` and `remove`
+never refuse a name, so removing a machine does not lock a board.
 
 `schema` prints the engine contract: areas, providers, views and sizes.
 `--json` prints it as JSON, the same document the app is built against.
 
 `add` places a widget on a board and writes `<config>/boards/<board>.yml`.
 The id defaults to the widget's name, made unique (`usage`, `usage-2`).
-`--set` gives an input a value, converted to the input's type. The widget
-must fit the area (`devmachine widgets list --board <area>` shows which do),
-and a widget marked `single` is refused when the board already has it.
+`--set` gives an input a value, converted to the input's type. For a
+choice of many, `--set machines=main,backup` writes a list, and
+`--set machines=` an empty one, which means all. A name your
+`config.yml` lacks is a `warning:` on stderr (and in `"warnings"` with
+`--format json`); the widget is still added. The widget must fit the area
+(`devmachine widgets list --board <area>` shows which do), and a widget
+marked `single` is refused when the board already has it.
 
 On Home (the default), `--size` is a preset the widget takes, default its
 `default_size`. `--at x,y` is the top-left corner in points, snapped to
@@ -851,16 +857,31 @@ has a place, not a turn. A missing board is read as the default board. A
 move that leaves the order as it was does not rewrite the file. An empty
 `--after ""` or `--before ""` is refused, on `add` as on `move`.
 
-All three re-read the board first and write it in one step (a temporary file,
+`set` changes one widget on a board and leaves every other entry as it
+was. `--title` is the title this copy shows and `--every` how often it
+runs (`2m`, or `manual` for any source but a provider); `--title ""` and
+`--every ""` take the override off, so the widget's own comes back.
+`--every` is refused below what the widget's source allows and on a
+stream, with the same words as `widgets validate`. `--set` gives an input
+a value as on `add`, `name=a,b` for a choice of many. A widget written in
+the board takes `--title` only: to change what it runs, edit its `source`
+in the board file, and the app asks for your approval again. `--board`
+is required; a missing sidebar or menu bar board is read as its default
+board, and a missing Home board is an error. It prints `changed <id> on
+the <board> board: <what>`, then any `warning:` about a choice your
+`config.yml` lacks.
+
+All four re-read the board first and write it in one step (a temporary file,
 then a rename). A board with a problem is refused and left as it is; so is
 a board that changed while the command ran. Comments in a board are lost
 when the CLI rewrites it. `--format json` prints
-`{"board", "path", "widget"}` for `add` (for a widget in a list, which is a
-sidebar, the menu bar or its popover, `frame`, `minimized` and `z` are zero
-and mean nothing, and in the menu bar and its popover `size` is `""`;
-`collapsed` appears when true), `{"board", "path", "removed"}` for
-`remove`, and `{"board", "path", "moved", "order"}` for `move`, `order`
-being every id after the move.
+`{"board", "path", "widget", "warnings"}` for `add` (`warnings` only when
+there are some; for a widget in a list, which is a sidebar, the menu bar
+or its popover, `frame`, `minimized` and `z` are zero and mean nothing,
+and in the menu bar and its popover `size` is `""`; `collapsed` appears
+when true), `{"board", "path", "removed"}` for `remove`, and
+`{"board", "path", "moved", "order"}` for `move`, `order` being every id after the move, and `{"board", "path", "widget", "warnings"}` for
+`set`.
 
 ## aliases
 

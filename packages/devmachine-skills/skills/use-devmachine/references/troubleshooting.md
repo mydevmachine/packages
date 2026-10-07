@@ -1752,12 +1752,122 @@ a `command` source with no `parse`), and a rule uses `<`, `<=`, `>` or
 output is a number, say so: `parse: number` on a `command` source, or
 leave `parse` out on a `url` source to compare its status code.
 
-## "requires engine >= 1.5, and this CLI implements engine 1.4"
+## "requires engine >= 1.6, and this CLI implements engine 1.5"
 
 **What it means:** The widget says it needs a newer engine than this CLI
 has. Nothing else in it was checked.
 
 **What to do:** `devmachine update`.
+
+## "input X is a choice, and needs from"
+
+**What it means:** A `choice` input is picked from a list, and `from`
+says which list: `machines`, `workspaces` or `harnesses`. Without it, or
+with another name, the app has nothing to offer.
+
+**What to do:** Add `from: machines` (or one of the other two). Add
+`many: true` when the person may pick more than one.
+
+## "input X takes its options from Y, which is not a source"
+
+**What it means:** `from` names the list a `choice` is picked from, and
+there are three: `machines`, `workspaces` and `harnesses`. Any other
+name gives the app nothing to offer.
+
+**What to do:** Write one of the three, for example `from: machines`.
+
+## "input X: many is …: write true or false"
+
+**What it means:** `many` says whether the person may pick more than one
+name. It is a yes or no, so a word such as `maybe` is refused.
+
+**What to do:** Write `many: true`, or `many: false` (the same as
+leaving it out).
+
+## "input X is a list of choices, and its default … is not"
+
+**What it means:** The input has `many: true`, so its value is a list,
+and so is its default, even for one name. The other way round, "is one
+choice, and its default [main] is not a name" means a list was written
+where the input takes one name.
+
+**What to do:** Write `default: [main]`, or `default: []` for all; for
+an input without `many`, write `default: main`.
+
+## "input X is a string: from and many belong to a choice"
+
+**What it means:** `from` and `many` only mean something on a `choice`
+input. On a `string`, `number` or `boolean` they are a mistake, often a
+`type:` left over from before the input became a choice.
+
+**What to do:** Write `type: choice`, or remove `from` and `many`.
+
+## "a widget with a choice input needs requires.engine \">= 1.5\""
+
+**What it means:** An app on engine 1.4 or older has no chooser, so it
+could not show the input at all. The widget's `requires.engine` still
+lets such an app read it.
+
+**What to do:** Write `requires: {engine: ">= 1.5"}`. An older CLI then
+says "update" instead of hiding the widget for a reason nobody can read.
+
+## "input X takes a list of names, written [a, b]"
+
+**What it means:** The widget's input is a choice of many, so a board's
+`with` holds a list for it, even for one name. The same goes the other
+way: "takes one name" means the board holds a list where the widget
+takes a single name.
+
+**What to do:** Write `with: {machines: [main]}`, or set it with
+`devmachine widgets set <id> --board <area> --set machines=main`, which
+writes the right shape.
+
+## "warning: … names machine "X", which config.yml does not have"
+
+**What it means:** A widget on the board picked a machine (or workspace)
+that is not in `config.yml` any more, or a harness the engine does not
+know. The app leaves that name out and draws the rest. Nothing is
+refused.
+
+**What to do:** Pick again in the app (⋯ → Choose), or run `devmachine
+widgets set <id> --board <area> --set machines=<names>`.
+
+## "every 1s is below X's minimum of 5s"
+
+**What it means:** A board entry's `every` asks the widget to run more
+often than its source allows. The minimum comes from the source: an app
+provider, a package provider's `min_every`, or the source kind (15m for a
+prompt). The message names the widget and its minimum.
+
+**What to do:** Write the minimum or more, or take the key off to use the
+widget's own. On a provider widget, `manual` is refused too: it runs on a
+schedule.
+
+## "a widget written in the board sets how often in source.every, not every"
+
+**What it means:** The entry has its own `source`, so how often it runs
+is `source.every`. An `every` next to it would say the same thing twice.
+
+**What to do:** Change `source.every` and delete the other line. The app
+asks for your approval again when the source changes.
+
+## "X is written in the board: change its source in the board file"
+
+**What it means:** `widgets set --every` or `--set` was given for a
+widget that has its own `source` in the board. Those change what it
+runs, which the app asks you to approve, so the CLI does not change them
+from flags. A widget written in the board has no inputs either.
+
+**What to do:** Edit `source` in the board file and run `devmachine
+widgets validate` on it, or use ⋯ → Edit… in the app. `--title` alone
+still works.
+
+## "nothing to change: give --title, --every or --set"
+
+**What it means:** `widgets set` was run with only an id and a board.
+
+**What to do:** Say what to change, for example `devmachine widgets set
+usage --board home --every 2m`.
 
 ## "source.target: app/… is the app's own data, so it takes no target"
 

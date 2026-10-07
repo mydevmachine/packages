@@ -50,7 +50,7 @@ places: [home]
 | `requires.engine` | yes | The engine versions the widget works with, as `">= 1.0"`, `"> 1.0"` or `"= 1.0"`. |
 | `fits` | yes | The layouts it can be drawn in: `canvas`, `stack`, `slot` (the menu bar), `tabs` (the menu bar popover). |
 | `context` | no | The context keys it reads, each `required` or `optional`. A widget sees only the keys it declares. |
-| `inputs` | no | Values a person sets on each copy: `type` (`string`, `number` or `boolean`), `default`, `summary`. |
+| `inputs` | no | Values a person sets on each copy: `type` (`string`, `number`, `boolean` or `choice`), `default`, `summary`. A choice also takes `from` and `many`: see [Choice inputs](#choice-inputs). |
 | `source` | yes | Where the data comes from: `kind` and the fields of that kind. See [Sources](#sources). |
 | `view` | yes | How it is drawn: `kind` and that view's fields. See [Views](#views). |
 | `sizes` | yes | The presets it takes. |
@@ -60,6 +60,29 @@ places: [home]
 
 A value in `source.with` can hold `{{inputs.<name>}}` or
 `{{context.<key>}}`. The input or key it names has to be declared.
+
+### Choice inputs
+
+A `choice` input is picked from a list the app fills from live data, so
+the app can offer a checklist or a picker on any widget without knowing
+the widget:
+
+```yaml
+inputs:
+  machines: {type: choice, from: machines, many: true, summary: Which machines; none shows all.}
+```
+
+- `from` says where the options come from: `machines` (the machines in
+  `config.yml`), `workspaces` (the workspaces in `config.yml`) or
+  `harnesses` (the coding harnesses that report usage: `claude`, `codex`).
+- `many: true` makes the value a list of names; left out, or `[]`, it
+  means all of them. Without `many` the value is one name; left out, it
+  means the first option.
+- A template sees a list joined with commas (`main,backup`), and so does
+  `$DM_INPUT_<NAME>` in a shell line. An `app/…` provider gets the list
+  itself.
+- A widget with a choice input needs `requires.engine: ">= 1.5"`: an
+  older app cannot show the choices.
 
 ## Sources
 
@@ -273,7 +296,9 @@ widgets:
 | --- | --- |
 | `id` | Unique on the board: lower case letters, digits and dashes. |
 | `type` | The widget, `<package>/<widget>`. |
-| `with` | Values for the widget's inputs. Left out when there are none. |
+| `with` | Values for the widget's inputs. Left out when there are none. A choice of many takes a list: `with: {machines: [main, backup]}`; `[]` means all. |
+| `title` | Optional, on an entry with a `type`: the title this copy shows instead of the widget's own. Never empty; take the key off to go back. |
+| `every` | Optional, on an entry with a `type`: how often this copy runs, as a duration (`2m`) or, for any source but a provider, `manual`. Never below what the widget's source allows (`devmachine widgets schema` lists each minimum), and not on a stream. |
 | `frame` | Position and size in points. `x` and `y` are 0 or more; `w` and `h` are at least the smallest preset the widget takes. |
 | `size` | A preset, or `custom` after a free resize. Left out, it is `custom`. |
 | `minimized` | `true` draws a pill with the title instead. |
@@ -283,6 +308,9 @@ A `type` no package provides is not an error: the app keeps the entry and
 shows a placeholder, so a missing package never loses a layout. A widget
 can also be written in place, with no `type` and no package: see below. A
 widget has either a `type` or a `source` and a `view`, never both.
+
+A widget written in the board owns its `title`, and sets how often it runs
+in `source.every`; an `every` next to its `source` is refused.
 
 A key the board does not know, at the top, in a widget or in a `frame`, is
 a mistake, for example `unknown key "minimised" in a widget`. A typo is
@@ -365,7 +393,7 @@ The menu bar item is two boards, both lists drawn in the order they are
 written.
 
 `menubar.yml` is the title in the menu bar: at most 3 widgets, left to
-right, each one line. An entry there has only `id`, `type` and `with`
+right, each one line. An entry there has only `id`, `type`, `title`, `with` and `every`
 (or `title`, `source` and `view` when written in place): no `frame`,
 `size`, `minimized`, `collapsed` or `z`. Only four views draw there:
 `text` (its first line, cut at 24 characters with "…"), `number`
@@ -416,7 +444,7 @@ open pull request count, and the Pull Requests and Usage tabs.
 
 <!-- generated from the engine contract by `make widget-format`: start -->
 
-Engine **1.4**. Widget format 1, board format 1.
+Engine **1.5**. Widget format 1, board format 1.
 
 ### Sizes
 
@@ -455,6 +483,19 @@ The menu bar holds at most 3 widgets, left to right, each one line drawn by one 
 | `string` | none |
 | `workspace` | `machine` machine, `name` string, `path` path, `user` string |
 
+### Inputs
+
+| Type | Fields besides `type`, `default` and `summary` | A board's `with` value |
+| --- | --- | --- |
+| `boolean` | none | bool |
+| `choice` | `from` enum, required, harnesses/machines/workspaces; `many` bool, default `false` | string, or a list of strings when many |
+| `number` | none | number |
+| `string` | none | string |
+
+A choice takes its options from `harnesses` (claude, codex), `machines` (the machines in config.yml), `workspaces` (the workspaces in config.yml).
+
+An entry with a `type` may also set `every` every; `title` string on a board: they change only that copy.
+
 ### Providers
 
 | Provider | Arguments | Context it needs | Minimum `every` | Returns |
@@ -462,7 +503,7 @@ The menu bar holds at most 3 widgets, left to right, each one line drawn by one 
 | `app/brand` | none | none | 5s | `mark` string |
 | `app/clock` | none | none | 5s | `date` string, `host` string, `time` string |
 | `app/harness-usage` | `harness` string, required | none | 5s | `error` string?, `harness` string, `windows` list |
-| `app/machines` | none | none | 5s | `list` machine_stats |
+| `app/machines` | `machines` list, optional | none | 5s | `list` machine_stats |
 | `app/open-pull-requests` | none | none | 5s | `count` number |
 | `app/publish-port` | none | none | 5s | `available` bool |
 | `app/pull-requests-panel` | none | none | 5s | `error` string?, `owners` list, `pull_requests` list |
@@ -498,7 +539,7 @@ A package declares providers in its `package.yml`; a widget names one `<package>
 | `app.monitors` | `app/session-context` | stack; grows with its content | none |
 | `app.publish-port` | `app/publish-port` | stack; grows with its content | none |
 | `app.pull-requests` | `app/session-context` | stack; grows with its content | none |
-| `app.pull-requests-panel` | `app/pull-requests-panel` | tabs | none |
+| `app.pull-requests-panel` | `app/pull-requests-panel` | canvas, stack, tabs | none |
 | `app.shells` | `app/session-context` | stack; grows with its content | none |
 | `app.shortcuts` | `app/shortcuts` | stack; grows with its content | none |
 | `app.sub-agents` | `app/session-context` | stack; grows with its content | none |
@@ -525,7 +566,7 @@ A package declares providers in its `package.yml`; a widget names one `<package>
 | `format` is not 1 | `format 2, and this CLI reads widget format 1` |
 | `requires.engine` missing | `every widget needs requires.engine, for example ">= 1.0"` |
 | `requires.engine` unreadable | `requires.engine "X": write it as ">= 1.0", "> 1.0" or "= 1.0"` |
-| a newer engine is required | ``requires engine >= 1.5, and this CLI implements engine 1.4: update with `devmachine update` `` |
+| a newer engine is required | ``requires engine >= 1.6, and this CLI implements engine 1.5: update with `devmachine update` `` |
 | an unknown top-level field | `unknown field "X"` |
 | `name` malformed or not the folder | `name is "X" but the folder is "Y": a widget is found by its folder` |
 | `summary` missing | `every widget needs a one-line summary` |
@@ -538,9 +579,18 @@ A package declares providers in its `package.yml`; a widget names one `<package>
 | a provider's context not declared | `source.name app/session-context needs context.session: declare context: {session: required}` |
 | `context` key no surface gives | `context key "X" is not given by any surface` |
 | `context` value other than required/optional | `context key "X" is "Y": write required or optional` |
-| input type unknown, or default of the wrong type | `input "X" has type "Y"`, `input "X" is a string, and its default 3 is not` |
+| input type unknown, or default of the wrong type | `input "X" has type "Y": the types are string, number, boolean, choice`, `input "X" is a string, and its default 3 is not` |
+| a choice without `from`, or an unknown one | `input "X" is a choice, and needs from: one of harnesses, machines, workspaces`, `input "X" takes its options from "Y", which is not a source: the sources are harnesses, machines, workspaces` |
+| `many` neither true nor false | `input "X": many is maybe: write true or false` |
+| a choice's default of the wrong shape | `input "X" is a list of choices, and its default main is not: write [a, b], or [] for all`, `input "X" is one choice, and its default [main] is not a name` |
+| `from` or `many` on another type | `input "X" is a string: from and many belong to a choice` |
+| a choice input on an engine below 1.5 | `a widget with a choice input needs requires.engine ">= 1.5": an app on engine 1.4 cannot show its choices` |
+| a board's `with` of the wrong shape for a choice | `machines: input "machines" takes a list of names, written [a, b], and main is not one`, `usage: input "harness" takes one name, and [claude, codex] is not one` |
+| an empty `title` on an entry | `usage: title is empty: write one, or take the key off to show the widget's own` |
+| an `every` on an entry that its source does not take | `usage: every 1s is below claude-code/usage's minimum of 5s`, `usage: every "often" is not a duration: …`, `usage: every manual: claude-code/usage reads a provider, which runs on a schedule: …`, `tail: a stream runs while the widget is on screen, so it takes no every` |
+| an `every` on a widget written in the board | `disk: a widget written in the board sets how often in source.every, not every` |
 | template names something undeclared | `template {{inputs.X}} in source.with.Y needs inputs.X` |
-| `source.kind` unknown | `source.kind "X": engine 1.4 knows provider, command, url, prompt, session` |
+| `source.kind` unknown | `source.kind "X": engine 1.5 knows provider, command, url, prompt, session` |
 | a key of another kind | `source.url is not a field of a command source: it takes …` |
 | no `run`/`script`, or both | `a command source needs run or script`, `a command source has run or script, not both` |
 | `run` with spaces and no `shell: true` | `source.run "df -h /" has spaces: put each argument in source.args, or set shell: true …` |
@@ -557,7 +607,7 @@ A package declares providers in its `package.yml`; a widget names one `<package>
 | `parse`, `mode` or `harness` unknown | `source.parse "yaml": a command source takes text, lines, number, json, ansi` |
 | `url` not a full address | `source.url "X": write a full address starting with https:// or http://` |
 | view does not draw the source | `view.kind "gauge" takes number, json, and this command source gives text` |
-| `source.name` unknown | `source.name "X" is not a provider engine 1.4 knows` |
+| `source.name` unknown | `source.name "X" is not a provider engine 1.5 knows` |
 | `source.with` wrong | `source.with.X is not an argument of P`, `source.with.X is required by P` |
 | an app provider with target or timeout | `source.target: app/clock is the app's own data, so it takes no target` |
 | `source.every` missing, unreadable or too short | `source.every 1s is below the P minimum of 5s` |
@@ -599,6 +649,11 @@ A package declares providers in its `package.yml`; a widget names one `<package>
 | a `single` widget twice on one board | `workspaces-2: devmachine-app/workspaces goes on a board once, and workspaces already has it` |
 | a widget written in a board whose provider needs context the area lacks | `keys: source.name app/shortcuts needs context.session, which this board's area does not give` |
 | a widget written in a board whose view is drawn only in a stack, on Home | `port: the app.publish-port view is drawn only in stack, and this board's area is laid out as canvas` |
+
+A choice that names a machine or workspace your `config.yml` does not
+have, or a harness the engine does not know, is a warning (`warning: …`),
+never a problem: see [choosing and editing a
+widget](https://mydevmachine.sh/how-it-works/choosing-and-editing-a-widget/).
 
 `devmachine widgets validate` and `devmachine packages validate` report
 every problem at once, with the file and line.
