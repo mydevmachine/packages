@@ -37,6 +37,11 @@ jobs:
       - name: Run every provider's tests
         run: python3 -m unittest discover -s packages -p 'test_*.py' -v
 
+      # The renderer behind the skill references has its own tests, outside
+      # packages/, where the step above does not look.
+      - name: Run the skill reference renderer's tests
+        run: python3 -m unittest discover -s scripts/lib -p 'test_*.py' -v
+
       # devmachine-app's tests are pytest-style (fixtures, monkeypatch) and
       # `unittest discover` above collects none of them.
       - name: Install pytest
