@@ -122,6 +122,26 @@ def test_a_mac_whose_caddy_stopped_starting_shows_the_newer_launchd_log(on_a_mac
     assert capsys.readouterr().out == "Error: adapting config: bad Caddyfile\n"
 
 
+def test_a_mac_with_newer_startup_chatter_still_shows_caddys_log(on_a_mac, monkeypatch, capsys):
+    m = devmachine_caddy_logs
+    (on_a_mac / "devmachine-caddy.log").write_text('{"msg":"served"}\n')
+    os.utime(on_a_mac / "devmachine-caddy.log", (1000, 1000))
+    (on_a_mac / "devmachine-caddy.launchd.log").write_text("{\"msg\":\"using config from file\"}\n")
+    monkeypatch.setattr(sys, "argv", ["devmachine-caddy-logs"])
+    assert m.main() == 0
+    assert capsys.readouterr().out == '{"msg":"served"}\n'
+
+
+def test_a_mac_right_after_a_rotation_has_no_entries(on_a_mac, monkeypatch, capsys):
+    m = devmachine_caddy_logs
+    (on_a_mac / "devmachine-caddy.launchd.log").write_text("Error: an old failure\n")
+    os.utime(on_a_mac / "devmachine-caddy.launchd.log", (1000, 1000))
+    (on_a_mac / "devmachine-caddy.log").write_text("")
+    monkeypatch.setattr(sys, "argv", ["devmachine-caddy-logs"])
+    assert m.main() == 0
+    assert capsys.readouterr().out == "-- No entries --\n"
+
+
 def test_a_mac_without_caddy_has_no_entries(on_a_mac, monkeypatch, capsys):
     m = devmachine_caddy_logs
     monkeypatch.setattr(sys, "argv", ["devmachine-caddy-logs"])

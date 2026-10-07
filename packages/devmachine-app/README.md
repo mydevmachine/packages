@@ -114,9 +114,11 @@ entries: the output is `-- No entries --` and the exit is zero. A real failure
 (`journalctl` missing, a timeout) is reported on stderr with a non-zero exit.
 A Mac has no journal. There it prints the last lines of the log the `caddy`
 package writes, `/var/log/devmachine-caddy.log` (JSON, one entry per line).
-When Caddy failed before it could open that log, its startup output in
-`/var/log/devmachine-caddy.launchd.log` is newer, and that is what it prints.
-With neither file, Caddy is not there: `-- No entries --`, exit zero.
+It prints Caddy's startup output, `/var/log/devmachine-caddy.launchd.log`,
+instead only when that log does not exist yet, or when the startup output is
+newer and ends in the `Error:` line Caddy exits with. A start that fails never
+reaches the older log. With neither file, Caddy is not there: `-- No entries --`,
+exit zero.
 
 ## Learn more
 

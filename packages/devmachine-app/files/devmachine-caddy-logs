@@ -31,30 +31,38 @@ def tail(path: Path, lines: int) -> str:
         return "".join(deque(f, maxlen=lines))
 
 
-def darwin_logs(lines: int) -> int:
-    """The tail of whichever log Caddy wrote to last: its own log, or its
-    startup output when it failed before it could open that log, which leaves
-    the older log behind untouched. Neither file is a machine without Caddy."""
-    newest, newest_time = None, None
-    for path in (DARWIN_LOG, DARWIN_LAUNCHD_LOG):
-        try:
-            info = path.stat()
-        except FileNotFoundError:
-            continue
-        except OSError as e:
-            print("%s: %s" % (path, e.strerror or e), file=sys.stderr)
-            return 1
-        if info.st_size and (newest_time is None or info.st_mtime > newest_time):
-            newest, newest_time = path, info.st_mtime
-    if newest is None:
-        sys.stdout.write(NO_ENTRIES)
-        return 0
+def mtime(path: Path):
     try:
-        text = tail(newest, lines)
+        return path.stat().st_mtime
+    except FileNotFoundError:
+        return None
+
+
+def failed_to_start(startup: str) -> bool:
+    """Caddy's last word before it exits on a bad start is `Error: ...`."""
+    last = [line for line in startup.splitlines() if line.strip()][-1:]
+    return bool(last) and last[0].startswith("Error:")
+
+
+def darwin_logs(lines: int) -> int:
+    """The tail of Caddy's own log. Its startup output wins only when Caddy
+    never opened that log, or when it is newer and ends in the error Caddy
+    exits with: a start that fails leaves the older log behind untouched.
+    Neither file is a machine without Caddy."""
+    try:
+        log_time, startup_time = mtime(DARWIN_LOG), mtime(DARWIN_LAUNCHD_LOG)
+        startup = tail(DARWIN_LAUNCHD_LOG, lines) if startup_time is not None else ""
+        if log_time is None or (startup and startup_time > log_time and failed_to_start(startup)):
+            text = startup
+        else:
+            text = tail(DARWIN_LOG, lines)
     except OSError as e:
-        print("%s: %s" % (newest, e.strerror or e), file=sys.stderr)
+        print("%s: %s" % (e.filename or "caddy log", e.strerror or e), file=sys.stderr)
         return 1
-    sys.stdout.write(text if text.endswith("\n") else text + "\n")
+    if not text:
+        sys.stdout.write(NO_ENTRIES)
+    else:
+        sys.stdout.write(text if text.endswith("\n") else text + "\n")
     return 0
 
 
