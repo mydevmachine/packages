@@ -127,9 +127,10 @@ An Ansible role, with one extra file beside it:
 
 ```
 packages/<name>/
-  package.yml        what this is, what it needs, what it offers
-  tasks/main.yml     required
-  skills/*/SKILL.md  optional Agent Skills contributed by this package
+  package.yml          what this is, what it needs, what it offers
+  tasks/main.yml       required
+  skills/*/SKILL.md    optional Agent Skills contributed by this package
+  widgets/*/widget.yml optional widgets for the macOS app's Home
   defaults/, vars/, files/, templates/, handlers/
 ```
 
@@ -137,6 +138,22 @@ Nothing is translated. What is written here is what runs on the machine, so a
 failure points at a line somebody wrote rather than at generated YAML they have
 never seen. The full format is in the
 [package format reference](https://mydevmachine.sh/reference/package-format/).
+
+## Widgets
+
+A package can carry widgets for the
+[Devmachine macOS app](https://mydevmachine.sh/app/): small cards on its
+Home, each one `widget.yml` that names what to read and how to show it.
+There is no code in a widget. `package.yml` points at the folder:
+
+```yaml
+widgets: widgets
+```
+
+`devmachine-app` ships the clock, summary and machines widgets, and
+`claude-code` and `codex` each ship `usage`. A widget that reads only what
+the app already knows works without adding its package. The format is in
+the [widget format reference](https://mydevmachine.sh/reference/widget-format/).
 
 ## A pin is a tag, never a branch
 
