@@ -29,8 +29,8 @@ root. tailscaled then runs as a launch daemon this package writes,
 `/var/lib/tailscale/tailscaled.state`, the path `stored_at` names on Linux too,
 and runs the binary Homebrew upgrades instead of a copy of it.
 
-A Mac that already runs Tailscale, through the Tailscale app or a tailscaled
-installed by hand, is left as it is: a second tailscaled beside it fights it for
+A Mac that already runs Tailscale, through the Tailscale app, `sudo brew services
+start tailscale` or a tailscaled installed by hand, is left as it is: a second tailscaled beside it fights it for
 the tunnel, which is often the one the Mac is reached through. Log in through
 what is already there. `exit_node` turns on IP forwarding only on Linux.
 
