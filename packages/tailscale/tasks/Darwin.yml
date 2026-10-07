@@ -1,13 +1,15 @@
 ---
 # The Tailscale app runs a network extension of its own, and a second
 # tailscaled beside it fights it for the tunnel — often the tunnel this Mac is
-# reached through. So does a tailscaled somebody already installed by hand.
+# reached through. So does a tailscaled somebody already installed by hand or started with
+# `brew services`.
 - name: Look for a Tailscale this package did not install
   ansible.builtin.stat:
     path: "{{ item }}"
   loop:
     - /Applications/Tailscale.app
     - /Library/LaunchDaemons/com.tailscale.tailscaled.plist
+    - /Library/LaunchDaemons/homebrew.mxcl.tailscale.plist
   register: devmachine_tailscale_other
 
 - name: Say the Tailscale already here is left alone
