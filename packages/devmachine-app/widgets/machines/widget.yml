@@ -1,13 +1,15 @@
 format: 1
 name: machines
 summary: Each machine, online or not, with its CPU, memory, disk and readiness.
-requires: {engine: ">= 1.0"}
+requires: {engine: ">= 1.5"}
 fits: [canvas, stack]
 context: {}
+inputs:
+  machines: {type: choice, from: machines, many: true, summary: Which machines to show; none picked shows them all.}
 source:
   kind: provider
   name: app/machines
-  with: {}
+  with: {machines: "{{inputs.machines}}"}
   every: 90s
 view: {kind: app.machines}
 sizes: [medium, large, wide, tall]
