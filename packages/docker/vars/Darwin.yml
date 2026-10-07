@@ -1,0 +1,21 @@
+---
+devmachine_docker_brew_prefix: "{{ '/opt/homebrew' if ansible_facts['architecture'] == 'arm64' else '/usr/local' }}"
+
+devmachine_docker_formulae:
+  - colima
+  - docker
+  - docker-buildx
+  - docker-compose
+
+# The docker CLI looks for plugins here and in ~/.docker/cli-plugins, never in
+# Homebrew's prefix, so without the links `docker compose` is "not a command".
+devmachine_docker_plugin_dir: /usr/local/lib/docker/cli-plugins
+devmachine_docker_plugins: [docker-buildx, docker-compose]
+
+devmachine_docker_label_prefix: devmachine.colima.
+devmachine_docker_vm_users: >-
+  {{ (devmachine_workspaces | default([])
+      | selectattr('name', 'in', devmachine_docker_workspaces)
+      if devmachine_docker_workspaces | length > 0
+      else devmachine_workspaces | default([]))
+     | map(attribute='user') | unique | list }}

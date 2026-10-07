@@ -385,3 +385,87 @@ def test_stats_answer_matches_the_declared_provider(monkeypatch):
         if optional and value is None:
             continue
         assert isinstance(value, PY_TYPES[kind.rstrip("?")]), (field, kind, value)
+
+
+def _colima(monkeypatch, m, sockets, binaries=("/opt/homebrew/bin/docker",)):
+    monkeypatch.setattr(m.glob, "glob", lambda pattern: list(sockets))
+    monkeypatch.setattr(m.os.path, "exists", lambda p: p in binaries)
+
+
+def test_docker_endpoints_on_linux_is_the_one_daemon(monkeypatch):
+    m = devmachine_stats
+    assert m.docker_endpoints("Linux") == [(["docker"], None)]
+
+
+def test_docker_endpoints_on_darwin_is_one_colima_per_account(monkeypatch):
+    m = devmachine_stats
+    _colima(monkeypatch, m, [
+        "/Users/bob/.colima/default/docker.sock",
+        "/Users/alice/.colima/default/docker.sock",
+    ])
+    assert m.docker_endpoints("Darwin") == [
+        (["/opt/homebrew/bin/docker", "--host", "unix:///Users/alice/.colima/default/docker.sock"], "alice"),
+        (["/opt/homebrew/bin/docker", "--host", "unix:///Users/bob/.colima/default/docker.sock"], "bob"),
+    ]
+
+
+def test_docker_endpoints_on_an_intel_mac_finds_docker_under_usr_local(monkeypatch):
+    m = devmachine_stats
+    _colima(monkeypatch, m, ["/Users/alice/.colima/default/docker.sock"], binaries=("/usr/local/bin/docker",))
+    assert m.docker_endpoints("Darwin")[0][0][0] == "/usr/local/bin/docker"
+
+
+def test_docker_endpoints_on_darwin_without_colima_asks_the_default_daemon(monkeypatch):
+    m = devmachine_stats
+    _colima(monkeypatch, m, [], binaries=())
+    assert m.docker_endpoints("Darwin") == [(["docker"], None)]
+
+
+def test_read_docker_merges_every_colima_and_names_the_account(monkeypatch):
+    m = devmachine_stats
+    alice = ["/opt/homebrew/bin/docker", "--host", "unix:///Users/alice/.colima/default/docker.sock"]
+    bob = ["/opt/homebrew/bin/docker", "--host", "unix:///Users/bob/.colima/default/docker.sock"]
+
+    def run_stub(cmd, timeout=10):
+        if cmd[:4] == alice + ["stats"]:
+            return True, "web|10MiB / 2GiB|1.00%\n", None
+        if cmd[:4] == alice + ["ps"]:
+            return True, "web|\n", None
+        if cmd[:4] == bob + ["stats"]:
+            return True, "web|20MiB / 2GiB|2.00%\n", None
+        if cmd[:4] == bob + ["ps"]:
+            return True, "web|/Users/carol/compose\n", None
+        raise AssertionError("unexpected command: %r" % cmd)
+
+    monkeypatch.setattr(m, "run", run_stub)
+    docker = m.read_docker([], [(alice, "alice"), (bob, "bob")])
+    assert docker["available"] is True
+    assert [(c["name"], c["owner"], c["mem_used_bytes"]) for c in docker["containers"]] == [
+        ("web", "alice", m.parse_size("10MiB")),
+        ("web", "carol", m.parse_size("20MiB")),
+    ]
+
+
+def test_read_docker_treats_a_stopped_colima_as_not_running(monkeypatch):
+    m = devmachine_stats
+    alice = ["/opt/homebrew/bin/docker", "--host", "unix:///Users/alice/.colima/default/docker.sock"]
+    stopped = "Cannot connect to the Docker daemon at unix:///Users/alice/.colima/default/docker.sock. Is the docker daemon running?"
+    monkeypatch.setattr(m, "run", lambda cmd, timeout=10: (False, "", stopped))
+    errors = []
+    assert m.read_docker(errors, [(alice, "alice")]) == {"available": False, "containers": []}
+    assert errors == []
+
+
+def test_read_ports_darwin_names_the_colima_account_for_a_published_port(monkeypatch):
+    m = devmachine_stats
+    alice = ["/opt/homebrew/bin/docker", "--host", "unix:///Users/alice/.colima/default/docker.sock"]
+
+    def run_stub(cmd, timeout=10):
+        if cmd[:4] == alice + ["ps"]:
+            return True, "web||0.0.0.0:8810->80/tcp\n", None
+        if cmd[0] == "lsof":
+            return True, "p700\nLroot\nf3\nn*:8810\n", None
+        raise AssertionError("unexpected command: %r" % cmd)
+
+    monkeypatch.setattr(m, "run", run_stub)
+    assert m.read_ports_darwin([], [(alice, "alice")]) == [{"port": 8810, "owner": "alice"}]

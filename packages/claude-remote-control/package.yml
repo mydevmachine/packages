@@ -1,11 +1,12 @@
 format: 1
 name: claude-remote-control
 scope: workspace
-platforms: [linux]
+platforms: [linux, macos]
 category: Coding agents
 summary: >-
   Keeps one account's Claude Code Remote Control session up: a user systemd
-  unit plus linger, so it survives every logout. It starts only where that
+  unit plus linger on Linux, a launch daemon on macOS, so it survives every
+  logout. It starts only where that
   account has logged in, because there is nothing to connect without a session.
 
 needs: [claude-code]
@@ -29,4 +30,5 @@ variables:
     summary: >-
       How long to wait before reconnecting. The server gives up on its own
       after about ten minutes with no network, so the unit restarts for good.
+      On macOS it is launchd's ThrottleInterval.
     default: 30

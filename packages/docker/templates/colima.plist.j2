@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>{{ devmachine_docker_label_prefix }}{{ item | e }}</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/sh</string>
+    <string>-c</string>
+    <string>until /usr/bin/id -u "$1" >/dev/null 2>&amp;1; do sleep 30; done; exec /usr/bin/sudo -u "$1" -H /usr/bin/env PATH="$PATH" colima start --foreground --cpu "$2" --memory "$3"</string>
+    <string>devmachine-colima</string>
+    <string>{{ item | e }}</string>
+    <string>{{ devmachine_docker_vm_cpus | int }}</string>
+    <string>{{ devmachine_docker_vm_memory | int }}</string>
+  </array>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>{{ devmachine_docker_brew_prefix }}/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+  </dict>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+  <key>ThrottleInterval</key>
+  <integer>30</integer>
+</dict>
+</plist>

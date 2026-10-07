@@ -1,21 +1,25 @@
 ---
+# macOS ships python3 with its Command Line Tools, and the provider runs on its
+# 3.9. Homebrew would also refuse the root this play runs as on a Mac reached
+# over SSH.
 - name: Make sure Python is available
-  package:
+  ansible.builtin.package:
     name: python3
     state: present
+  when: ansible_facts['system'] != 'Darwin'
 
 - name: Make sure the provider configuration directory exists
-  file:
+  ansible.builtin.file:
     path: /etc/devmachine/hostinger
     state: directory
     owner: root
-    group: root
+    group: "{{ 'wheel' if ansible_facts['system'] == 'Darwin' else 'root' }}"
     mode: "0700"
 
 - name: Record the zones available to the provider
-  copy:
+  ansible.builtin.copy:
     content: "{{ devmachine_hostinger_zones | to_json }}\n"
     dest: /etc/devmachine/hostinger/zones.json
     owner: root
-    group: root
+    group: "{{ 'wheel' if ansible_facts['system'] == 'Darwin' else 'root' }}"
     mode: "0600"

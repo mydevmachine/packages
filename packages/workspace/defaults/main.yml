@@ -1,7 +1,7 @@
 ---
 # The home the account has. Before it exists — a first run, or a dry run —
 # there is nothing to read, so it is where useradd puts a new one on Linux.
-devmachine_workspace_home: "{{ devmachine_account.home | default('/home/' ~ devmachine_workspace.user) }}"
+devmachine_workspace_home: "{{ devmachine_account.home | default(('/Users/' if ansible_facts['system'] == 'Darwin' else '/home/') ~ devmachine_workspace.user) }}"
 
 # Every workspace is reached by whatever reaches the administrative account.
 # There is no second list of keys to keep in step, and no key of the operator's
@@ -23,3 +23,7 @@ devmachine_workspace_sign_commits: true
 
 devmachine_workspace_known_hosts:
   - github.com
+
+# Cloned once into ~/dev/<name>. Never pulled: a pull on somebody's working
+# tree is the one thing convergence must not do.
+devmachine_workspace_repos: []

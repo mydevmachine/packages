@@ -1,83 +1,108 @@
 ---
-# This checks the machine, not the operator's computer, and that is right:
-# provisioning runs `ansible-playbook -c local` on the machine, so the machine
-# is where a collection has to resolve. Running this role over SSH from
-# somewhere else would check the wrong host — that mode is not how the CLI
-# applies anything.
-- name: Look for the community.general collection
-  ansible.builtin.command: ansible-galaxy collection list community.general
-  register: devmachine_firewall_collection
-  changed_when: false
-  failed_when: false
+# A loop over first_found, not a plain include_vars: when no file matches, the
+# loop is empty and the task skips, on ansible-core 2.14 as on the latest.
+- name: Load the names for this system
+  ansible.builtin.include_vars: "{{ devmachine_vars_file }}"
+  loop: "{{ query('ansible.builtin.first_found', devmachine_vars_chain) }}"
+  loop_control:
+    loop_var: devmachine_vars_file
+  vars:
+    devmachine_vars_chain:
+      files:
+        - "{{ ansible_facts['distribution'] }}.yml"
+        - "{{ ansible_facts['pkg_mgr'] }}.yml"
+        - "{{ ansible_facts['os_family'] }}.yml"
+        - default.yml
+      paths:
+        - "{{ role_path }}/vars"
+      skip: true
 
-# Without this the run dies on "couldn't resolve module community.general.ufw",
-# which says what is missing but not how to get it.
-- name: Check the community.general collection is installed
-  ansible.builtin.assert:
-    quiet: true
-    that: devmachine_firewall_collection.rc == 0
-    fail_msg: >-
-      This package uses community.general.ufw. Install the collection with
-      `ansible-galaxy collection install community.general`.
+- name: Turn the Application Firewall on, with SSH open, on macOS
+  ansible.builtin.import_tasks: Darwin.yml
+  when: ansible_facts['system'] == 'Darwin'
 
-- name: Install ufw
-  ansible.builtin.package:
-    name: ufw
-    state: present
+- name: Set up ufw on Linux
+  when: ansible_facts['system'] != 'Darwin'
+  block:
+    # This checks the machine, not the operator's computer, and that is right:
+    # provisioning runs `ansible-playbook -c local` on the machine, so the machine
+    # is where a collection has to resolve. Running this role over SSH from
+    # somewhere else would check the wrong host — that mode is not how the CLI
+    # applies anything.
+    - name: Look for the community.general collection
+      ansible.builtin.command: ansible-galaxy collection list community.general
+      register: devmachine_firewall_collection
+      changed_when: false
+      failed_when: false
 
-- name: Look for ufw's OpenSSH profile
-  ansible.builtin.command: ufw app info OpenSSH
-  register: devmachine_firewall_ssh_profile
-  changed_when: false
-  failed_when: false
-  check_mode: false
+    # Without this the run dies on "couldn't resolve module community.general.ufw",
+    # which says what is missing but not how to get it.
+    - name: Check the community.general collection is installed
+      ansible.builtin.assert:
+        quiet: true
+        that: devmachine_firewall_collection.rc == 0
+        fail_msg: >-
+          This package uses community.general.ufw. Install the collection with
+          `ansible-galaxy collection install community.general`.
 
-# Debian and Ubuntu ship this profile with openssh-server. Arch ships none, and
-# the rule below would fail with "Could not find a profile matching 'OpenSSH'".
-- name: Describe OpenSSH to ufw where the system does not
-  ansible.builtin.copy:
-    dest: /etc/ufw/applications.d/devmachine-openssh
-    owner: root
-    group: root
-    mode: "0644"
-    content: |
-      [OpenSSH]
-      title=Secure shell server
-      description=OpenSSH, the Secure Shell server.
-      ports=22/tcp
-  when: devmachine_firewall_ssh_profile.rc != 0
+    - name: Install ufw
+      ansible.builtin.package:
+        name: ufw
+        state: present
 
-- name: Allow OpenSSH
-  community.general.ufw:
-    rule: allow
-    name: OpenSSH
+    - name: Look for ufw's OpenSSH profile
+      ansible.builtin.command: ufw app info OpenSSH
+      register: devmachine_firewall_ssh_profile
+      changed_when: false
+      failed_when: false
+      check_mode: false
 
-- name: Allow HTTP and HTTPS
-  community.general.ufw:
-    rule: allow
-    port: "{{ item }}"
-    proto: tcp
-  loop: ["80", "443"]
-  when: devmachine_firewall_http | bool
+    # Debian and Ubuntu ship this profile with openssh-server. Arch ships none, and
+    # the rule below would fail with "Could not find a profile matching 'OpenSSH'".
+    - name: Describe OpenSSH to ufw where the system does not
+      ansible.builtin.copy:
+        dest: /etc/ufw/applications.d/devmachine-openssh
+        owner: root
+        group: root
+        mode: "0644"
+        content: |
+          [OpenSSH]
+          title=Secure shell server
+          description=OpenSSH, the Secure Shell server.
+          ports=22/tcp
+      when: devmachine_firewall_ssh_profile.rc != 0
 
-- name: Allow mosh over one interface
-  community.general.ufw:
-    rule: allow
-    direction: in
-    interface: "{{ devmachine_firewall_mosh_interface }}"
-    proto: udp
-    port: "{{ devmachine_firewall_mosh_ports }}"
-    comment: "mosh on {{ devmachine_firewall_mosh_interface }}"
-  when: devmachine_firewall_mosh_interface | length > 0
+    - name: Allow OpenSSH
+      community.general.ufw:
+        rule: allow
+        name: OpenSSH
 
-- name: Enable ufw
-  community.general.ufw:
-    state: enabled
+    - name: Allow HTTP and HTTPS
+      community.general.ufw:
+        rule: allow
+        port: "{{ item }}"
+        proto: tcp
+      loop: ["80", "443"]
+      when: devmachine_firewall_http | bool
 
-# `ufw enable` applies the rules now; the service is what applies them again
-# after a reboot, and Arch does not enable it when ufw is installed.
-- name: Apply the rules on every boot
-  ansible.builtin.systemd:
-    name: ufw
-    enabled: true
-  when: not ansible_check_mode
+    - name: Allow mosh over one interface
+      community.general.ufw:
+        rule: allow
+        direction: in
+        interface: "{{ devmachine_firewall_mosh_interface }}"
+        proto: udp
+        port: "{{ devmachine_firewall_mosh_ports }}"
+        comment: "mosh on {{ devmachine_firewall_mosh_interface }}"
+      when: devmachine_firewall_mosh_interface | length > 0
+
+    - name: Enable ufw
+      community.general.ufw:
+        state: enabled
+
+    # `ufw enable` applies the rules now; the service is what applies them again
+    # after a reboot, and Arch does not enable it when ufw is installed.
+    - name: Apply the rules on every boot
+      ansible.builtin.systemd:
+        name: ufw
+        enabled: true
+      when: not ansible_check_mode

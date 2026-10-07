@@ -1,11 +1,12 @@
 format: 1
 name: firewall
 scope: machine
-platforms: [linux]
+platforms: [linux, macos]
 category: Security
 summary: >-
   ufw, with SSH open and HTTP optional. It needs the community.general
-  collection on the machine.
+  collection on the machine. On macOS, the Application Firewall, with sshd
+  permitted before it is turned on.
 
 requires:
   cli: ">= 0.2.0"

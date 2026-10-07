@@ -3,3 +3,5 @@
   ansible.builtin.systemd:
     name: "{{ devmachine_ssh_hardening_service | default(devmachine_ssh_hardening_family_service, true) }}"
     state: reloaded
+  # launchd starts sshd per connection on macOS: the next login reads the file.
+  when: ansible_facts['system'] != 'Darwin'

@@ -1,0 +1,11 @@
+---
+devmachine_socketfilterfw: /usr/libexec/ApplicationFirewall/socketfilterfw
+
+# The program launchd starts for Remote Login. macOS lists it in the firewall
+# itself when Remote Login is turned on in System Settings, but not when it is
+# turned on with `systemsetup -setremotelogin on`.
+devmachine_firewall_sshd: /usr/libexec/sshd-keygen-wrapper
+
+devmachine_firewall_bin_dir: >-
+  {{ ('/opt/homebrew' if ansible_facts['architecture'] == 'arm64' else '/usr/local') ~ '/bin'
+  if ansible_facts['pkg_mgr'] == 'homebrew' else '/opt/local/bin' }}

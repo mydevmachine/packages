@@ -25,6 +25,7 @@
   ansible.builtin.package:
     name: tailscale
     state: present
+  when: ansible_facts['system'] == 'Linux'
 
 - name: Enable and start tailscaled
   ansible.builtin.systemd:
@@ -34,7 +35,13 @@
   # A dry run on a machine that does not have the package yet cannot start a
   # service that does not exist, so check mode would report a failure that only
   # means "this is not installed" — which the rest of the run already said.
-  when: not ansible_check_mode
+  when:
+    - not ansible_check_mode
+    - ansible_facts['system'] == 'Linux'
+
+- name: Install and run Tailscale on macOS
+  ansible.builtin.import_tasks: Darwin.yml
+  when: ansible_facts['system'] == 'Darwin'
 
 # Exit node: IPv4 and IPv6 forwarding has to be on in the host for tailscaled to
 # route the peers' traffic (https://tailscale.com/kb/1103/exit-nodes). Off by
@@ -48,7 +55,18 @@
       net.ipv6.conf.all.forwarding = 1
     mode: "0644"
   register: devmachine_tailscale_sysctl
-  when: devmachine_tailscale_exit_node | bool
+  when:
+    - devmachine_tailscale_exit_node | bool
+    - ansible_facts['system'] == 'Linux'
+
+- name: Say that the exit node is not set up on macOS
+  ansible.builtin.debug:
+    msg: >-
+      WARNING: exit_node only turns on IP forwarding on Linux. On macOS this
+      package leaves forwarding as it is.
+  when:
+    - devmachine_tailscale_exit_node | bool
+    - ansible_facts['system'] == 'Darwin'
 
 - name: Reload the tailscale sysctl
   ansible.builtin.command: sysctl -p /etc/sysctl.d/99-tailscale.conf

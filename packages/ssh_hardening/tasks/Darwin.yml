@@ -1,0 +1,53 @@
+---
+# launchd starts a fresh sshd for every connection, so a drop-in sshd refuses
+# locks out the very next login. The file is checked before it takes the place
+# of the old one: the candidate is included first, then the real sshd_config.
+- name: Turn off password authentication and root login by password
+  ansible.builtin.copy:
+    dest: /etc/ssh/sshd_config.d/00-devmachine-hardening.conf
+    owner: root
+    group: wheel
+    mode: "0644"
+    content: |
+      PasswordAuthentication no
+      # macOS turns PAM on, and PAM still takes a password through
+      # keyboard-interactive unless this is off as well.
+      KbdInteractiveAuthentication no
+      PermitRootLogin prohibit-password
+      # SSH forwards TERM and nothing else. A program on the machine that wants
+      # to know which terminal it is talking to needs the rest listed here, and
+      # SendEnv on the client.
+      AcceptEnv TERM_PROGRAM TERM_PROGRAM_VERSION COLORTERM
+      {% if devmachine_password_login_keep | default([]) | length > 0 %}
+      # These accounts still log in with a password (password_login_keep in
+      # config.yml). A Match block runs to the end of its file, so it stays last.
+      Match User {{ devmachine_password_login_keep | join(',') }}
+      	PasswordAuthentication yes
+      	KbdInteractiveAuthentication yes
+      {% endif %}
+    validate: >-
+      /bin/sh -c 'c=$(mktemp) || exit 1;
+      echo "Include $0" > "$c";
+      echo "Include /etc/ssh/sshd_config" >> "$c";
+      /usr/sbin/sshd -t -f "$c"; r=$?; rm -f "$c"; exit $r' %s
+
+- name: Ask sshd what it runs with
+  ansible.builtin.command: /usr/sbin/sshd -T
+  register: devmachine_ssh_hardening_effective
+  changed_when: false
+  check_mode: false
+  when: not ansible_check_mode
+
+# A drop-in can be valid and still never read, when the main sshd_config sets
+# the value before its Include. sshd -T, not the file, says what is true.
+- name: Check that sshd takes no password
+  ansible.builtin.assert:
+    quiet: true
+    that:
+      - devmachine_ssh_hardening_effective.stdout is search('(?im)^passwordauthentication no$')
+      - devmachine_ssh_hardening_effective.stdout is search('(?im)^kbdinteractiveauthentication no$')
+    fail_msg: >-
+      /etc/ssh/sshd_config.d/00-devmachine-hardening.conf is in place, but sshd
+      still takes a password: /etc/ssh/sshd_config sets PasswordAuthentication
+      or KbdInteractiveAuthentication before it includes sshd_config.d.
+  when: not ansible_check_mode

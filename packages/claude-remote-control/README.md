@@ -1,7 +1,8 @@
 # claude-remote-control
 
 Keeps one account's Claude Code Remote Control session up: a user systemd
-unit plus linger, so it survives every logout. It starts only where that
+unit plus linger on Linux, a launch daemon on macOS, so it survives every
+logout. It starts only where that
 account has logged in, because there is nothing to connect without a session.
 
 - **Scope:** workspace
@@ -28,6 +29,19 @@ None of its own; it uses the `claude` login from
 devmachine packages add claude-remote-control --workspace acme
 devmachine login claude --workspace acme
 devmachine sync
+```
+
+## How it stays up on macOS
+
+A workspace account never logs in at the Mac's own screen, and a LaunchAgent
+loads only inside a session of its account. So on macOS the session is a
+LaunchDaemon, `/Library/LaunchDaemons/devmachine.claude-rc.<user>.plist`, with
+`UserName` set to the account: launchd starts it at boot as that account, with
+nobody logged in, the way linger does for the systemd unit on Linux. Its output
+goes to `~/Library/Logs/claude-rc.log`.
+
+```bash
+sudo launchctl print system/devmachine.claude-rc.<user>
 ```
 
 ## Notes

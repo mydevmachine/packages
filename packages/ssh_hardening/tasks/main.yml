@@ -17,39 +17,86 @@
         - "{{ role_path }}/vars"
       skip: true
 
-# 00- so it wins by alphabetical order over the other drop-ins, for example the
-# 50-cloud-init.conf that a cloud image ships with PasswordAuthentication yes.
-# sshd uses the first value it finds for each directive — the Include of
-# sshd_config.d sits at the top of the main sshd_config, so whatever comes first
-# in the alphabetical glob is in charge.
-- name: Turn off password authentication and root login by password
-  ansible.builtin.copy:
-    dest: /etc/ssh/sshd_config.d/00-devmachine-hardening.conf
-    owner: root
-    group: root
-    mode: "0644"
-    content: |
-      PasswordAuthentication no
-      PermitRootLogin prohibit-password
-      # SSH forwards TERM and nothing else. A program on the machine that wants
-      # to know which terminal it is talking to needs the rest listed here, and
-      # SendEnv on the client.
-      AcceptEnv TERM_PROGRAM TERM_PROGRAM_VERSION COLORTERM
-  notify: Reload sshd
+# config.yml's password_login_keep reaches every play as a host variable. A
+# name sshd would read as a pattern or a second account must not reach the file.
+- name: Check the accounts that keep password login
+  ansible.builtin.assert:
+    quiet: true
+    that: item is match('^[A-Za-z0-9_][A-Za-z0-9_.-]{0,63}$')
+    fail_msg: "{{ item }} is not one account name, so it cannot keep password login"
+  loop: "{{ devmachine_password_login_keep | default([]) }}"
 
-# sshd -t refuses to parse anything without its privilege separation directory.
-# systemd makes /run/sshd only when ssh.service starts, and on a release that
-# starts sshd through ssh.socket — Ubuntu 24.04 and later — it may never have
-# started: a machine reached only through Tailscale SSH never opens the socket.
-- name: Make sshd's runtime directory, which the check needs
-  ansible.builtin.file:
-    path: /run/sshd
-    state: directory
-    owner: root
-    group: root
-    mode: "0755"
-  changed_when: false
+- name: Keep password login off on macOS
+  ansible.builtin.import_tasks: Darwin.yml
+  when: ansible_facts['system'] == 'Darwin'
 
-- name: Check the sshd config before it is reloaded
-  ansible.builtin.command: sshd -t
+- name: Keep password login off on Linux
+  when: ansible_facts['system'] != 'Darwin'
+  block:
+    # 00- so it wins by alphabetical order over the other drop-ins, for example the
+    # 50-cloud-init.conf that a cloud image ships with PasswordAuthentication yes.
+    # sshd uses the first value it finds for each directive — the Include of
+    # sshd_config.d sits at the top of the main sshd_config, so whatever comes first
+    # in the alphabetical glob is in charge.
+    - name: Turn off password authentication and root login by password
+      ansible.builtin.copy:
+        dest: /etc/ssh/sshd_config.d/00-devmachine-hardening.conf
+        owner: root
+        group: root
+        mode: "0644"
+        content: |
+          PasswordAuthentication no
+          PermitRootLogin prohibit-password
+          # SSH forwards TERM and nothing else. A program on the machine that wants
+          # to know which terminal it is talking to needs the rest listed here, and
+          # SendEnv on the client.
+          AcceptEnv TERM_PROGRAM TERM_PROGRAM_VERSION COLORTERM
+          {% if devmachine_password_login_keep | default([]) | length > 0 %}
+          # These accounts still log in with a password (password_login_keep in
+          # config.yml). A Match block runs to the end of its file, so it stays last.
+          Match User {{ devmachine_password_login_keep | join(',') }}
+          	PasswordAuthentication yes
+          	KbdInteractiveAuthentication yes
+          {% endif %}
+      notify: Reload sshd
+
+    # sshd -t refuses to parse anything without its privilege separation directory.
+    # systemd makes /run/sshd only when ssh.service starts, and on a release that
+    # starts sshd through ssh.socket — Ubuntu 24.04 and later — it may never have
+    # started: a machine reached only through Tailscale SSH never opens the socket.
+    - name: Make sshd's runtime directory, which the check needs
+      ansible.builtin.file:
+        path: /run/sshd
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+      changed_when: false
+
+    - name: Check the sshd config before it is reloaded
+      ansible.builtin.command: sshd -t
+      changed_when: false
+
+# sshd -T reads the files, not the running daemon, so it answers before the
+# reload. A Match block earlier in sshd_config could still decide it first.
+- name: Ask sshd whether each kept account still takes a password
+  ansible.builtin.command: >-
+    {{ '/usr/sbin/sshd' if ansible_facts['system'] == 'Darwin' else 'sshd' }}
+    -T -C user={{ item }},host=localhost,addr=127.0.0.1
+  register: devmachine_ssh_hardening_kept
   changed_when: false
+  check_mode: false
+  loop: "{{ devmachine_password_login_keep | default([]) }}"
+  when: not ansible_check_mode
+
+- name: Check that each kept account still takes a password
+  ansible.builtin.assert:
+    quiet: true
+    that: item.stdout is search('(?im)^passwordauthentication yes$')
+    fail_msg: >-
+      {{ item.item }} is in password_login_keep, but sshd still refuses its
+      password: a Match block or a drop-in that sorts before 00- decides it first.
+  loop: "{{ devmachine_ssh_hardening_kept.results | default([]) }}"
+  loop_control:
+    label: "{{ item.item }}"
+  when: not ansible_check_mode

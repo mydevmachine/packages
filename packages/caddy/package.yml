@@ -1,7 +1,7 @@
 format: 1
 name: caddy
 scope: machine
-platforms: [linux]
+platforms: [linux, macos]
 category: Web
 summary: >-
   A reverse proxy that gets its own certificates, and a one-page site that
@@ -49,7 +49,8 @@ variables:
       GitHub release instead. `apt` uses only the repository and fails when it
       cannot be checked. `github` always installs the pinned GitHub release and
       removes the repository. Debian and Ubuntu only: elsewhere Caddy comes
-      from the system's own repository.
+      from the system's own repository, and on macOS from Homebrew or
+      MacPorts.
     default: auto
   version:
     summary: >-

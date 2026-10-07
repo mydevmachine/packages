@@ -1,13 +1,27 @@
 format: 1
 name: docker
 scope: machine
-platforms: [linux]
+platforms: [linux, macos]
 category: Containers
 summary: >-
   Docker Engine and the Compose plugin, from Docker's own repository on Debian
-  and Ubuntu and from the system's own on Arch Linux.
+  and Ubuntu and from the system's own on Arch Linux. On macOS, colima and the
+  docker CLI from Homebrew, with a VM for each workspace.
 
 needs: [base]
 
 requires:
   cli: ">= 0.2.0"
+
+variables:
+  workspaces:
+    summary: >-
+      macOS only: the workspaces that get a Docker VM of their own. Empty
+      means every workspace on the machine.
+    default: []
+  vm_cpus:
+    summary: macOS only. The CPUs each workspace's VM gets.
+    default: 2
+  vm_memory:
+    summary: macOS only. The memory each workspace's VM gets, in GiB.
+    default: 2

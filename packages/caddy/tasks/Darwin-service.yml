@@ -1,0 +1,67 @@
+---
+# Root, because nothing else on a Mac may take 80 and 443 on every interface.
+- name: Write Caddy's launchd job
+  ansible.builtin.template:
+    src: devmachine.caddy.plist.j2
+    dest: "{{ devmachine_caddy_launchd_plist }}"
+    owner: root
+    group: wheel
+    mode: "0644"
+  register: devmachine_caddy_plist
+  notify: Load caddy's launchd job again
+
+- name: Look for Caddy's launchd job
+  ansible.builtin.command: launchctl print system/{{ devmachine_caddy_launchd_label }}
+  register: devmachine_caddy_job
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+# A plist written this run is loaded by its handler, so it is not loaded twice.
+- name: Load Caddy's launchd job
+  ansible.builtin.command: launchctl bootstrap system {{ devmachine_caddy_launchd_plist }}
+  changed_when: true
+  when:
+    - not ansible_check_mode
+    - devmachine_caddy_job.rc != 0
+    - devmachine_caddy_plist is not changed
+
+# The Application Firewall decides per program, not per port. A Caddy it has
+# never seen gets no incoming connection, and no one is at the screen to answer
+# its prompt. One it already lists is left alone: `firewall` with http off
+# blocks it on purpose. Each Homebrew upgrade is a new path, and it gets what
+# the Caddy before it had, so an upgrade never undoes that block.
+- name: Read the Application Firewall's state
+  ansible.builtin.command: "{{ devmachine_socketfilterfw }} --getglobalstate"
+  register: devmachine_caddy_alf_state
+  changed_when: false
+  check_mode: false
+
+- name: Find the Caddy binary behind Homebrew's link
+  ansible.builtin.stat:
+    path: "{{ devmachine_caddy_bin }}"
+  register: devmachine_caddy_bin_stat
+
+- name: List what the Application Firewall knows
+  ansible.builtin.command: "{{ devmachine_socketfilterfw }} --listapps"
+  register: devmachine_caddy_alf_apps
+  changed_when: false
+  check_mode: false
+  when: devmachine_caddy_alf_state.stdout is search('State = [12]')
+
+- name: Give a new Caddy what the Application Firewall decided for the last one
+  ansible.builtin.command:
+    argv:
+      - "{{ devmachine_socketfilterfw }}"
+      - --add
+      - "{{ devmachine_caddy_real_bin }}"
+      - "{{ '--blockapp' if devmachine_caddy_alf_apps.stdout is search('(?m)/caddy\\s*\\n\\s*\\(Block incoming') else '--unblockapp' }}"
+      - "{{ devmachine_caddy_real_bin }}"
+  changed_when: true
+  vars:
+    devmachine_caddy_real_bin: >-
+      {{ devmachine_caddy_bin_stat.stat.lnk_source | default(devmachine_caddy_bin, true) }}
+  when:
+    - not ansible_check_mode
+    - devmachine_caddy_alf_apps is not skipped
+    - devmachine_caddy_real_bin not in devmachine_caddy_alf_apps.stdout

@@ -98,12 +98,32 @@
     # macOS has no useradd and no subordinate IDs: the task below creates it.
     - ansible_facts['system'] != 'Darwin'
 
+# A configuration written for Linux often carries `groups: [docker]`, and a Mac
+# has no docker group: the docker package gives each workspace a VM of its own
+# there instead. A group macOS does not have is left out rather than failing.
+- name: Look for each group on macOS
+  ansible.builtin.command:
+    argv: [dscl, ., -read, "/Groups/{{ item }}", RecordName]
+  loop: "{{ devmachine_workspace_groups }}"
+  register: devmachine_workspace_mac_groups
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  when: ansible_facts['system'] == 'Darwin'
+
+- name: Say which groups macOS does not have
+  ansible.builtin.debug:
+    msg: >-
+      {{ devmachine_workspace.user }} joins no {{ item }} group: macOS has
+      none{{ ', and Docker reaches this workspace through a VM of its own instead' if item == 'docker' else '' }}.
+  loop: "{{ devmachine_workspace_groups | difference(devmachine_workspace_joined_groups) }}"
+
 - name: Create the account
   ansible.builtin.user:
     name: "{{ devmachine_workspace.user }}"
-    groups: "{{ devmachine_workspace_groups | default(omit, true) }}"
+    groups: "{{ devmachine_workspace_joined_groups | default(omit, true) }}"
     # ansible-core 2.21 refuses append without groups; older ones only warned.
-    append: "{{ true if devmachine_workspace_groups | length > 0 else omit }}"
+    append: "{{ true if devmachine_workspace_joined_groups | length > 0 else omit }}"
     # Left out unless somebody asks for one. Setting a shell here would fight
     # the package that installs one: each run would change it back, and both
     # tasks would report a change forever.
@@ -113,6 +133,15 @@
     # workspace at the Mac's own screen.
     hidden: "{{ true if ansible_facts['system'] == 'Darwin' else omit }}"
   register: devmachine_account
+
+- name: Say the account comes with a real sync
+  ansible.builtin.debug:
+    msg: >-
+      {{ devmachine_workspace.user }} does not exist yet. A real sync creates
+      it; this dry run skips what would go into its home.
+  when:
+    - ansible_check_mode
+    - devmachine_account.home is not defined
 
 # With Remote Login set to "Only these users", sshd lets in only members of
 # this group, and refuses a new account with "failed service ACL check".
@@ -281,6 +310,80 @@
     owner: "{{ devmachine_workspace.user }}"
     group: "{{ devmachine_account.group | default(omit) }}"
     mode: "0755"
+
+# A name is a folder under ~/dev, so nothing in it may walk out of ~/dev. The
+# CLI checks the shape of each entry; only the recipe knows what a name becomes.
+- name: Refuse a repository name that leaves ~/dev
+  ansible.builtin.assert:
+    that:
+      - devmachine_workspace_repo.name is match('^[A-Za-z0-9._-]+$')
+      - devmachine_workspace_repo.name not in ['.', '..']
+    fail_msg: >-
+      workspace.repos: {{ devmachine_workspace_repo.name | to_json }} is not a
+      folder name: use letters, digits, dot, dash and underscore
+    quiet: true
+  loop: "{{ devmachine_workspace_repos }}"
+  loop_control:
+    loop_var: devmachine_workspace_repo
+    label: "{{ devmachine_workspace_repo.name }}"
+
+- name: Look for each repository's folder
+  ansible.builtin.stat:
+    path: "{{ devmachine_workspace_home }}/dev/{{ devmachine_workspace_repo.name }}"
+  loop: "{{ devmachine_workspace_repos }}"
+  loop_control:
+    loop_var: devmachine_workspace_repo
+    label: "{{ devmachine_workspace_repo.name }}"
+  register: devmachine_workspace_repo_dirs
+  check_mode: false
+
+# A clone over SSH needs a key the forge knows. git-key and the CLI deliver it
+# after this package has run, and the CLI runs every workspace package a second
+# time once they have, so the clone waits for that pass rather than failing
+# the first one.
+- name: Look for a key a clone over SSH can use
+  ansible.builtin.find:
+    paths: "{{ devmachine_workspace_home }}/.ssh"
+    patterns: ["id_*"]
+    excludes: ["*.pub"]
+  register: devmachine_workspace_ssh_keys
+  check_mode: false
+  when: devmachine_workspace_repos | length > 0
+
+- name: Clone each repository that is not there yet
+  become: true
+  become_user: "{{ devmachine_workspace.user }}"
+  environment:
+    HOME: "{{ devmachine_workspace_home }}"
+  ansible.builtin.git:
+    repo: "{{ devmachine_workspace_repo_dir.devmachine_workspace_repo.url }}"
+    dest: "{{ devmachine_workspace_home }}/dev/{{ devmachine_workspace_repo_dir.devmachine_workspace_repo.name }}"
+    version: "{{ devmachine_workspace_repo_dir.devmachine_workspace_repo.branch | default(omit) }}"
+    update: false
+  loop: "{{ devmachine_workspace_repo_dirs.results | default([]) }}"
+  loop_control:
+    loop_var: devmachine_workspace_repo_dir
+    label: "{{ devmachine_workspace_repo_dir.devmachine_workspace_repo.name }}"
+  when:
+    - not devmachine_workspace_repo_dir.stat.exists
+    - devmachine_workspace_repo_dir.devmachine_workspace_repo.url is match('^(https?|file)://')
+      or devmachine_workspace_ssh_keys.matched | default(0) > 0
+    - not ansible_check_mode or devmachine_workspace_account.stat.exists
+
+- name: Say which repositories wait for a key
+  ansible.builtin.debug:
+    msg: >-
+      {{ devmachine_workspace_repo_dir.devmachine_workspace_repo.name }} is
+      cloned over SSH and this workspace has no key in ~/.ssh yet: it is cloned
+      once one arrives, on the second pass of this sync or a later one
+  loop: "{{ devmachine_workspace_repo_dirs.results | default([]) }}"
+  loop_control:
+    loop_var: devmachine_workspace_repo_dir
+    label: "{{ devmachine_workspace_repo_dir.devmachine_workspace_repo.name }}"
+  when:
+    - not devmachine_workspace_repo_dir.stat.exists
+    - devmachine_workspace_repo_dir.devmachine_workspace_repo.url is not match('^(https?|file)://')
+    - devmachine_workspace_ssh_keys.matched | default(0) == 0
 
 # The CLI delivers the workspace's secrets into this directory and keeps it at
 # 0700 itself, so any other mode here would be undone on every push.

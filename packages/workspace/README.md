@@ -14,12 +14,13 @@ other workspace-scoped package needs this one first.
 | --- | --- | --- |
 | `home` | the account's own home | Where the account's home is. It is read from the account; a new account gets `/home/<the account>` unless this says otherwise. On macOS a new account always gets `/Users/<the account>`. |
 | `admin_home` | `/root` | The home of the account the CLI provisions with. Whatever reaches that account over SSH is what reaches this workspace. On macOS it is the admin login's own home, read from the system. |
-| `groups` | `[]` | Extra groups the account joins. The `docker` group is one of them, and it is effectively root, so nobody joins it by accident. |
+| `groups` | `[]` | Extra groups the account joins. The `docker` group is one of them, and it is effectively root, so nobody joins it by accident. On macOS a group the Mac does not have, such as `docker`, is left out with a note instead of failing. |
 | `shell` | `""` | The login shell. Empty means the system's default for a new account (`useradd`'s on Linux, `/bin/bash` on macOS); the package that installs a shell (such as `zsh`) is the one that sets it. |
 | `git_name` | `""` | The name on this workspace's commits. |
 | `git_email` | `""` | The address on this workspace's commits. |
 | `sign_commits` | `true` | Sign every commit and rebase, once a package such as `git-key` sets up a key. |
 | `known_hosts` | `["github.com"]` | The hosts whose SSH host key is trusted in advance, so the first clone does not stop to ask a question nobody is there to answer. |
+| `repos` | `[]` | Repositories cloned into `~/dev/<name>`, once: each entry is `name` and `url`, and optionally `branch`. A clone is never pulled, reset or removed, and a folder already there is left alone. A clone over SSH waits for the workspace's key, which arrives on the second pass of the same sync. |
 
 ## Credentials
 
@@ -40,6 +41,10 @@ devmachine sync
 
 - **The `docker` group is effectively root.** Add it to `groups` only for a
   workspace that genuinely needs it.
+- **`repos` is set as YAML**, and the CLI checks each entry before it
+  writes it:
+  `devmachine workspaces edit alice --set 'workspace.repos=[{name: app, url: git@github.com:example/app.git}]'`.
+  A name is a folder under `~/dev`, so one with a `/` is refused.
 - `sign_commits` only takes effect once a key exists — pair it with
   [`git-key`](../git-key/README.md) or a key set up by hand.
 - **On macOS** the account is created hidden: it is not on the login window

@@ -1,0 +1,123 @@
+---
+# macOS has no ufw. Its Application Firewall decides per program, not per port,
+# and only for incoming connections, so "SSH open" means sshd's program is
+# permitted before the firewall is turned on, never after.
+- name: Read the Application Firewall's state
+  ansible.builtin.command: "{{ devmachine_socketfilterfw }} --getblockall"
+  register: devmachine_firewall_blockall
+  changed_when: false
+  check_mode: false
+
+# Block all turns away every sharing service, Remote Login included: one sync
+# with it on is a Mac nobody can reach over SSH again.
+- name: Turn block-all off, which would shut SSH out
+  ansible.builtin.command: "{{ devmachine_socketfilterfw }} --setblockall off"
+  changed_when: true
+  when:
+    - not ansible_check_mode
+    - devmachine_firewall_blockall.stdout is search('(?i)enabled')
+
+- name: Read whether built-in signed software is allowed
+  ansible.builtin.command: "{{ devmachine_socketfilterfw }} --getallowsigned"
+  register: devmachine_firewall_allowsigned
+  changed_when: false
+  check_mode: false
+
+# sshd is built-in signed software. With this on, the firewall lets it in
+# even before it is listed.
+- name: Allow built-in signed software, sshd among it
+  ansible.builtin.command: "{{ devmachine_socketfilterfw }} --setallowsigned on"
+  changed_when: true
+  when:
+    - not ansible_check_mode
+    - devmachine_firewall_allowsigned.stdout is not search('built-in signed software ENABLED')
+
+- name: List what the Application Firewall knows
+  ansible.builtin.command: "{{ devmachine_socketfilterfw }} --listapps"
+  register: devmachine_firewall_apps
+  changed_when: false
+  check_mode: false
+
+- name: Read whether sshd is permitted
+  ansible.builtin.command: "{{ devmachine_socketfilterfw }} --getappblocked {{ devmachine_firewall_sshd }}"
+  register: devmachine_firewall_sshd_state
+  changed_when: false
+  check_mode: false
+
+- name: Permit sshd
+  ansible.builtin.command:
+    argv:
+      - "{{ devmachine_socketfilterfw }}"
+      - --add
+      - "{{ devmachine_firewall_sshd }}"
+      - --unblockapp
+      - "{{ devmachine_firewall_sshd }}"
+  changed_when: true
+  when:
+    - not ansible_check_mode
+    - devmachine_firewall_sshd not in devmachine_firewall_apps.stdout or
+      devmachine_firewall_sshd_state.stdout is not search('is permitted')
+
+- name: Find the programs that serve HTTP and mosh
+  ansible.builtin.stat:
+    path: "{{ devmachine_firewall_bin_dir }}/{{ item }}"
+  loop: [caddy, mosh-server]
+  register: devmachine_firewall_programs
+
+# Caddy may not be installed yet: it needs this package, so it comes after it,
+# and it permits itself once it is. Here it is only kept in line with http.
+- name: Permit or block Caddy, as http says
+  ansible.builtin.command:
+    argv:
+      - "{{ devmachine_socketfilterfw }}"
+      - --add
+      - "{{ devmachine_firewall_caddy }}"
+      - "{{ '--unblockapp' if devmachine_firewall_http | bool else '--blockapp' }}"
+      - "{{ devmachine_firewall_caddy }}"
+  changed_when: true
+  vars:
+    devmachine_firewall_caddy: >-
+      {{ devmachine_firewall_programs.results[0].stat.lnk_source
+      | default(devmachine_firewall_programs.results[0].stat.path | default(''), true) }}
+  when:
+    - not ansible_check_mode
+    - devmachine_firewall_programs.results[0].stat.exists
+
+- name: Say that mosh is open on every interface
+  ansible.builtin.debug:
+    msg: >-
+      WARNING: firewall.mosh_interface is "{{ devmachine_firewall_mosh_interface }}",
+      but the macOS firewall decides per program, not per interface or port:
+      mosh-server is permitted on every interface, and mosh_ports is ignored.
+  when: devmachine_firewall_mosh_interface | length > 0
+
+- name: Permit mosh-server
+  ansible.builtin.command:
+    argv:
+      - "{{ devmachine_socketfilterfw }}"
+      - --add
+      - "{{ devmachine_firewall_mosh }}"
+      - --unblockapp
+      - "{{ devmachine_firewall_mosh }}"
+  changed_when: true
+  vars:
+    devmachine_firewall_mosh: >-
+      {{ devmachine_firewall_programs.results[1].stat.lnk_source
+      | default(devmachine_firewall_programs.results[1].stat.path | default(''), true) }}
+  when:
+    - not ansible_check_mode
+    - devmachine_firewall_mosh_interface | length > 0
+    - devmachine_firewall_programs.results[1].stat.exists
+
+- name: Read whether the Application Firewall is on
+  ansible.builtin.command: "{{ devmachine_socketfilterfw }} --getglobalstate"
+  register: devmachine_firewall_state
+  changed_when: false
+  check_mode: false
+
+- name: Turn the Application Firewall on
+  ansible.builtin.command: "{{ devmachine_socketfilterfw }} --setglobalstate on"
+  changed_when: true
+  when:
+    - not ansible_check_mode
+    - devmachine_firewall_state.stdout is not search('State = [12]')
