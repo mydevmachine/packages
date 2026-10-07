@@ -29,11 +29,15 @@
   ansible.builtin.import_tasks: Debian.yml
   when: ansible_facts['os_family'] == 'Debian'
 
+- name: Install Caddy from Homebrew or MacPorts on macOS
+  ansible.builtin.import_tasks: Darwin.yml
+  when: ansible_facts['system'] == 'Darwin'
+
 - name: Install Caddy from the system's own repository
   ansible.builtin.package:
     name: caddy
     state: present
-  when: ansible_facts['os_family'] != 'Debian'
+  when: ansible_facts['os_family'] not in ['Debian', 'Darwin']
 
 # An empty sites.d is not an error. Caddy only warns when an import glob matches
 # nothing, so a machine with no site yet still starts.
@@ -42,7 +46,7 @@
     path: /etc/caddy/sites.d
     state: directory
     owner: root
-    group: root
+    group: "{{ devmachine_caddy_root_group }}"
     mode: "0755"
 
 - name: Create the one-page site's directory
@@ -50,7 +54,7 @@
     path: /var/www/devmachine
     state: directory
     owner: root
-    group: root
+    group: "{{ devmachine_caddy_root_group }}"
     mode: "0755"
   when: devmachine_caddy_site | bool
 
@@ -59,7 +63,7 @@
     src: index.html
     dest: /var/www/devmachine/index.html
     owner: root
-    group: root
+    group: "{{ devmachine_caddy_root_group }}"
     mode: "0644"
   when: devmachine_caddy_site | bool
 
@@ -68,7 +72,7 @@
     src: Caddyfile.j2
     dest: /etc/caddy/Caddyfile
     owner: root
-    group: root
+    group: "{{ devmachine_caddy_root_group }}"
     mode: "0644"
   notify: Reload caddy
 
@@ -80,4 +84,10 @@
   # A dry run on a machine that does not have the package yet cannot start a
   # service that does not exist, so check mode would report a failure that only
   # means "this is not installed" — which the rest of the run already said.
-  when: not ansible_check_mode
+  when:
+    - not ansible_check_mode
+    - ansible_facts['system'] != 'Darwin'
+
+- name: Start Caddy on macOS
+  ansible.builtin.import_tasks: Darwin-service.yml
+  when: ansible_facts['system'] == 'Darwin'

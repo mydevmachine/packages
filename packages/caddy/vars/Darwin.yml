@@ -1,0 +1,22 @@
+---
+# macOS has no group called root: gid 0 is wheel.
+devmachine_caddy_root_group: wheel
+
+devmachine_caddy_brew_prefix: "{{ '/opt/homebrew' if ansible_facts['architecture'] == 'arm64' else '/usr/local' }}"
+devmachine_caddy_bin: >-
+  {{ devmachine_caddy_brew_prefix ~ '/bin/caddy' if ansible_facts['pkg_mgr'] == 'homebrew' else '/opt/local/bin/caddy' }}
+
+devmachine_caddy_launchd_label: devmachine.caddy
+devmachine_caddy_launchd_plist: /Library/LaunchDaemons/devmachine.caddy.plist
+
+# Where Caddy keeps its certificates and its autosaved config. On Linux this is
+# the caddy account's home; on a Mac it runs as root, whose home is not a place
+# for state.
+devmachine_caddy_state_dir: /var/db/devmachine-caddy
+# Linux has the journal. A Mac has nothing that rotates a launchd job's output,
+# so Caddy writes and rolls its own log, and launchd keeps only what Caddy says
+# before it has read its config.
+devmachine_caddy_log: /var/log/devmachine-caddy.log
+devmachine_caddy_launchd_log: /var/log/devmachine-caddy.launchd.log
+
+devmachine_socketfilterfw: /usr/libexec/ApplicationFirewall/socketfilterfw

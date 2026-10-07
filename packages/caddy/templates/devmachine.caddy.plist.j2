@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Managed by the devmachine caddy package. -->
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>{{ devmachine_caddy_launchd_label }}</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>{{ devmachine_caddy_bin }}</string>
+		<string>run</string>
+		<string>--config</string>
+		<string>/etc/caddy/Caddyfile</string>
+		<string>--adapter</string>
+		<string>caddyfile</string>
+	</array>
+	<key>EnvironmentVariables</key>
+	<dict>
+		<key>XDG_DATA_HOME</key>
+		<string>{{ devmachine_caddy_state_dir }}/data</string>
+		<key>XDG_CONFIG_HOME</key>
+		<string>{{ devmachine_caddy_state_dir }}/config</string>
+	</dict>
+	<key>RunAtLoad</key>
+	<true/>
+	<key>KeepAlive</key>
+	<true/>
+	<key>StandardOutPath</key>
+	<string>{{ devmachine_caddy_launchd_log }}</string>
+	<key>StandardErrorPath</key>
+	<string>{{ devmachine_caddy_launchd_log }}</string>
+</dict>
+</plist>

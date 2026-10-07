@@ -20,3 +20,7 @@ devmachine_caddy_source: auto
 
 # The GitHub release the fallback installs, and the one `source: github` keeps.
 devmachine_caddy_version: "2.11.4"
+
+# The group that owns what root owns. vars/<system>.yml overrides it where gid 0
+# has another name.
+devmachine_caddy_root_group: root

@@ -1,7 +1,7 @@
 format: 1
 name: hostinger
 scope: machine
-platforms: [linux]
+platforms: [linux, macos]
 category: DNS
 kind: dns
 summary: DNS zones on Hostinger.

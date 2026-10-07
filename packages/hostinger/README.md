@@ -45,6 +45,8 @@ devmachine credentials push
   An explicit TTL below Hostinger's minimum of 60 seconds is rejected with an
   `invalid_record` error, rather than silently raised — the value you asked
   for is not the value you would get.
+- On macOS it uses the `python3` of the Command Line Tools and installs
+  nothing. The provider runs on that Python's 3.9.
 
 ## Learn more
 
