@@ -12,4 +12,3 @@ source:
 view: {kind: app.harness-usage}
 sizes: [small, medium, wide]
 default_size: medium
-places: [home]
