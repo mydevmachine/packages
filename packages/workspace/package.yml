@@ -19,9 +19,9 @@ variables:
   admin_home:
     summary: >-
       The home of the account the CLI provisions with. Whatever reaches that
-      account over SSH is what reaches this workspace. On macOS it is the admin
-      login's own home, read from the system.
-    default: /root
+      account over SSH is what reaches this workspace. It is read from the
+      system: root's home, or the admin login's own when that is not root.
+    default: <the admin login's own home>
   groups:
     summary: >-
       Extra groups the account joins. The docker group is one of them and it

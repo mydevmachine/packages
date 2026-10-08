@@ -191,15 +191,17 @@
     group: "{{ devmachine_account.group | default(omit) }}"
     mode: "0700"
 
-# On a Mac reached over SSH the admin login is not root: it runs the play
-# through sudo, and sudo names it in SUDO_USER on this side of the connection.
+# The admin login is not always root: on a Mac, and on a Linux machine whose
+# admin is an ordinary account with passwordless sudo, it runs the play through
+# sudo, and sudo names it in SUDO_USER on this side of the connection. Its home
+# is read from the system, never assumed: it can be anywhere, such as a Lima
+# VM's /home/<user>.guest.
 - name: Read the administrative account's home
   ansible.builtin.user:
     name: "{{ lookup('ansible.builtin.env', 'SUDO_USER') | default(ansible_facts['user_id'], true) }}"
   check_mode: true
   changed_when: false
   register: devmachine_workspace_admin_account
-  when: ansible_facts['system'] == 'Darwin'
 
 - name: Look for the keys the administrative account is reached by
   ansible.builtin.stat:

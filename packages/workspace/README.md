@@ -13,7 +13,7 @@ other workspace-scoped package needs this one first.
 | Setting | Default | What it does |
 | --- | --- | --- |
 | `home` | the account's own home | Where the account's home is. It is read from the account; a new account gets `/home/<the account>` unless this says otherwise. On macOS a new account always gets `/Users/<the account>`. |
-| `admin_home` | `/root` | The home of the account the CLI provisions with. Whatever reaches that account over SSH is what reaches this workspace. On macOS it is the admin login's own home, read from the system. |
+| `admin_home` | the admin login's own home | The home of the account the CLI provisions with. Whatever reaches that account over SSH is what reaches this workspace. It is read from the system: root's home, or the admin login's own when that is not root. |
 | `groups` | `[]` | Extra groups the account joins. The `docker` group is one of them, and it is effectively root, so nobody joins it by accident. On macOS a group the Mac does not have, such as `docker`, is left out with a note instead of failing. |
 | `shell` | `""` | The login shell. Empty means the system's default for a new account (`useradd`'s on Linux, `/bin/bash` on macOS); the package that installs a shell (such as `zsh`) is the one that sets it. |
 | `git_name` | `""` | The name on this workspace's commits. |
