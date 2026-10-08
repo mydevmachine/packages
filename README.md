@@ -83,6 +83,7 @@ What works on each system is on the
 | [`git-key`](packages/git-key/README.md) | workspace | One SSH key the machine pushes with, copied into each workspace. |
 | [`glab`](packages/glab/README.md) | workspace | The GitLab CLI, installed for one account. |
 | [`sentry`](packages/sentry/README.md) | workspace | The Sentry CLI, installed for one account. |
+| [`session-share`](packages/session-share/README.md) | workspace | Shares a tmux session for a limited time, in a browser or over SSH. |
 
 ### Containers and web
 

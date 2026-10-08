@@ -1,0 +1,34 @@
+format: 1
+name: session-share
+scope: workspace
+category: Developer tools
+summary: >-
+  Share one of the account's tmux sessions with someone else for a limited
+  time, in a browser or over SSH, read only or typing along.
+
+needs: [workspace]
+
+requires:
+  cli: ">= 0.10.0"
+
+variables:
+  home:
+    summary: Where the account's home is.
+    default: <the account's own home>
+  version:
+    summary: >-
+      The session-share release to install. A sync replaces an installed
+      binary of another version.
+    default: 0.1.0
+  port:
+    summary: >-
+      The local port this account's share server listens on. Every workspace
+      on a machine needs its own.
+    default: 7690
+
+entrypoint: bin/session-share
+commands: [start, stop, extend, list, logs, expose, shares]
+providers:
+  shares:
+    returns: {version: number, shares: list}
+    min_every: 5s

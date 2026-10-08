@@ -1,0 +1,116 @@
+---
+# check_mode makes the user module only read: it never creates the account,
+# and a missing one just leaves no home in the result.
+- name: Read the account's home and group
+  ansible.builtin.user:
+    name: "{{ devmachine_workspace.user }}"
+  check_mode: true
+  changed_when: false
+  register: devmachine_account
+
+# A dry run on a machine where this account does not exist yet cannot become
+# it: Ansible has no user to hand its temporary files to, and fails saying so.
+- name: Look for the account
+  ansible.builtin.stat:
+    path: "{{ devmachine_session_share_home }}"
+  register: devmachine_session_share_account
+  check_mode: false
+
+- name: Read the installed version
+  become: true
+  become_user: "{{ devmachine_workspace.user }}"
+  ansible.builtin.command: "{{ devmachine_session_share_home }}/.local/bin/session-share version"
+  register: devmachine_session_share_installed
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  when: devmachine_session_share_account.stat.exists
+
+# A dry run has nothing downloaded to unpack, so it reads the version only.
+- name: Install session-share
+  when:
+    - not ansible_check_mode
+    - devmachine_session_share_account.stat.exists
+    - (devmachine_session_share_installed.stdout | default('') | trim) != (devmachine_session_share_version | string)
+  vars:
+    devmachine_session_share_architectures:
+      x86_64: amd64
+      aarch64: arm64
+      arm64: arm64
+    devmachine_session_share_asset: >-
+      session-share_{{ ansible_facts['system'] | lower }}_{{
+      devmachine_session_share_architectures.get(ansible_facts['architecture'], ansible_facts['architecture']) }}.tar.gz
+    devmachine_session_share_base: "{{ devmachine_session_share_release_url }}/v{{ devmachine_session_share_version }}"
+  block:
+    - name: Make a place to download the release
+      ansible.builtin.tempfile:
+        state: directory
+      register: devmachine_session_share_tmp
+
+    - name: Download the release and check it against its checksums
+      ansible.builtin.get_url:
+        url: "{{ devmachine_session_share_base }}/{{ devmachine_session_share_asset }}"
+        dest: "{{ devmachine_session_share_tmp.path }}/{{ devmachine_session_share_asset }}"
+        checksum: "sha256:{{ devmachine_session_share_base }}/checksums.txt"
+        mode: "0644"
+
+    - name: Unpack the release
+      ansible.builtin.unarchive:
+        src: "{{ devmachine_session_share_tmp.path }}/{{ devmachine_session_share_asset }}"
+        dest: "{{ devmachine_session_share_tmp.path }}"
+        remote_src: true
+
+    - name: Make the account's bin directory
+      ansible.builtin.file:
+        path: "{{ devmachine_session_share_home }}/.local/bin"
+        state: directory
+        owner: "{{ devmachine_workspace.user }}"
+        group: "{{ devmachine_account.group | default(omit) }}"
+        mode: "0755"
+
+    # The path stays the same across versions: the SSH guests' keys run it by
+    # that path, and a share that is live during a sync keeps working.
+    - name: Put the binary in ~/.local/bin
+      ansible.builtin.copy:
+        src: "{{ devmachine_session_share_tmp.path }}/session-share"
+        dest: "{{ devmachine_session_share_home }}/.local/bin/session-share"
+        remote_src: true
+        owner: "{{ devmachine_workspace.user }}"
+        group: "{{ devmachine_account.group | default(omit) }}"
+        mode: "0755"
+  always:
+    - name: Remove the download
+      ansible.builtin.file:
+        path: "{{ devmachine_session_share_tmp.path }}"
+        state: absent
+      when: devmachine_session_share_tmp.path is defined
+
+- name: Make the share state directory
+  ansible.builtin.file:
+    path: "{{ devmachine_session_share_home }}/.local/state/session-share"
+    state: directory
+    owner: "{{ devmachine_workspace.user }}"
+    group: "{{ devmachine_account.group | default(omit) }}"
+    mode: "0700"
+  when: devmachine_session_share_account.stat.exists
+
+# Every account runs its own share server, so each one reads its own port.
+- name: Give the account's share server its own address
+  ansible.builtin.copy:
+    dest: "{{ devmachine_session_share_home }}/.local/state/session-share/listen"
+    content: "127.0.0.1:{{ devmachine_session_share_port }}\n"
+    owner: "{{ devmachine_workspace.user }}"
+    group: "{{ devmachine_account.group | default(omit) }}"
+    mode: "0600"
+  when: devmachine_session_share_account.stat.exists
+
+# The share server ends shares on time while it runs. This catches a share
+# whose server is gone, so its SSH lines leave authorized_keys too; sshd
+# already refuses them after the deadline.
+- name: Clean up ended shares every five minutes
+  ansible.builtin.cron:
+    name: devmachine session-share gc
+    user: "{{ devmachine_workspace.user }}"
+    minute: "*/5"
+    job: "{{ devmachine_session_share_home }}/.local/bin/session-share gc >/dev/null 2>&1"
+  when: devmachine_session_share_account.stat.exists
