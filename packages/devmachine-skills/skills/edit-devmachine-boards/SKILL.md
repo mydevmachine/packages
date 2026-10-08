@@ -61,6 +61,21 @@ devmachine widgets set <id> --board <area> [--title t] [--every d] [--set name=v
   documented, and sized for its area.
 - Without `--at`, Home places the widget at the first free spot. Leave it
   to the CLI unless the person names a place.
+- On Home a widget is never taller than what it shows. A widget whose
+  view grows (`app.summary`, `app.machines`, `app.harness-usage`, `text`,
+  `number`, `status`, `list`, `markdown`) gets `size: auto` from `widgets
+  add` and a frame of `{x, y, w}`, with no `h`: it is as tall as its
+  content, so Machines grows with each machine. A widget with a set
+  height (`size: custom` or a preset, with `h`) is capped at its content:
+  `h` is the most it shows, never the least. A view that does not grow
+  (`app.clock`, `gauge`, `sparkline`, `web`, `terminal`,
+  `app.pull-requests-panel`) keeps its `default_size`, and `--size auto`
+  on one is refused: pass the message on.
+- On Home, a widget that grows pushes the widgets under it down on
+  screen only. Their stored `y` does not change. To put a widget back to
+  `auto`, tell the person to choose "Reset size" in its "..." menu in the
+  app; it also resets a fixed-size widget to its `default_size`. Do not
+  write `h` next to `auto`: the CLI drops it.
 - In a sidebar, `--size` is a preset or `auto`; leave it out and the CLI
   picks.
 - In the menu bar and its popover, leave out `--size` and `--at`: both
@@ -86,7 +101,8 @@ devmachine widgets set <id> --board <area> [--title t] [--every d] [--set name=v
 
 When no widget fits, write one straight into the board: an entry with
 `id`, `title`, `source`, `view` and `sizes`. On Home it also needs
-`frame`, `size`, `minimized` and `z`; in a sidebar, the menu bar or its popover it
+`frame`, `size`, `minimized` and `z` (with `size: auto`, `frame` is
+`{x, y, w}` and a view that grows, such as `text` or `list`, takes it); in a sidebar, the menu bar or its popover it
 has none of those. Read `references/widget-format.md` first; it has
 every source kind, view and rule.
 
@@ -199,6 +215,26 @@ remove <name>` manage it later.
 If no widget fit, write the `disk-main` entry above into
 `context-sidebar.yml`, run `widgets validate`, and tell the person it
 waits for their approval in the app.
+
+"Put my Machines widget on Home so it grows with my machines":
+
+1. `devmachine widgets add devmachine-app/machines` (Home is the default
+   board). The CLI picks the first free spot and writes `size: auto`.
+2. The entry in `home.yml` is:
+
+   ```yaml
+     - id: machines
+       type: devmachine-app/machines
+       frame: {x: 24, y: 24, w: 640}
+       size: auto
+       minimized: false
+       z: 1
+   ```
+
+3. Tell the person it is as tall as its list: a new machine makes it
+   taller and moves the widgets under it down on screen. If they drag it
+   shorter, that height sticks as a cap; "Reset size" in the "..." menu
+   brings `auto` back.
 
 "Show only main in my machines widget":
 
