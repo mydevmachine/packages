@@ -17,7 +17,7 @@ minutes. The tool itself explains what a guest can and cannot do, and why.
 | Setting | Default | What it does |
 | --- | --- | --- |
 | `home` | the account's own home | Where the account's home is. Read from the account. |
-| `version` | `0.1.1` | The release to install. A sync replaces a binary of another version. |
+| `version` | `0.1.2` | The release to install. A sync replaces a binary of another version. |
 | `port` | `7690` | The local port of this account's share server. Every workspace on a machine needs its own. |
 
 ## Use it
