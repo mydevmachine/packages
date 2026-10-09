@@ -17,7 +17,7 @@ minutes. The tool itself explains what a guest can and cannot do, and why.
 | Setting | Default | What it does |
 | --- | --- | --- |
 | `home` | the account's own home | Where the account's home is. Read from the account. |
-| `version` | `0.1.2` | The release to install. A sync replaces a binary of another version. |
+| `version` | `0.1.4` | The release to install. A sync replaces a binary of another version. |
 | `port` | `7690` | The local port of this account's share server. Every workspace on a machine needs its own. |
 
 ## Use it
@@ -33,7 +33,7 @@ devmachine run --package session-share --workspace acme -- stop <id>
 
 | Command | What it runs |
 | --- | --- |
-| `start`, `stop`, `extend`, `list`, `logs`, `expose` | The same `session-share` command. |
+| `start`, `stop`, `extend`, `list`, `logs`, `chat`, `expose` | The same `session-share` command. `chat <id> "text"` answers the guests in the chat beside the session. |
 | `shares` | `session-share list --all --json`: the provider the app reads. |
 
 ## Reach it from outside

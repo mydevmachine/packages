@@ -31,6 +31,12 @@ class Entrypoint(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertEqual(result.stdout.split(), ["start", "api", "--mode", "write"])
 
+    def test_chat_reaches_the_binary(self):
+        with tempfile.TemporaryDirectory() as home:
+            fake_binary(home)
+            result = run(home, "chat", "abcdefghijkl", "hi there")
+            self.assertEqual(result.stdout.splitlines(), ["chat", "abcdefghijkl", "hi there"])
+
     def test_the_provider_asks_for_every_share_as_json(self):
         with tempfile.TemporaryDirectory() as home:
             fake_binary(home)

@@ -19,7 +19,7 @@ variables:
     summary: >-
       The session-share release to install. A sync replaces an installed
       binary of another version.
-    default: 0.1.2
+    default: 0.1.4
   port:
     summary: >-
       The local port this account's share server listens on. Every workspace
@@ -27,7 +27,7 @@ variables:
     default: 7690
 
 entrypoint: bin/session-share
-commands: [start, stop, extend, list, logs, expose, shares]
+commands: [start, stop, extend, list, logs, chat, expose, shares]
 providers:
   shares:
     returns: {version: number, shares: list}
