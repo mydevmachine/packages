@@ -1,0 +1,18 @@
+packages/session-share/README.md
+  h_0e71f0b33c1b87 20
+packages/session-share/defaults/main.yml
+  h_0e71f0b33c1b87 3
+packages/session-share/package.yml
+  h_0e71f0b33c1b87 22
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ae4abdc96cabd56b1df001b23e927fb1802ae48c",
+  "prompts": {},
+  "humans": {
+    "h_0e71f0b33c1b87": {
+      "author": "Djalma Araujo <djalma@nossomos.cc>"
+    }
+  }
+}
