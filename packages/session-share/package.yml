@@ -19,7 +19,7 @@ variables:
     summary: >-
       The session-share release to install. A sync replaces an installed
       binary of another version.
-    default: 0.1.6
+    default: 0.1.7
   port:
     summary: >-
       The local port this account's share server listens on. Every workspace

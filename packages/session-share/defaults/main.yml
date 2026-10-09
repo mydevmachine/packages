@@ -1,5 +1,5 @@
 ---
 devmachine_session_share_home: "{{ devmachine_account.home | default(('/Users/' if ansible_facts['system'] == 'Darwin' else '/home/') ~ devmachine_workspace.user) }}"
-devmachine_session_share_version: "0.1.6"
+devmachine_session_share_version: "0.1.7"
 devmachine_session_share_port: 7690
 devmachine_session_share_release_url: https://github.com/mydevmachine/session-share/releases/download
