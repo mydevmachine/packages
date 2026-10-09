@@ -9,6 +9,7 @@ COMMANDS = {
     "extend": ["extend"],
     "list": ["list"],
     "logs": ["logs"],
+    "chat": ["chat"],
     "expose": ["expose"],
     "shares": ["list", "--all", "--json"],
 }
