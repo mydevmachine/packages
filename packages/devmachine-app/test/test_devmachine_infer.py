@@ -2114,3 +2114,79 @@ def test_detect_harness_finds_a_kimi_session_on_disk(monkeypatch, tmp_path):
     monkeypatch.setattr(m, "find_pi_transcript", lambda project: None)
     project, _ = _kimi_home(monkeypatch, tmp_path)
     assert m.detect_harness(None, project) == "kimi"
+
+
+def _task_file(root, session, name, body):
+    d = root / "tasks" / session
+    d.mkdir(parents=True, exist_ok=True)
+    (d / name).write_text(body if isinstance(body, str) else json.dumps(body))
+
+
+def test_claude_task_files_ordered_by_numeric_id_with_mapped_status(monkeypatch, tmp_path):
+    import devmachine_infer as m
+    monkeypatch.setenv("CLAUDE_CONFIG_DIR", str(tmp_path))
+    for tid, status in (("10", "pending"), ("2", "in_progress"), ("1", "completed")):
+        _task_file(tmp_path, "sess", f"{tid}.json",
+                   {"id": tid, "subject": f"task {tid}", "status": status})
+    items = m.claude_task_files(tmp_path / "projects" / "p" / "sess.jsonl")
+    assert items == [{"text": "task 1", "state": "done"},
+                     {"text": "task 2", "state": "active"},
+                     {"text": "task 10", "state": "pending"}]
+
+
+def test_claude_task_files_skip_undecodable_files(monkeypatch, tmp_path):
+    import devmachine_infer as m
+    monkeypatch.setenv("CLAUDE_CONFIG_DIR", str(tmp_path))
+    _task_file(tmp_path, "sess", "1.json", {"id": "1", "subject": "ok", "status": "pending"})
+    _task_file(tmp_path, "sess", "2.json", "{not json")
+    assert [t["text"] for t in m.claude_task_files(Path("sess.jsonl"))] == ["ok"]
+
+
+def test_claude_config_dir_defaults_to_home(monkeypatch, tmp_path):
+    import devmachine_infer as m
+    monkeypatch.delenv("CLAUDE_CONFIG_DIR", raising=False)
+    monkeypatch.setattr(m.Path, "home", classmethod(lambda cls: tmp_path))
+    assert m.claude_config_dir() == tmp_path / ".claude"
+
+
+def test_latest_todos_prefers_task_files_then_falls_back_to_transcript(monkeypatch, tmp_path):
+    import devmachine_infer as m
+    monkeypatch.setenv("CLAUDE_CONFIG_DIR", str(tmp_path))
+    tx = Path("sess.jsonl")
+    events = [_created("1", "from transcript")]
+    assert [t["text"] for t in m.latest_todos(events, "claude", tx)] == ["from transcript"]
+    _task_file(tmp_path, "sess", "1.json", {"id": "1", "subject": "from disk", "status": "pending"})
+    assert [t["text"] for t in m.latest_todos(events, "claude", tx)] == ["from disk"]
+
+
+def _claude_tasks_context(monkeypatch, tmp_path, harness):
+    import devmachine_infer as m
+    project = tmp_path / "proj"
+    plans = project / "docs" / "superpowers" / "plans"
+    plans.mkdir(parents=True)
+    (plans / "plan.md").write_text("- [ ] a checklist item\n")
+    transcript = tmp_path / "sess.jsonl"
+    transcript.write_text("")
+    monkeypatch.setattr(m, "cwd_for_session", lambda session: str(project))
+    monkeypatch.setattr(m, "detect_harness", lambda session, proj: harness)
+    monkeypatch.setattr(m, "_discover", lambda h, proj: (transcript, []))
+    monkeypatch.setattr(m, "default_repo_of", lambda proj: None)
+    return m.build_context("sess", None, resolve=False)
+
+
+def test_claude_session_without_tasks_shows_no_plan_even_with_a_plan_file(monkeypatch, tmp_path):
+    monkeypatch.setenv("CLAUDE_CONFIG_DIR", str(tmp_path / "cfg"))
+    assert _claude_tasks_context(monkeypatch, tmp_path, "claude")["plan"] is None
+
+
+def test_claude_session_with_task_files_shows_them(monkeypatch, tmp_path):
+    monkeypatch.setenv("CLAUDE_CONFIG_DIR", str(tmp_path / "cfg"))
+    _task_file(tmp_path / "cfg", "sess", "1.json", {"id": "1", "subject": "ship", "status": "completed"})
+    plan = _claude_tasks_context(monkeypatch, tmp_path, "claude")["plan"]
+    assert plan["items"] == [{"text": "ship", "state": "done"}] and plan["done"] == 1
+
+
+def test_other_harness_ignores_claude_task_files(monkeypatch, tmp_path):
+    monkeypatch.setenv("CLAUDE_CONFIG_DIR", str(tmp_path / "cfg"))
+    _task_file(tmp_path / "cfg", "sess", "1.json", {"id": "1", "subject": "ship", "status": "pending"})
+    assert _claude_tasks_context(monkeypatch, tmp_path, "codex")["plan"] is None
