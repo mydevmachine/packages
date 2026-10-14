@@ -1108,7 +1108,34 @@ def _json_object(raw) -> dict:
     return raw if isinstance(raw, dict) else {}
 
 
-def latest_todos(events, harness: str = "claude") -> list[dict]:
+def claude_config_dir() -> Path:
+    override = os.environ.get("CLAUDE_CONFIG_DIR")
+    return Path(override) if override else Path.home() / ".claude"
+
+
+def claude_task_files(tx: Path | None) -> list[dict]:
+    """The session's Claude tasks, read from `<config>/tasks/<session>/*.json`."""
+    if tx is None:
+        return []
+    found = []
+    for f in (claude_config_dir() / "tasks" / tx.stem).glob("*.json"):
+        try:
+            data = json.loads(f.read_text())
+        except (OSError, ValueError):
+            continue
+        if not isinstance(data, dict):
+            continue
+        try:
+            order = int(data.get("id"))
+        except (TypeError, ValueError):
+            order = float("inf")
+        found.append((order, f.name, {
+            "text": data.get("subject", ""),
+            "state": _TODO_STATE.get(data.get("status", ""), "pending")}))
+    return [item for _, _, item in sorted(found, key=lambda t: t[:2])]
+
+
+def latest_todos(events, harness: str = "claude", tx: Path | None = None) -> list[dict]:
     if harness == "codex":
         return codex_todos(events)
     if harness == "pi":
@@ -1121,7 +1148,7 @@ def latest_todos(events, harness: str = "claude") -> list[dict]:
         # Neither CLI has a todo tool: Cline 3.x dropped the focus chain the
         # VS Code extension keeps, and agy's `manage_task` runs commands.
         return []
-    return latest_tasks(events) or todo_write_items(events)
+    return claude_task_files(tx) or latest_tasks(events) or todo_write_items(events)
 
 
 _OPENCODE_TODO_STATE = {**_TODO_STATE, "cancelled": "done"}
@@ -1733,7 +1760,7 @@ def build_context(session: str | None, project: str | None, resolve: bool) -> di
     for other_tx in siblings:
         if other_tx != tx:
             merge_refs(refs, extract_refs(load_events(harness, other_tx), repo, harness))
-    todos = latest_todos(events, harness)
+    todos = latest_todos(events, harness, tx)
     github = resolve_all(refs["github"]) if resolve else list(refs["github"].values())
     links = [{"url": u, **v} for u, v in refs["links"].items()]
     return {"cwd": str(proj), "isClaude": harness == "claude", "harness": harness,
