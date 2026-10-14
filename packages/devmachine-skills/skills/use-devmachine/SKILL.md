@@ -29,7 +29,7 @@ description: "Use when running, inspecting, or troubleshooting the Devmachine CL
   it later with `devmachine machines edit <name> --location <location>`.
 - Your shell has no terminal, so a command that asks a question waits
   forever. Always pass the non-interactive flags, such as `--yes`, and
-  `devmachine skills add --agent <harness> --yes`.
+  `devmachine skills add --agent <agent> --yes`.
 - Find the configuration with `devmachine config path`. Never guess it.
 
 ## Setting up a machine: the person decides

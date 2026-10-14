@@ -32,15 +32,15 @@ Home:
 | Widget | Default size | What it shows |
 | --- | --- | --- |
 | `devmachine-app/clock` | medium | The time, the date and the computer the app runs on. |
-| `devmachine-app/summary` | wide | How many sessions, coding-harness sessions and workspaces are open. |
+| `devmachine-app/summary` | wide | How many sessions, coding agent sessions and workspaces are open. |
 | `devmachine-app/machines` | large | Each machine, online or not, with its CPU, memory, disk and readiness. |
-| `devmachine-app/usage` | medium | One coding harness's usage windows, how much of each is used and when it resets. |
+| `devmachine-app/usage` | medium | One coding agent's usage windows, how much of each is used and when it resets. |
 
 `machines` and `usage` let you choose what they show: in the app, ⋯ →
 **Choose machines…** picks some machines (none picked shows them all),
-and ⋯ → **Choose harness…** picks the harness. From the terminal:
+and ⋯ → **Choose coding agent…** picks the coding agent. From the terminal:
 `devmachine widgets set machines --board home --set machines=main,backup`.
-The app puts one `usage` card on Home for each harness you use.
+The app puts one `usage` card on Home for each coding agent you use.
 
 On a machine (needs this package added to that machine and synced):
 
@@ -61,7 +61,7 @@ Sidebar (one per board):
 | --- | --- |
 | `devmachine-app/workspaces` | Your machines and workspaces with their sessions, in the order you drag them. |
 
-Context sidebar, in the order the app puts them there (each reads the
+Context tab, in the order the app puts them there (each reads the
 selected session):
 
 | Widget | What it shows |
@@ -87,7 +87,7 @@ Menu bar popover, one tab each:
 | Widget | What it shows |
 | --- | --- |
 | `devmachine-app/pull-requests-panel` | Your open pull requests by owner, with their checks and review state. It fits Home and the sidebars too (`large` or `tall`). |
-| `devmachine-app/usage-panel` | Every coding harness's usage windows side by side, how much is used and when each resets. |
+| `devmachine-app/usage-panel` | Every coding agent's usage windows side by side, how much is used and when each resets. |
 
 The sidebar widgets grow with their content (`size: auto`). Remove one in
 the app or with `devmachine widgets remove <id> --board context-sidebar`,
@@ -97,7 +97,7 @@ devmachine-app/<name> --board context-sidebar`. `devmachine widgets list
 
 The menu bar works the same way with `--board menubar` and `--board
 menubar-panel`, for example `devmachine widgets move usage-panel
---before pull-requests-panel --board menubar-panel` to open the popover
+--before pull-requests-panel --board menubar-panel` to open the menu bar popover
 on Usage.
 
 ## Add it

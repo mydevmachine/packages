@@ -1,11 +1,11 @@
 format: 1
 name: usage
-summary: One coding harness's usage windows, how much of each is used and when it resets.
+summary: One coding agent's usage windows, how much of each is used and when it resets.
 requires: {engine: ">= 1.5"}
 fits: [canvas, stack]
 context: {}
 inputs:
-  harness: {type: choice, from: harnesses, summary: Which coding harness to show.}
+  harness: {type: choice, from: harnesses, summary: Which coding agent to show.}
 source:
   kind: provider
   name: app/harness-usage

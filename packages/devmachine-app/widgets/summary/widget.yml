@@ -1,6 +1,6 @@
 format: 1
 name: summary
-summary: How many sessions, coding-harness sessions and workspaces are open.
+summary: How many sessions, coding agent sessions and workspaces are open.
 requires: {engine: ">= 1.0"}
 fits: [canvas, stack]
 context: {}

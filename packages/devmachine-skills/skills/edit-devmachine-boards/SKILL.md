@@ -1,6 +1,6 @@
 ---
 name: edit-devmachine-boards
-description: "Use when the person wants to change what the Devmachine macOS app shows: add, move, remove, resize, rename or retime a widget on Home, the sidebar, a session's context sidebar or the menu bar, or make a new widget that shows a command's output, a web page, a coding harness's answer, a session's screen or a package's data. Triggers on requests like \"add a widget showing disk usage on main to my context sidebar\", \"put the clock on my Home\", \"move usage above shortcuts\", \"show my open pull requests in the menu bar\", \"show only main in my machines widget\", \"refresh usage every 2 minutes\", \"remove the links section\", \"show my site's health on Home\", \"let my prompt widget search the web\", or \"what widgets can I add\". Not for writing a package's widget.yml for publishing (see create-devmachine-package) or for other CLI work (see use-devmachine)."
+description: "Use when the person wants to change what the Devmachine macOS app shows: add, move, remove, resize, rename or retime a widget on Home, the sidebar, a session's Context tab (also called the context sidebar) or the menu bar, or make a new widget that shows a command's output, a web page, a coding agent's answer, a session's screen or a package's data. Triggers on requests like \"add a widget showing disk usage on main to my Context tab\", \"put the clock on my Home\", \"move usage above shortcuts\", \"show my open pull requests in the menu bar\", \"show only main in my machines widget\", \"refresh usage every 2 minutes\", \"remove the links section\", \"show my site's health on Home\", \"let my prompt widget search the web\", or \"what widgets can I add\". Not for writing a package's widget.yml for publishing (see create-devmachine-package) or for other CLI work (see use-devmachine)."
 ---
 
 # Edit Devmachine boards
@@ -19,13 +19,13 @@ add` cannot create one, so that is the only edit you make by hand.
 | `sidebar` | `<config>/boards/sidebar.yml` | stack: an ordered list | the selected workspace, when there is one |
 | `context-sidebar` | `<config>/boards/context-sidebar.yml` | stack: an ordered list | the selected session, its machine, workspace, path, repo and branch |
 | `menubar` | `<config>/boards/menubar.yml` | slot: at most 3 one-line widgets (text up to 24 characters), left to right | nothing from the app |
-| `menubar-panel` | `<config>/boards/menubar-panel.yml` | tabs: each widget is one tab of the popover | nothing from the app |
+| `menubar-panel` | `<config>/boards/menubar-panel.yml` | tabs: each widget is one tab of the menu bar popover | nothing from the app |
 
 The menu bar title draws only the `text`, `number`, `status` and
 `app.brand` views, and runs its widgets whenever the app runs, at most
-every 30 seconds. The popover's widgets run only while it is open. By
+every 30 seconds. The menu bar popover's widgets run only while it is open. By
 default the title shows `devmachine-app/brand` and
-`devmachine-app/open-pull-requests`, and the popover the
+`devmachine-app/open-pull-requests`, and the menu bar popover the
 `pull-requests-panel` and `usage-panel` tabs.
 
 Find the configuration with `devmachine config path`: use the path it
@@ -78,7 +78,7 @@ devmachine widgets set <id> --board <area> [--title t] [--every d] [--set name=v
   write `h` next to `auto`: the CLI drops it.
 - In a sidebar, `--size` is a preset or `auto`; leave it out and the CLI
   picks.
-- In the menu bar and its popover, leave out `--size` and `--at`: both
+- In the menu bar and the menu bar popover, leave out `--size` and `--at`: both
   are refused. The menu bar holds 3 widgets; when it is full, ask the
   person which one to take off before you remove anything.
 - When a widget is `available: false`, tell the person the command in
@@ -92,7 +92,7 @@ devmachine widgets set <id> --board <area> [--title t] [--every d] [--set name=v
   minimum; pass that on, do not guess.
 - A choice input takes names: `devmachine machines list` and
   `devmachine workspaces list` give the machines and workspaces, and the
-  harnesses are `claude` and `codex`. A choice of many takes
+  coding agents are `claude` and `codex`. A choice of many takes
   `--set machines=main,backup`; `--set machines=` means all of them. A
   name the configuration lacks only prints a `warning:`: tell the person
   the app leaves it out.
@@ -102,7 +102,7 @@ devmachine widgets set <id> --board <area> [--title t] [--every d] [--set name=v
 When no widget fits, write one straight into the board: an entry with
 `id`, `title`, `source`, `view` and `sizes`. On Home it also needs
 `frame`, `size`, `minimized` and `z` (with `size: auto`, `frame` is
-`{x, y, w}` and a view that grows, such as `text` or `list`, takes it); in a sidebar, the menu bar or its popover it
+`{x, y, w}` and a view that grows, such as `text` or `list`, takes it); in a sidebar, the menu bar or the menu bar popover it
 has none of those. Read `references/widget-format.md` first; it has
 every source kind, view and rule.
 
@@ -114,7 +114,7 @@ This is the only hand edit, so make it with care:
 3. Run `devmachine widgets validate` on that file at once.
 4. If it fails, put the file back exactly as it was before your edit.
 
-A context sidebar board with one widget written in it (the entry is
+A `context-sidebar` board (the Context tab) with one widget written in it (the entry is
 `disk-main`; the board's other lines were already there):
 
 ```yaml
@@ -155,13 +155,13 @@ board with a problem is one the CLI refuses to change later.
   person to approve the new source.
 - A `prompt` source answers without tools unless it has
   `permission_mode`, so a widget asked to search the web says it has no
-  permission. The values are the harness's own names:
+  permission. The values are the coding agent's own names:
   - `claude`: `manual`, `dontAsk`, `plan`, `acceptEdits`, `auto`,
     `bypassPermissions`.
   - `codex`: `read-only`, `workspace-write`, `danger-full-access`,
     `approve-for-me`, `dangerously-bypass-approvals-and-sandbox`.
 
-  Leave it out for the harness's default. To let the widget use tools,
+  Leave it out for the coding agent's default. To let the widget use tools,
   write `auto` (Claude) or `workspace-write` (Codex). `bypassPermissions`,
   `danger-full-access` and `dangerously-bypass-approvals-and-sandbox` run
   without any check: write one only when the person names it, and then
@@ -201,7 +201,7 @@ remove <name>` manage it later.
 
 ## Example
 
-"Add a widget showing disk usage on main to my context sidebar":
+"Add a widget showing disk usage on main to my Context tab":
 
 1. `devmachine --format json widgets list --board context-sidebar` and
    look for one that shows disk use: `devmachine-app/machine-stats`.
