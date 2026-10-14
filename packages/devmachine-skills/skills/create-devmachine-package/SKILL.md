@@ -32,7 +32,7 @@ Read `references/package-format.md` and the generated skeleton before editing.
 Keep tasks idempotent and portable: use Ansible modules, declare `needs`, avoid
 direct `apt`, and put defaults in the role. A package may also contribute
 complete Agent Skill directories with `skills.path`; the CLI owns canonical
-installation and harness adapters.
+installation and coding agent adapters.
 
 ## One package for every system it declares
 

@@ -1,6 +1,6 @@
 format: 1
 name: usage-panel
-summary: Every coding harness's usage windows side by side, how much is used and when each resets.
+summary: Every coding agent's usage windows side by side, how much is used and when each resets.
 requires: {engine: ">= 1.4"}
 fits: [tabs]
 context: {}
