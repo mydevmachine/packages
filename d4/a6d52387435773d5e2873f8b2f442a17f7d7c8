@@ -1,0 +1,31 @@
+packages/devmachine-app/README.md
+  s_0f105d87334789::t_0ffbfd49d0f5f1 35,37,41,43,64,90,100
+packages/devmachine-app/widgets/summary/widget.yml
+  s_0f105d87334789::t_c87a85af3535d0 3
+packages/devmachine-app/widgets/usage-panel/widget.yml
+  s_0f105d87334789::t_89b85c17b30a8c 3
+packages/devmachine-app/widgets/usage/widget.yml
+  s_0f105d87334789::t_cb1aeb06041bbc 3,8
+packages/devmachine-skills/skills/create-devmachine-package/SKILL.md
+  s_0f105d87334789::t_89dc871e079c51 35
+packages/devmachine-skills/skills/edit-devmachine-boards/SKILL.md
+  s_0f105d87334789::t_3018a8c4905f24 3,22,26,28,81,95,105,117,158,164,204
+packages/devmachine-skills/skills/use-devmachine/SKILL.md
+  s_0f105d87334789::t_94c093269de0d3 32
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d4a6d52387435773d5e2873f8b2f442a17f7d7c8",
+  "prompts": {},
+  "sessions": {
+    "s_0f105d87334789": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3a5d445d-a266-4f47-9d99-dffda990876e",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Djalma Araujo <djalma@nossomos.cc>"
+    }
+  }
+}
