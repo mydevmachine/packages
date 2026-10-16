@@ -1,0 +1,13 @@
+---
+devmachine_scheduled_home: "{{ devmachine_account.home | default(('/Users/' if ansible_facts['system'] == 'Darwin' else '/home/') ~ devmachine_workspace.user) }}"
+
+devmachine_scheduled_version: ""
+devmachine_scheduled_fallback_version: "0.14.0"
+devmachine_scheduled_release_url: https://github.com/mydevmachine/devmachine/releases/download
+
+devmachine_scheduled_dir: "{{ devmachine_scheduled_home }}/.devmachine/scheduled"
+devmachine_scheduled_binary: "{{ devmachine_scheduled_dir }}/devmachine"
+
+# One launch daemon per account, so two workspaces on one Mac never share a label.
+devmachine_scheduled_label: "devmachine.scheduled.{{ devmachine_workspace.user }}"
+devmachine_scheduled_plist: "/Library/LaunchDaemons/{{ devmachine_scheduled_label }}.plist"

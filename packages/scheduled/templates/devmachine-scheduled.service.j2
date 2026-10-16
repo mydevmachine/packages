@@ -1,0 +1,10 @@
+[Unit]
+Description=Start the scheduled tasks that are due
+
+[Service]
+Type=oneshot
+ExecStart={{ devmachine_scheduled_binary }} scheduled local tick
+Environment=DEVMACHINE_NO_UPDATE_HINT=1
+# tick starts each run and returns at once. The default kills everything left
+# in the unit when it returns, the runs included.
+KillMode=process

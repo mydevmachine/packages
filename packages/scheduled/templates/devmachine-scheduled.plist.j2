@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>{{ devmachine_scheduled_label | e }}</string>
+  <key>UserName</key>
+  <string>{{ devmachine_workspace.user | e }}</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>{{ devmachine_scheduled_binary | e }}</string>
+    <string>scheduled</string>
+    <string>local</string>
+    <string>tick</string>
+  </array>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>HOME</key>
+    <string>{{ devmachine_scheduled_home | e }}</string>
+    <key>USER</key>
+    <string>{{ devmachine_workspace.user | e }}</string>
+    <key>SHELL</key>
+    <string>{{ devmachine_account.shell | default('/bin/zsh', true) | e }}</string>
+    <key>DEVMACHINE_NO_UPDATE_HINT</key>
+    <string>1</string>
+  </dict>
+  <key>StartCalendarInterval</key>
+  <array>
+{% for minute in range(60) %}
+    <dict><key>Minute</key><integer>{{ minute }}</integer></dict>
+{% endfor %}
+  </array>
+  <!-- tick starts each run and returns at once; launchd must not stop the runs with it. -->
+  <key>AbandonProcessGroup</key>
+  <true/>
+  <key>StandardOutPath</key>
+  <string>/dev/null</string>
+  <key>StandardErrorPath</key>
+  <string>{{ devmachine_scheduled_dir | e }}/tick.log</string>
+</dict>
+</plist>

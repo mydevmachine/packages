@@ -1,0 +1,37 @@
+---
+- name: Install the launch daemon
+  ansible.builtin.template:
+    src: devmachine-scheduled.plist.j2
+    dest: "{{ devmachine_scheduled_plist }}"
+    owner: root
+    group: wheel
+    mode: "0644"
+  become: true
+  register: devmachine_scheduled_unit
+  when: devmachine_scheduled_account.stat.exists
+
+- name: Ask launchd whether the timer is loaded
+  ansible.builtin.command:
+    argv: [launchctl, print, "system/{{ devmachine_scheduled_label }}"]
+  register: devmachine_scheduled_loaded
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  become: true
+  when: devmachine_scheduled_account.stat.exists
+
+- name: Load the timer
+  ansible.builtin.shell:
+    cmd: |
+      launchctl bootout system/{{ devmachine_scheduled_label | quote }} 2>/dev/null || true
+      launchctl bootstrap system {{ devmachine_scheduled_plist | quote }}
+  become: true
+  register: devmachine_scheduled_started
+  until: devmachine_scheduled_started.rc == 0
+  retries: 3
+  delay: 2
+  changed_when: true
+  when:
+    - not ansible_check_mode
+    - devmachine_scheduled_account.stat.exists
+    - devmachine_scheduled_unit is changed or devmachine_scheduled_loaded.rc != 0
