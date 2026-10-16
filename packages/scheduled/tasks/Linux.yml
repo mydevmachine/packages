@@ -1,0 +1,57 @@
+---
+# check_mode: false, or a dry run leaves the uid empty and the systemd task
+# below looks for a bus at /run/user//bus.
+- name: Find the account's uid
+  ansible.builtin.command: "id -u {{ devmachine_workspace.user | quote }}"
+  register: devmachine_scheduled_uid
+  changed_when: false
+  check_mode: false
+  failed_when:
+    - devmachine_scheduled_uid.rc != 0
+    - devmachine_scheduled_account.stat.exists
+
+# Linger, or the user manager dies with the last logout and takes the timer
+# with it. Tasks have to run with nobody logged in.
+- name: Let the account's systemd keep running with nobody logged in
+  ansible.builtin.command: "loginctl enable-linger {{ devmachine_workspace.user | quote }}"
+  args:
+    creates: "/var/lib/systemd/linger/{{ devmachine_workspace.user }}"
+  when: devmachine_scheduled_account.stat.exists
+
+- name: Create ~/.config/systemd/user
+  ansible.builtin.file:
+    path: "{{ devmachine_scheduled_home }}/.config/systemd/user"
+    state: directory
+    owner: "{{ devmachine_workspace.user }}"
+    group: "{{ devmachine_account.group | default(omit) }}"
+    mode: "0755"
+  when: devmachine_scheduled_account.stat.exists
+
+- name: Install the units
+  ansible.builtin.template:
+    src: "{{ item }}.j2"
+    dest: "{{ devmachine_scheduled_home }}/.config/systemd/user/{{ item }}"
+    owner: "{{ devmachine_workspace.user }}"
+    group: "{{ devmachine_account.group | default(omit) }}"
+    mode: "0644"
+  loop:
+    - devmachine-scheduled.service
+    - devmachine-scheduled.timer
+  register: devmachine_scheduled_units
+  when: devmachine_scheduled_account.stat.exists
+
+- name: Start the timer
+  become: true
+  become_user: "{{ devmachine_workspace.user }}"
+  environment:
+    XDG_RUNTIME_DIR: "/run/user/{{ devmachine_scheduled_uid.stdout | default('') | trim }}"
+    DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/{{ devmachine_scheduled_uid.stdout | default('') | trim }}/bus"
+  ansible.builtin.systemd_service:
+    name: devmachine-scheduled.timer
+    scope: user
+    daemon_reload: "{{ devmachine_scheduled_units is changed }}"
+    enabled: true
+    state: started
+  when:
+    - not ansible_check_mode
+    - devmachine_scheduled_account.stat.exists

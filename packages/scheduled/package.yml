@@ -1,0 +1,26 @@
+format: 1
+name: scheduled
+scope: workspace
+platforms: [linux, macos]
+category: Developer tools
+summary: >-
+  Runs the workspace's scheduled tasks — a shell command, or a prompt for
+  Claude or Codex — from one timer that fires every minute, with nobody logged
+  in and your computer off. Manage them with `devmachine scheduled` or the
+  app's Scheduled page.
+
+needs: [workspace]
+
+requires:
+  cli: ">= 0.14.0"
+
+variables:
+  home:
+    summary: Where the account's home is.
+    default: <the account's own home>
+  version:
+    summary: >-
+      The devmachine release the workspace runs its tasks with. Empty means
+      the release of the CLI that syncs, so both sides speak the same
+      version; a CLI built from source falls back to 0.14.0.
+    default: ""
