@@ -1,0 +1,37 @@
+README.md
+  s_be9ca8cef925d9::t_245f3ca805d307 86
+packages/devmachine-skills/skills/create-devmachine-package/references/package-format.md
+  s_be9ca8cef925d9::t_cf4a43505e236b 177
+packages/devmachine-skills/skills/edit-devmachine-boards/references/commands-widgets.md
+  s_be9ca8cef925d9::t_a28889ddb763d5 38,42,167,183
+packages/devmachine-skills/skills/edit-devmachine-boards/references/concepts/widgets.md
+  s_be9ca8cef925d9::t_5c806aaab0b976 4,23,29,35,68-70,78-80,124,126
+packages/devmachine-skills/skills/edit-devmachine-boards/references/widget-format.md
+  s_be9ca8cef925d9::t_7063ce163ab266 28,33,58,77,94,222,227-229,239,305,372,446,490,492,633,687
+packages/devmachine-skills/skills/use-devmachine/SKILL.md
+  s_be9ca8cef925d9::t_6d9ea49409348a 3,117-123
+packages/devmachine-skills/skills/use-devmachine/references/commands.md
+  s_be9ca8cef925d9::t_ad13c5ac732795 7,157,745,749,874,890,1126-1128,1136-1258,1540
+packages/devmachine-skills/skills/use-devmachine/references/concepts/publishing.md
+  s_be9ca8cef925d9::t_ce08e7963a2745 29,36
+packages/devmachine-skills/skills/use-devmachine/references/settings.md
+  s_be9ca8cef925d9::t_5ac927ff843221 94-95,97-99,103
+packages/devmachine-skills/skills/use-devmachine/references/troubleshooting.md
+  s_be9ca8cef925d9::t_fe27b7cfb2c73c 46-56,80-94,775,805,808,1915,1922,1928,1948,2011,2109,2114,2117,2185,2189,2205,2247,2295,2779-2868
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "fce1e3dd89a8e77e46c1eea178a7fee20503b088",
+  "prompts": {},
+  "sessions": {
+    "s_be9ca8cef925d9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d9f277d6-7db0-48b4-8122-c76a3ca3c439",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Djalma Araujo <djalma@nossomos.cc>"
+    }
+  }
+}
