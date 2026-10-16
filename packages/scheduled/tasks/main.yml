@@ -72,11 +72,18 @@
         checksum: "sha256:{{ devmachine_scheduled_base }}/checksums.txt"
         mode: "0644"
 
+    # unarchive wants GNU tar and fails on macOS, whose tar is bsdtar. Both
+    # read this command line the same way.
     - name: Unpack the release
-      ansible.builtin.unarchive:
-        src: "{{ devmachine_scheduled_tmp.path }}/{{ devmachine_scheduled_asset }}"
-        dest: "{{ devmachine_scheduled_tmp.path }}"
-        remote_src: true
+      ansible.builtin.command:
+        argv:
+          - tar
+          - -xzf
+          - "{{ devmachine_scheduled_tmp.path }}/{{ devmachine_scheduled_asset }}"
+          - -C
+          - "{{ devmachine_scheduled_tmp.path }}"
+          - devmachine
+        creates: "{{ devmachine_scheduled_tmp.path }}/devmachine"
 
     # Its own path, never on the account's PATH: the devmachine the person
     # may run by hand stays whatever they installed.
