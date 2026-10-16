@@ -74,6 +74,7 @@ selected session):
 | `devmachine-app/todo` | The plan of the selected session and its to-do list. |
 | `devmachine-app/pull-requests` | The pull requests of the selected session, with their checks and review state. |
 | `devmachine-app/links` | The links the selected session mentioned. |
+| `devmachine-app/ask` | Ask a question about the selected session without interrupting it: every question reads the session's transcript as it is now and asks its harness, with no tools (`devmachine chat ask`). Needs CLI engine 1.8. |
 
 Menu bar title, left to right (at most three widgets, each one line):
 
