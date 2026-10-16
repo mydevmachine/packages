@@ -1,6 +1,6 @@
 ---
 name: use-devmachine
-description: "Use when running, inspecting, or troubleshooting the Devmachine CLI itself, or when answering ANY question about a machine, workspace, server, or VPS it manages — even a read-only one such as \"what's published on the VPS\", \"DNS entries/records for my domain\", \"is my site/subdomain/certificate working\", \"what packages are installed\", \"logins, tokens, API keys or credentials\", \"how much RAM/disk/load\", \"is the server healthy\", \"open/connect to my workspace\", \"run a command on the server\", \"private access to a port\", \"did the host key/fingerprint change\", or \"where is my config\". Covers adding or editing a machine (including the local self:true machine) or workspace, adding a package to one, running sync, expose, tunnel, dns, credentials, secrets, login, run --package, upload, download, update, Tailscale addresses, or any other devmachine subcommand. Not for writing a new package's Ansible role (see create-devmachine-package)."
+description: "Use when running, inspecting, or troubleshooting the Devmachine CLI itself, or when answering ANY question about a machine, workspace, server, or VPS it manages — even a read-only one such as \"what's published on the VPS\", \"DNS entries/records for my domain\", \"is my site/subdomain/certificate working\", \"what packages are installed\", \"logins, tokens, API keys or credentials\", \"how much RAM/disk/load\", \"is the server healthy\", \"open/connect to my workspace\", \"run a command on the server\", \"private access to a port\", \"did the host key/fingerprint change\", \"schedule/automate a recurring task, prompt or command (every day, weekly, a monthly briefing)\", or \"where is my config\". Covers adding or editing a machine (including the local self:true machine) or workspace, adding a package to one, running sync, scheduled tasks, expose, tunnel, dns, credentials, secrets, login, run --package, upload, download, update, Tailscale addresses, or any other devmachine subcommand. Not for writing a new package's Ansible role (see create-devmachine-package)."
 ---
 
 # Use Devmachine
@@ -114,6 +114,13 @@ back to reading files instead.
 | Update everything / is devmachine up to date / upgrade | `devmachine update` (updates the CLI, packages pin and skills, runs doctor and `sync --check`, then asks before syncing) |
 | Update only the CLI binary, nothing else | `devmachine update --cli-only` |
 | Apply pending changes to the server | `devmachine sync` |
+| Run a prompt or a command on a schedule in a workspace (daily, weekly, monthly…) | `devmachine scheduled add --workspace <w> --name <n> --folder <f> (--command <c> \| --harness claude --prompt <p> --permission-mode auto) --every <e> --at HH:MM --yes`; then `scheduled list`, `run <id>` to try it, `runs`/`log` to read it |
+
+For a scheduled prompt, pick `--permission-mode auto`: nobody approves a tool
+during a run, and `acceptEdits` refuses connectors such as Linear or email.
+`--yes` on the first task in a workspace adds the `scheduled` package and syncs
+its machine. Times are in the person's timezone; pass `--timezone` when it
+differs from this computer's.
 
 Use the CLI as the source of truth. Do not replace a missing CLI operation with
 ad-hoc SSH or an old Ansible repository without first identifying the missing

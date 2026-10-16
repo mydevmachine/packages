@@ -91,11 +91,16 @@ configuration says it is.
 | `mise.home` | Where the account's home is. | `<the account's own home>` |
 | `opencode.home` | Where the account's home is. | `<the account's own home>` |
 | `pi.home` | Where the account's home is. | `<the account's own home>` |
+| `scheduled.home` | Where the account's home is. | `<the account's own home>` |
+| `scheduled.version` | The devmachine release the workspace runs its tasks with. Empty means the release of the CLI that syncs, so both sides speak the same version; a CLI built from source falls back to 0.14.0. | *(empty)* |
 | `sentry.home` | Where the account's home is. | `<the account's own home>` |
+| `session-share.home` | Where the account's home is. | `<the account's own home>` |
+| `session-share.port` | The local port this account's share server listens on. Every workspace on a machine needs its own. | `7690` |
+| `session-share.version` | The session-share release to install. A sync replaces an installed binary of another version. | `0.1.7` |
 | `ssh_hardening.service` | What systemd calls sshd. Empty means the name this distribution family uses, which is `ssh` on Debian and Ubuntu and `sshd` elsewhere. macOS ignores it: launchd starts sshd for each connection, so there is nothing to reload. | *(empty)* |
 | `tailscale.exit_node` | Advertise this machine as an exit node. Off unless asked for. | `false` |
 | `tailscale.login_server` | The control server `devmachine login tailscale` joins. Empty means Tailscale's own; a URL means your own, such as Headscale. | *(empty)* |
-| `workspace.admin_home` | The home of the account the CLI provisions with. Whatever reaches that account over SSH is what reaches this workspace. On macOS it is the admin login's own home, read from the system. | `/root` |
+| `workspace.admin_home` | The home of the account the CLI provisions with. Whatever reaches that account over SSH is what reaches this workspace. It is read from the system: root's home, or the admin login's own when that is not root. | `<the admin login's own home>` |
 | `workspace.git_email` | The address on this workspace's commits. | *(empty)* |
 | `workspace.git_name` | The name on this workspace's commits. | *(empty)* |
 | `workspace.groups` | Extra groups the account joins. The docker group is one of them and it is effectively root, so nobody joins it by accident. | `[]` |

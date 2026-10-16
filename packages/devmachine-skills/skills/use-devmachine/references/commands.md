@@ -4,7 +4,7 @@ Every command accepts:
 
 | Flag | Meaning |
 | --- | --- |
-| `--config <dir>` | the configuration directory to use |
+| `--config <dir>` | the configuration folder to use |
 | `--format table\|json` | how to print; JSON is the stable contract |
 | `--machine <name>` | which machine to act on, for commands that act on a server |
 | `--help` | what this command does |
@@ -154,7 +154,7 @@ involved.
 devmachine setup git [--yes] [--check]
 ```
 
-Turns your configuration directory into a git repository, so you can push
+Turns your configuration folder into a git repository, so you can push
 it to a private remote. `config.yml`, `packages.lock`, `known_hosts` and
 `AGENTS.md` are committed — see [versioning your
 configuration](https://mydevmachine.sh/how-it-works/versioning-your-configuration/) for what
@@ -742,11 +742,11 @@ prints:
       "trust": "official",
       "version": "v40",
       "path": "/Users/alice/.config/devmachine/cache/packages/v40/packages/claude-code/widgets/usage",
-      "summary": "Coding-harness usage windows.",
+      "summary": "Coding-agent usage windows.",
       "requires_engine": ">= 1.0",
       "fits": ["canvas", "stack", "slot"],
       "context": {},
-      "inputs": {"harness": {"type": "string", "default": "claude", "summary": "Which harness."}},
+      "inputs": {"harness": {"type": "string", "default": "claude", "summary": "Which coding agent."}},
       "source": {"kind": "provider", "name": "app/harness-usage", "with": {"harness": "{{inputs.harness}}"}, "every": "60s"},
       "view": {"kind": "app.harness-usage"},
       "sizes": ["small", "medium", "wide"],
@@ -871,7 +871,7 @@ marked `single` is refused when the board already has it.
 
 On Home (the default), `--size` is a preset the widget takes or `auto`.
 Without it the widget gets `auto` when its view grows with its content
-(the summary, machines and harness usage views, and the generic `text`,
+(the summary, machines and coding agent usage views, and the generic `text`,
 `number`, `status`, `list` and `markdown`) and its `default_size`
 otherwise. `--size auto` on a view that does not grow is refused. An
 `auto` widget is written as `frame: {x, y, w}` with no `h`: `w` is the
@@ -887,7 +887,7 @@ The point is on Home with the app's sidebar open. With the sidebar hidden,
 the app spreads the widgets over the wider canvas: one at an edge stays at
 that edge, and any other keeps its share of the space between the edges.
 
-In the sidebar or the context sidebar, the widget goes at the end of the
+In the sidebar or the Context tab, the widget goes at the end of the
 list, or right after `--after <id>`, or right before `--before <id>` (one
 of the two at most). `--size` is a preset or `auto`; without it the widget
 gets `auto` when its view grows with its content and its `default_size`
@@ -1123,13 +1123,138 @@ reads, and its shape is stable:
   answer, and the command exits 0.
 - `error.kind` is one of `unreachable` (no address answered, or the 5 seconds
   ran out), `host-key-rejected` (the machine's key is not the one pinned),
-  `tmux-missing` (tmux is not installed there), `not-configured` (the name
+  `login-refused` (the machine answered but refused the workspace's login,
+  most often because the workspace is not synced yet, so its account does not
+  exist), `tmux-missing` (tmux is not installed there), `not-configured` (the name
   given to `--workspace` is not in the configuration) or `other`.
 - The table shows `busy`, `attention` or nothing under `STATE`, and the
   folder's name when a session has no branch.
 
 See [session indicators](https://mydevmachine.sh/how-it-works/session-indicators/) for how
 `busy` and `attention` are decided.
+
+## scheduled
+
+```
+devmachine scheduled list [--workspace name]...
+devmachine scheduled add --workspace w --name n --folder f
+    (--command c | --harness h --prompt p [--model m] [--permission-mode x])
+    --every once|hourly|daily|weekdays|weekly|monthly
+    [--at HH:MM] [--minute M] [--weekday mon..sun] [--day D] [--date YYYY-MM-DD]
+    [--timezone zone] [--timeout 30m] [--allow-dangerous] [--yes]
+devmachine scheduled edit <id> --workspace w [any flag of add]
+devmachine scheduled pause|resume <id> --workspace w
+devmachine scheduled rm <id> --workspace w [--yes]
+devmachine scheduled run <id> --workspace w
+devmachine scheduled runs <id> --workspace w
+devmachine scheduled log <id> <run-id> --workspace w
+devmachine scheduled harnesses
+```
+
+A scheduled task runs a shell command, or a prompt for a coding agent, in a
+folder of a workspace, on a schedule. The workspace keeps and runs its own
+tasks, so they run with your computer off. See [scheduled
+tasks](https://mydevmachine.sh/how-it-works/scheduled-tasks/) for how.
+
+```
+devmachine scheduled add --workspace alice --name "Daily briefing" --folder ~/dev/app \
+  --harness claude --prompt "Summarize yesterday's commits" --every weekdays --at 09:00
+```
+
+- `--every` says how often, and which other flag it needs: `once` needs
+  `--date` and `--at`; `hourly` needs `--minute`; `daily` and `weekdays`
+  (Monday to Friday) need `--at`; `weekly` needs `--weekday` and `--at`;
+  `monthly` needs `--day` (1 to 31, a short month uses its last day) and
+  `--at`.
+- `--timezone` is the zone `--at` is in, such as `America/Sao_Paulo`. It
+  defaults to your computer's.
+- `--harness` is `claude` or `codex`. `--model` is passed to the agent as
+  written; empty means the agent's own default. `--permission-mode` takes the
+  agent's modes, listed by `scheduled harnesses`. A mode that never asks for
+  approval needs `--allow-dangerous`.
+- `--folder` may start with `~`, the workspace's home. It must exist when the
+  task runs.
+- `--timeout` stops a run after that long: 30 minutes by default, at most 6
+  hours.
+- The first task in a workspace without the `scheduled` package asks to set it
+  up: it adds the package to the workspace and runs `sync` for its machine,
+  then creates the task. `--yes` does that without asking. It refuses, and
+  changes nothing, when the packages release your configuration uses has no
+  `scheduled` package yet.
+- `edit` changes only the flags you give. Changing `--command` or `--prompt`
+  switches what the task runs. Changing `--harness` drops the old agent's
+  model and permission mode, unless you give new ones.
+- `pause` stops a task from running on its schedule; `run` still runs it.
+  `resume` refuses a one-off task that already ran; give it a new `--date`
+  with `edit`.
+- `run` starts the task now and prints the run's id at once. `runs` shows
+  when it ends, and `log` what it printed.
+- `rm` asks first, and deletes the task and the record of its runs.
+
+```
+WORKSPACE  ID        NAME            SCHEDULE           ACTION   NEXT              LAST
+alice      t_7f3a9c  Daily briefing  Weekdays at 09:00  claude   2026-10-16 09:00  succeeded 2026-10-15 09:00
+```
+
+With `--format json`, `list` prints what the macOS app reads:
+
+```json
+{
+  "workspaces": [
+    {
+      "name": "alice",
+      "machine": "main",
+      "installed": true,
+      "tasks": [
+        {
+          "version": 1,
+          "id": "t_7f3a9c",
+          "name": "Daily briefing",
+          "paused": false,
+          "done": false,
+          "folder": "~/dev/app",
+          "timeout": "30m",
+          "schedule": {"every": "weekdays", "at": "09:00", "timezone": "America/Sao_Paulo"},
+          "action": {"kind": "prompt", "harness": "claude", "prompt": "Summarize yesterday's commits"},
+          "created_at": "2026-10-15T12:00:00Z",
+          "updated_at": "2026-10-15T12:00:00Z",
+          "next_run_at": "2026-10-16T12:00:00Z",
+          "last_run": {
+            "id": "20261015T120000Z-ab12",
+            "task_id": "t_7f3a9c",
+            "status": "succeeded",
+            "trigger": "schedule",
+            "started_at": "2026-10-15T12:00:00Z",
+            "ended_at": "2026-10-15T12:01:10Z",
+            "duration_ms": 70000,
+            "exit_code": 0
+          }
+        }
+      ]
+    },
+    {"name": "bob", "machine": "main", "installed": false, "tasks": []}
+  ]
+}
+```
+
+- `installed` is whether the workspace has the `scheduled` package. A
+  workspace without it is not asked, and has no error.
+- `next_run_at` is `null` for a paused task and for a one-off task that is
+  `done`. `last_run` is `null` before the first run.
+- A run's `status` is `running`, `succeeded`, `failed`, `timeout`, `error`,
+  `missed` or `skipped`; `message` says why when it is not `succeeded`.
+- `error` appears only on a workspace that could not answer, and the command
+  still exits 0. `error.kind` is `unreachable`, `host-key-rejected`,
+  `login-refused`, `not-installed` (the package is in the configuration but
+  not on the machine yet), `outdated` (the workspace's devmachine is older
+  than yours), `not-configured` or `other`.
+
+The other commands print, with `--format json`: `add`, `edit`, `pause` and
+`resume` `{"workspace", "task"}`; `rm` `{"workspace", "removed"}`; `run`
+`{"workspace", "task", "run_id"}`; `runs` `{"workspace", "task", "runs"}`,
+newest first; `harnesses` `{"harnesses": [{"name", "package",
+"permission_modes", "dangerous", "models"}]}`. `log` prints the output as it
+is.
 
 ## ssh-proxy
 
@@ -1412,7 +1537,7 @@ get a yes. `--publish` is the non-interactive way past that.
   refused with the machines that have it. See
   [publishing through another machine](https://mydevmachine.sh/how-it-works/published-sites/#publishing-through-another-machine).
 
-See [why a published site lives in the configuration](https://mydevmachine.sh/how-it-works/published-sites/).
+See [why a published app lives in the configuration](https://mydevmachine.sh/how-it-works/published-sites/).
 
 `list` prints every host the machine's Caddy serves — those sent to it
 with `--via` too, naming the machine they come from — with its port,
