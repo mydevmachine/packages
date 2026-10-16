@@ -35,11 +35,11 @@ prints:
       "trust": "official",
       "version": "v40",
       "path": "/Users/alice/.config/devmachine/cache/packages/v40/packages/claude-code/widgets/usage",
-      "summary": "Coding-harness usage windows.",
+      "summary": "Coding-agent usage windows.",
       "requires_engine": ">= 1.0",
       "fits": ["canvas", "stack", "slot"],
       "context": {},
-      "inputs": {"harness": {"type": "string", "default": "claude", "summary": "Which harness."}},
+      "inputs": {"harness": {"type": "string", "default": "claude", "summary": "Which coding agent."}},
       "source": {"kind": "provider", "name": "app/harness-usage", "with": {"harness": "{{inputs.harness}}"}, "every": "60s"},
       "view": {"kind": "app.harness-usage"},
       "sizes": ["small", "medium", "wide"],
@@ -164,7 +164,7 @@ marked `single` is refused when the board already has it.
 
 On Home (the default), `--size` is a preset the widget takes or `auto`.
 Without it the widget gets `auto` when its view grows with its content
-(the summary, machines and harness usage views, and the generic `text`,
+(the summary, machines and coding agent usage views, and the generic `text`,
 `number`, `status`, `list` and `markdown`) and its `default_size`
 otherwise. `--size auto` on a view that does not grow is refused. An
 `auto` widget is written as `frame: {x, y, w}` with no `h`: `w` is the
@@ -180,7 +180,7 @@ The point is on Home with the app's sidebar open. With the sidebar hidden,
 the app spreads the widgets over the wider canvas: one at an edge stays at
 that edge, and any other keeps its share of the space between the edges.
 
-In the sidebar or the context sidebar, the widget goes at the end of the
+In the sidebar or the Context tab, the widget goes at the end of the
 list, or right after `--after <id>`, or right before `--before <id>` (one
 of the two at most). `--size` is a preset or `auto`; without it the widget
 gets `auto` when its view grows with its content and its `default_size`

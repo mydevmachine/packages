@@ -43,6 +43,17 @@ says which server it lives on.
 `doctor` never says this: with several machines and no `--machine`, it
 checks every one of them.
 
+## Commands hang for a minute or more right after the computer wakes
+
+**What it means:** An older CLI kept its shared SSH connection open across
+the sleep. The connection was dead, and each command waited on it until the
+system gave up. The SSH agent's prompt, such as 1Password's, only appeared
+after that.
+
+**What to do:** Update the CLI. It now drops a dead connection within a few
+seconds and logs in again. See
+[Session indicators](https://mydevmachine.sh/how-it-works/session-indicators/#after-the-computer-sleeps).
+
 ## "no address answered"
 
 **What it means:** Nothing answered at the address devmachine tried. The error
@@ -65,6 +76,21 @@ or the key is the problem.
 - Check that account exists on the server. A workspace in your configuration
   is not created on the server until you run `sync`.
 - Check the key is allowed to log in to that account.
+
+## A new workspace shows as unreachable until sync
+
+**What it means:** A workspace you just added is in your configuration, but
+its account on the machine does not exist until `sync` finishes. Until then,
+the machine refuses every login to it. `devmachine sessions` reports this as
+`login-refused`, not `unreachable`: the machine is fine, and the other
+workspaces on it still answer.
+
+Each refused login is a failed login in the machine's SSH log. With fail2ban
+on, enough of them in a short time block your address for the whole machine,
+so do not keep asking about a workspace that is not synced yet.
+
+**What to do:** Run `devmachine sync`. When it finishes, the workspace
+answers.
 
 ## "no key in the configuration and no SSH agent"
 
@@ -746,7 +772,7 @@ is the name a setting has to match.
 
 **What it means:** The setting's first part, before the dot, names a
 package that machine or workspace does not have. Nothing would read the
-value: the recipe would keep its default, so the CLI refuses it instead.
+value: the role would keep its default, so the CLI refuses it instead.
 It is usually a typo in the package name, or a package added to the
 workspace when the setting is on the machine (or the other way round).
 
@@ -776,10 +802,10 @@ devmachine config path
 
 ## `secrets list` shows nothing after storing one
 
-**What it means:** The list of names lives in your configuration directory,
+**What it means:** The list of names lives in your configuration folder,
 even though the values themselves live in your keychain.
 
-**What to do:** Check you are using the same configuration directory you used
+**What to do:** Check you are using the same configuration folder you used
 when storing it — see `devmachine config path` above.
 
 ## `secrets set --env-file` refuses the path
@@ -1886,20 +1912,20 @@ has. Nothing else in it was checked.
 
 ## "source.permission_mode X: a claude prompt takes …"
 
-**What it means:** Each harness has its own names for what it may do, and
+**What it means:** Each coding agent has its own names for what it may do, and
 `permission_mode` takes only those of the widget's `harness`. A Codex
 name on a Claude prompt, or the other way round, is refused, and so is a
 template: the mode is what you approve, so it cannot change when the
 widget runs.
 
 **What to do:** Pick a name from the list in the message, or take the key
-off to run the harness as it does by default. If your harness has a mode
+off to run the coding agent as it does by default. If your coding agent has a mode
 the list lacks, `devmachine update`: a CLI release adds new modes.
 
 ## "permission_mode X runs without any check, so it runs only when you press refresh"
 
 **What it means:** `bypassPermissions` (Claude), `danger-full-access` and
-`dangerously-bypass-approvals-and-sandbox` (Codex) let the harness change
+`dangerously-bypass-approvals-and-sandbox` (Codex) let the coding agent change
 files and run commands without asking. Such a widget never runs on a
 timer, so its `every` must be `manual`. A board entry's `every` and
 `widgets set --every` follow the same rule.
@@ -1919,7 +1945,7 @@ old then says it needs an update.
 ## "input X is a choice, and needs from"
 
 **What it means:** A `choice` input is picked from a list, and `from`
-says which list: `machines`, `workspaces` or `harnesses`. Without it, or
+says which list: `machines`, `workspaces` or `harnesses` (the coding agents). Without it, or
 with another name, the app has nothing to offer.
 
 **What to do:** Add `from: machines` (or one of the other two). Add
@@ -1982,7 +2008,7 @@ writes the right shape.
 ## "warning: … names machine "X", which config.yml does not have"
 
 **What it means:** A widget on the board picked a machine (or workspace)
-that is not in `config.yml` any more, or a harness the engine does not
+that is not in `config.yml` any more, or a coding agent the engine does not
 know. The app leaves that name out and draws the rest. Nothing is
 refused.
 
@@ -2080,15 +2106,15 @@ not fit the menubar area: the X view cannot be drawn in the menu bar".
 
 **What to do:** Pick a widget that fits the area, or, for your own widget,
 add the layout to `fits`. A widget that needs `session` fits only the
-context sidebar.
+Context tab.
 
 ## "X needs context.session, which the sidebar area does not give"
 
 **What it means:** The widget reads the selected session, and only the
-context sidebar has one. The same goes for a widget written in a board
+Context tab has one. The same goes for a widget written in a board
 whose provider needs it ("which this board's area does not give").
 
-**What to do:** Put it on the context sidebar instead.
+**What to do:** Put it on the Context tab instead.
 
 ## "X goes on a board once"
 
@@ -2156,11 +2182,11 @@ is drawn anywhere, such as `list` or `text`.
 ## "source.name app/session-context needs context.session"
 
 **What it means:** The provider reads the session that is selected in the
-app, so it only works in the context sidebar, which hands every widget
+app, so it only works in the Context tab, which hands every widget
 there that session. A widget only sees the context keys it declares.
 
 **What to do:** Add `context: {session: required}` to the `widget.yml`.
-The widget then fits only the context sidebar, which is right: there is
+The widget then fits only the Context tab, which is right: there is
 no session to read anywhere else.
 
 ## "fits canvas, and the X view is drawn only in stack"
@@ -2176,7 +2202,7 @@ tall as their content, so they have no shape on Home's canvas.
 **What it means:** `places` asks the app to add the widget to an area
 once. The widget cannot sit there: its `fits` lacks the area's layout, or
 it requires a context key the area does not give (`session`, for example,
-only the context sidebar gives). The app would skip it without a word.
+only the Context tab gives). The app would skip it without a word.
 
 **What to do:** Remove the area from `places`, or change `fits` or
 `context` so the widget fits it. `devmachine widgets validate` lists the
@@ -2218,7 +2244,7 @@ the app has not saved a layout yet. `widgets add` creates the file;
 `remove` never does on Home. A missing sidebar board is different: it is
 read as the default board, so `remove` and `move` work on it.
 
-**What to do:** Check `--board` and the config directory the path names.
+**What to do:** Check `--board` and the configuration folder the path names.
 To see what is on a board, open `<config>/boards/<board>.yml`.
 
 ## "a widget written in the board needs a title"
@@ -2266,7 +2292,7 @@ The same message comes for `minimized: false`: a stack refuses the
 **What it means:** `auto` makes a widget as tall as what it shows. Only
 a view that has a natural height works that way: the app's sidebar views
 (`app.workspaces`, `app.todo` and the others), the summary, machines and
-harness usage views, and the generic `text`, `number`, `status`, `list`
+coding agent usage views, and the generic `text`, `number`, `status`, `list`
 and `markdown`. Every other view (a clock, a gauge, a web page, a
 terminal) has a fixed shape and needs a preset. The same message comes on
 Home, from a board entry or from `widgets add --size auto`
@@ -2750,3 +2776,93 @@ agent is still working.
 **What to do:** Nothing is broken. Wait for the next change on the screen, or
 open the session to see what the agent does. See
 [session indicators](https://mydevmachine.sh/how-it-works/session-indicators/).
+
+## "scheduled is not set up on …"
+
+**What it means:** The workspace has no `scheduled` package, or it is in your
+configuration but the machine has not been synced since. The timer that runs
+tasks and the devmachine it calls are not there yet.
+
+**What to do:** Add the task again with `--yes`, which sets up the package
+and syncs the machine first. Or do it by hand:
+`devmachine packages add scheduled --workspace <w> --yes`, then
+`devmachine sync --machine <m> --tags scheduled --yes`. See
+[scheduled tasks](https://mydevmachine.sh/how-it-works/scheduled-tasks/).
+
+## "the scheduled package is not in packages release …"
+
+**What it means:** Your configuration syncs from a packages release that
+came out before the `scheduled` package. Adding it anyway would leave the
+workspace with a package every later sync refuses, so nothing was changed.
+
+**What to do:** `devmachine update` once a packages release with `scheduled`
+is out, then create the task again.
+
+## "the devmachine on … is older than this one"
+
+**What it means:** The workspace runs an older devmachine than your computer,
+and it answers in a shape this one does not read. It happens after you update
+the CLI on your computer and before the machine is synced.
+
+**What to do:** `devmachine sync --machine <m> --tags scheduled`. The package
+installs the devmachine of the release your configuration pins.
+
+## A scheduled run ends with "claude is not installed for this account"
+
+**What it means:** The task's agent is not on the workspace's PATH. A
+scheduled prompt runs as the workspace's own account, so that account needs
+the agent, and its login.
+
+**What to do:** Add the agent's package to the workspace, `claude-code` or
+`codex`, sync, and log in once in a session there. Then press Run now, or
+`devmachine scheduled run <id> --workspace <w>`, to try again.
+
+## A scheduled run is `missed`
+
+**What it means:** The machine was off or asleep when the task was due. A run
+found more than two minutes late is recorded, not started. Nothing is wrong
+with the task.
+
+**What to do:** Nothing, or `devmachine scheduled run` to run it now. A task
+on a laptop that sleeps runs only while it is awake.
+
+## A scheduled run is `skipped`
+
+**What it means:** The task's previous run was still going when the next time
+came. Two runs of one task never go at once.
+
+**What to do:** Give the task a longer gap, or a shorter `--timeout` so a
+stuck run ends sooner.
+
+## A scheduled run fails with "folder … does not exist"
+
+**What it means:** The task's folder is not in the workspace any more, or was
+never there. `~` is the workspace's home, not your computer's.
+
+**What to do:** `devmachine scheduled edit <id> --workspace <w> --folder <f>`.
+
+## A scheduled prompt ran, succeeded, and did nothing
+
+**What it means:** The agent needed approval for a tool, and nobody was there
+to give it. With a mode that asks first, such as Claude's `manual`, the agent
+stops at the first tool it needs.
+
+**What to do:** Read what it said with `devmachine scheduled log`. Then pick a
+mode that lets it work. `acceptEdits` approves file edits only, so a prompt
+that uses a connector (Linear, email) is refused with "permission … denied";
+use `auto`:
+`devmachine scheduled edit <id> --workspace <w> --permission-mode auto`.
+
+## "A session vanishes from the app about 30 seconds after you open it"
+
+**What it means:** `devmachine sessions` read the workspace as having no
+sessions, while tmux still runs them. Up to CLI v0.13.0 this happened on a machine
+whose ssh login sets no UTF-8 locale, which is every Mac: tmux then prints each
+tab in its list as `_`, and no line could be read. The app keeps a new session
+on screen for 30 seconds, then trusts the empty list and closes the pane. The
+session and what runs in it are untouched on the machine.
+
+**What to do:** Update the CLI to the first release after v0.13.0. To check a machine by hand,
+compare `LC_ALL=C tmux list-sessions -F '#{session_name}<Tab>#{session_windows}'`
+with the same command under `tmux -u`; the first shows `_` where the second
+shows a tab. See [session indicators](https://mydevmachine.sh/how-it-works/session-indicators/).
