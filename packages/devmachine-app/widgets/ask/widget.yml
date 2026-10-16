@@ -1,0 +1,15 @@
+format: 1
+name: ask
+summary: Ask a question about the selected session without interrupting it.
+requires: {engine: ">= 1.8"}
+fits: [stack]
+context: {session: required}
+source:
+  kind: provider
+  name: app/session-ask
+  with: {}
+  every: 5s
+view: {kind: app.ask}
+sizes: [medium, large]
+default_size: large
+places: [context-sidebar]

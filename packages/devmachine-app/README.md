@@ -74,6 +74,7 @@ selected session):
 | `devmachine-app/todo` | The plan of the selected session and its to-do list. |
 | `devmachine-app/pull-requests` | The pull requests of the selected session, with their checks and review state. |
 | `devmachine-app/links` | The links the selected session mentioned. |
+| `devmachine-app/ask` | Ask a question about the selected session without interrupting it: a fork of a claude session, or an excerpt of a codex session's transcript (`devmachine chat ask`). Needs CLI engine 1.8. |
 
 Menu bar title, left to right (at most three widgets, each one line):
 
