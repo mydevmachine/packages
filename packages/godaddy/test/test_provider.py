@@ -125,7 +125,6 @@ class ProviderTest(unittest.TestCase):
         env = dict(os.environ)
         env["GODADDY_API_TOKEN"] = token
         env["DEVMACHINE_DNS_BASE"] = self.base_url
-        env["DEVMACHINE_DNS_PAGE_LIMIT"] = str(self.server.page_size)
         return subprocess.run(
             [sys.executable, PROVIDER] + args,
             input=stdin,
@@ -143,13 +142,13 @@ class ProviderTest(unittest.TestCase):
         self.assertEqual(result.returncode, 0)
         self.assertEqual(json.loads(result.stdout), {"zones": ["example.com"]})
 
-    def test_zones_follows_the_marker_until_a_short_page(self):
+    def test_zones_follows_the_marker_until_an_empty_page(self):
         self.server.page_size = 2
         self.server.domains = [{"domain": d, "status": "ACTIVE"} for d in ("a.example", "b.example", "c.example")]
         result = self.run_provider(["zones"])
         self.assertEqual(json.loads(result.stdout), {"zones": ["a.example", "b.example", "c.example"]})
         markers = [r[2].get("marker", [None])[0] for r in self.server.requests]
-        self.assertEqual(markers, [None, "b.example"])
+        self.assertEqual(markers, [None, "b.example", "c.example"])
 
     def test_zones_is_empty_when_no_domain_is_active(self):
         self.server.domains = [{"domain": "example.com", "status": "CANCELLED"}]
@@ -177,6 +176,14 @@ class ProviderTest(unittest.TestCase):
         message = json.loads(result.stdout)["error"]["message"]
         self.assertIn("ACCESS_DENIED", message)
         self.assertIn("not allowed access", message)
+
+    def test_an_unmapped_status_names_the_http_status_and_godaddys_message(self):
+        self.server.force_status = 500
+        self.server.force_body = {"code": "INTERNAL", "message": "something broke upstream"}
+        out = json.loads(self.run_provider(["zones"]).stdout)["error"]
+        self.assertEqual(out["kind"], "invalid_record")
+        self.assertIn("HTTP 500", out["message"])
+        self.assertIn("something broke upstream", out["message"])
 
     def test_a_429_is_never_retried(self):
         self.server.force_status = 429

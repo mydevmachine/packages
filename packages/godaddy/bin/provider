@@ -7,7 +7,7 @@ import urllib.parse
 import urllib.request
 
 DEFAULT_BASE = "https://api.godaddy.com"
-DEFAULT_PAGE_LIMIT = 1000
+PAGE_LIMIT = 1000
 
 ROUND_TRIP_TYPES = {"A", "AAAA", "CNAME", "TXT"}
 
@@ -19,10 +19,6 @@ def fail(kind, message):
 
 def base_url():
     return os.environ.get("DEVMACHINE_DNS_BASE", DEFAULT_BASE)
-
-
-def page_limit():
-    return int(os.environ.get("DEVMACHINE_DNS_PAGE_LIMIT", DEFAULT_PAGE_LIMIT))
 
 
 def token():
@@ -70,24 +66,22 @@ def call(method, path, body=None):
     if status in (400, 422):
         fail("invalid_record", message_from(parsed, "the record was rejected"))
     if status >= 400 and status != 404:
-        fail("invalid_record", message_from(parsed, "godaddy answered %d" % status))
+        fail("invalid_record", "HTTP %d: %s" % (status, message_from(parsed, "no details")))
 
     return status, parsed
 
 
 def cmd_zones():
-    limit = page_limit()
     zones = []
     marker = None
     while True:
-        params = {"statuses": "ACTIVE", "limit": limit}
+        params = {"statuses": "ACTIVE", "limit": PAGE_LIMIT}
         if marker:
             params["marker"] = marker
         _, page = call("GET", "/v1/domains?" + urllib.parse.urlencode(params))
-        page = page or []
-        zones.extend(d["domain"] for d in page)
-        if len(page) < limit:
+        if not page:
             break
+        zones.extend(d["domain"] for d in page)
         marker = page[-1]["domain"]
     print(json.dumps({"zones": zones}))
 
