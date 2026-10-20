@@ -70,6 +70,13 @@ class FakeGoDaddy(BaseHTTPRequestHandler):
             records[:] = [r for r in records if r not in selected]
             records.extend(dict(item, type=record_type, name=name) for item in body)
             self._reply(200)
+            return
+        if method == "DELETE":
+            if not selected:
+                self._reply(404, {"code": "UNKNOWN_RECORD", "message": "No such record"})
+                return
+            records[:] = [r for r in records if r not in selected]
+            self._reply(204)
 
     def _domains(self, query):
         active = [d for d in self.server.domains if d["status"] in query.get("statuses", [d["status"]])]
@@ -252,6 +259,45 @@ class ProviderTest(unittest.TestCase):
     def test_upsert_rejects_stdin_that_is_not_json(self):
         out = json.loads(self.run_provider(["upsert", "example.com"], stdin="{").stdout)
         self.assertEqual(out["error"]["kind"], "invalid_record")
+
+    def test_delete_of_the_only_value_deletes_the_set(self):
+        self.server.records["example.com"] = [{"type": "A", "name": "www", "data": "203.0.113.10", "ttl": 600}]
+        record = json.dumps({"name": "www", "type": "A", "value": "203.0.113.10"})
+        result = self.run_provider(["delete", "example.com"], stdin=record)
+        self.assertEqual(json.loads(result.stdout), {})
+        self.assertEqual(self.server.records["example.com"], [])
+        self.assertEqual([r[0] for r in self.server.requests][-1], "DELETE")
+
+    def test_delete_of_one_value_among_several_puts_the_rest_back(self):
+        self.server.records["example.com"] = [
+            {"type": "A", "name": "www", "data": "203.0.113.10", "ttl": 600},
+            {"type": "A", "name": "www", "data": "203.0.113.11", "ttl": 600},
+        ]
+        record = json.dumps({"name": "www", "type": "A", "value": "203.0.113.10"})
+        self.run_provider(["delete", "example.com"], stdin=record)
+        self.assertEqual(self.server.records["example.com"], [{"type": "A", "name": "www", "data": "203.0.113.11", "ttl": 600}])
+        self.assertNotIn("DELETE", [r[0] for r in self.server.requests])
+
+    def test_delete_with_no_value_removes_the_whole_set(self):
+        self.server.records["example.com"] = [
+            {"type": "A", "name": "www", "data": "203.0.113.10", "ttl": 600},
+            {"type": "A", "name": "www", "data": "203.0.113.11", "ttl": 600},
+        ]
+        self.run_provider(["delete", "example.com"], stdin=json.dumps({"name": "www", "type": "A", "value": ""}))
+        self.assertEqual(self.server.records["example.com"], [])
+
+    def test_delete_of_a_value_not_there_is_a_no_op(self):
+        self.server.records["example.com"] = [{"type": "A", "name": "www", "data": "203.0.113.10", "ttl": 600}]
+        before = len(self.server.requests)
+        result = self.run_provider(["delete", "example.com"], stdin=json.dumps({"name": "www", "type": "A", "value": "203.0.113.99"}))
+        self.assertEqual(json.loads(result.stdout), {})
+        self.assertEqual([r[0] for r in self.server.requests[before:]], ["GET"])
+
+    def test_delete_of_a_name_that_does_not_exist_succeeds(self):
+        self.server.records["example.com"] = []
+        result = self.run_provider(["delete", "example.com"], stdin=json.dumps({"name": "gone", "type": "A", "value": ""}))
+        self.assertEqual(result.returncode, 0)
+        self.assertEqual(json.loads(result.stdout), {})
 
 
 if __name__ == "__main__":

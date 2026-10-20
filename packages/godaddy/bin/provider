@@ -137,6 +137,31 @@ def cmd_upsert(zone, record):
     print(json.dumps({}))
 
 
+def delete_set(zone, record_type, name):
+    status, _ = call("DELETE", records_path(zone, record_type, name))
+    if status == 404:
+        # The set is already gone, which is what the caller asked for.
+        return
+
+
+def cmd_delete(zone, record):
+    record_type = record["type"]
+    name = record["name"]
+    value = record.get("value", "")
+    current = get_records(zone, record_type, name)
+    rest = [r for r in current if r["data"] != value]
+
+    if value and len(rest) == len(current):
+        print(json.dumps({}))
+        return
+
+    if value and rest:
+        put_set(zone, record_type, name, [{"data": r["data"], "ttl": r["ttl"]} for r in rest])
+    else:
+        delete_set(zone, record_type, name)
+    print(json.dumps({}))
+
+
 def read_record():
     try:
         return json.loads(sys.stdin.read())
@@ -187,7 +212,7 @@ def main(argv):
         cmd_upsert(zone, read_record())
         return
 
-    fail("invalid_record", "%s is not implemented yet" % command)
+    cmd_delete(zone, read_record())
 
 
 if __name__ == "__main__":
