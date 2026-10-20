@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import subprocess
 import sys
 import threading
@@ -7,6 +8,7 @@ import unittest
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import parse_qs, urlparse
 
+RECORDS_ROUTE = re.compile(r"^/v1/domains/([^/]+)/records(?:/([^/]+)/([^/]+))?$")
 PROVIDER = os.path.join(os.path.dirname(__file__), "..", "bin", "provider")
 
 
@@ -43,7 +45,22 @@ class FakeGoDaddy(BaseHTTPRequestHandler):
             self._domains(query)
             return
 
+        match = RECORDS_ROUTE.match(parsed.path)
+        if match:
+            self._records(method, match, body)
+            return
+
         self._reply(404, {"code": "NOT_FOUND", "message": "no such route"})
+
+    def _records(self, method, match, body):
+        domain, record_type, name = match.groups()
+        if domain not in self.server.records:
+            self._reply(404, {"code": "UNKNOWN_DOMAIN", "message": "The given domain is not registered"})
+            return
+        records = self.server.records[domain]
+        selected = [r for r in records if record_type in (None, r["type"]) and name in (None, r["name"])]
+        if method == "GET":
+            self._reply(200, selected)
 
     def _domains(self, query):
         active = [d for d in self.server.domains if d["status"] in query.get("statuses", [d["status"]])]
@@ -159,6 +176,33 @@ class ProviderTest(unittest.TestCase):
         result = self.run_provider(["list"])
         self.assertNotEqual(result.returncode, 0)
         self.assertEqual(json.loads(result.stdout)["error"]["kind"], "invalid_record")
+
+    def test_list_maps_data_to_value_and_keeps_the_apex_label(self):
+        self.server.records["example.com"] = [
+            {"type": "A", "name": "@", "data": "203.0.113.10", "ttl": 600},
+            {"type": "CNAME", "name": "www", "data": "example.com", "ttl": 3600},
+            {"type": "MX", "name": "@", "data": "mail.example.com", "ttl": 3600, "priority": 10},
+        ]
+        out = json.loads(self.run_provider(["list", "example.com"]).stdout)
+        self.assertEqual(out, {"records": [
+            {"name": "@", "type": "A", "value": "203.0.113.10", "ttl": 600},
+            {"name": "www", "type": "CNAME", "value": "example.com", "ttl": 3600},
+        ]})
+
+    def test_list_of_an_empty_zone_is_empty_not_missing(self):
+        self.server.records["example.com"] = []
+        result = self.run_provider(["list", "example.com"])
+        self.assertEqual(result.returncode, 0)
+        self.assertEqual(json.loads(result.stdout), {"records": []})
+
+    def test_list_of_an_unknown_domain_is_zone_not_found(self):
+        result = self.run_provider(["list", "example.net"])
+        self.assertEqual(json.loads(result.stdout)["error"]["kind"], "zone_not_found")
+
+    def test_the_zone_is_lowercased_and_the_trailing_dot_dropped(self):
+        self.server.records["example.com"] = []
+        self.run_provider(["list", "Example.COM."])
+        self.assertEqual(self.server.requests[-1][1], "/v1/domains/example.com/records")
 
 
 if __name__ == "__main__":

@@ -92,6 +92,33 @@ def cmd_zones():
     print(json.dumps({"zones": zones}))
 
 
+def zone_name(zone):
+    return zone.lower().rstrip(".")
+
+
+def records_path(zone, record_type=None, name=None):
+    path = "/v1/domains/%s/records" % urllib.parse.quote(zone_name(zone), safe="")
+    if record_type:
+        path += "/%s/%s" % (urllib.parse.quote(record_type, safe=""), urllib.parse.quote(name, safe="@"))
+    return path
+
+
+def get_records(zone, record_type=None, name=None):
+    status, records = call("GET", records_path(zone, record_type, name))
+    if status == 404:
+        fail("zone_not_found", "no zone named %r on this account, or the token cannot see it" % zone_name(zone))
+    return records or []
+
+
+def cmd_list(zone):
+    out = [
+        {"name": r["name"], "type": r["type"], "value": r["data"], "ttl": r["ttl"]}
+        for r in get_records(zone)
+        if r["type"] in ROUND_TRIP_TYPES
+    ]
+    print(json.dumps({"records": out}))
+
+
 COMMANDS = [
     {"name": "zones", "summary": "The zones this token can see."},
     {"name": "list", "summary": "Every record in a zone.", "args": "<zone>"},
@@ -124,6 +151,12 @@ def main(argv):
 
     if len(argv) < 3:
         fail("invalid_record", "usage: provider %s <zone>" % command)
+
+    zone = argv[2]
+
+    if command == "list":
+        cmd_list(zone)
+        return
 
     fail("invalid_record", "%s is not implemented yet" % command)
 
