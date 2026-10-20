@@ -61,6 +61,15 @@ class FakeGoDaddy(BaseHTTPRequestHandler):
         selected = [r for r in records if record_type in (None, r["type"]) and name in (None, r["name"])]
         if method == "GET":
             self._reply(200, selected)
+            return
+        if method == "PUT":
+            if any("data" not in item for item in body):
+                self._reply(422, {"code": "INVALID_BODY", "message": "Request body doesn't fulfill schema",
+                                  "fields": [{"path": "records[0].data", "code": "REQUIRED", "message": "is required"}]})
+                return
+            records[:] = [r for r in records if r not in selected]
+            records.extend(dict(item, type=record_type, name=name) for item in body)
+            self._reply(200)
 
     def _domains(self, query):
         active = [d for d in self.server.domains if d["status"] in query.get("statuses", [d["status"]])]
@@ -203,6 +212,46 @@ class ProviderTest(unittest.TestCase):
         self.server.records["example.com"] = []
         self.run_provider(["list", "Example.COM."])
         self.assertEqual(self.server.requests[-1][1], "/v1/domains/example.com/records")
+
+    def test_upsert_replaces_the_whole_set_with_one_value(self):
+        self.server.records["example.com"] = [
+            {"type": "A", "name": "www", "data": "203.0.113.10", "ttl": 600},
+            {"type": "A", "name": "www", "data": "203.0.113.11", "ttl": 600},
+        ]
+        record = json.dumps({"name": "www", "type": "A", "value": "203.0.113.20", "ttl": 300})
+        result = self.run_provider(["upsert", "example.com"], stdin=record)
+        self.assertEqual(result.returncode, 0)
+        self.assertEqual(json.loads(result.stdout), {})
+        self.assertEqual(self.server.records["example.com"], [{"type": "A", "name": "www", "data": "203.0.113.20", "ttl": 300}])
+        puts = [r for r in self.server.requests if r[0] == "PUT"]
+        self.assertEqual(puts[-1][1], "/v1/domains/example.com/records/A/www")
+
+    def test_upsert_with_ttl_zero_leaves_ttl_to_godaddy(self):
+        record = json.dumps({"name": "www", "type": "A", "value": "203.0.113.20", "ttl": 0})
+        self.server.records["example.com"] = []
+        self.run_provider(["upsert", "example.com"], stdin=record)
+        body = [r for r in self.server.requests if r[0] == "PUT"][-1][3]
+        self.assertEqual(body, [{"data": "203.0.113.20"}])
+
+    def test_upsert_keeps_a_txt_value_verbatim(self):
+        value = 'v=spf1 include:"_spf.example.net" ~all'
+        record = json.dumps({"name": "@", "type": "TXT", "value": value, "ttl": 600})
+        self.server.records["example.com"] = []
+        self.run_provider(["upsert", "example.com"], stdin=record)
+        self.assertEqual(self.server.records["example.com"][0]["data"], value)
+
+    def test_upsert_reports_a_422_with_the_field_messages(self):
+        self.server.force_status = 422
+        self.server.force_body = {"code": "INVALID_BODY", "message": "Request body doesn't fulfill schema",
+                                  "fields": [{"path": "records[0].data", "code": "UNEXPECTED_TYPE", "message": "is not a valid IPv4"}]}
+        record = json.dumps({"name": "www", "type": "A", "value": "nope", "ttl": 600})
+        out = json.loads(self.run_provider(["upsert", "example.com"], stdin=record).stdout)
+        self.assertEqual(out["error"]["kind"], "invalid_record")
+        self.assertIn("is not a valid IPv4", out["error"]["message"])
+
+    def test_upsert_rejects_stdin_that_is_not_json(self):
+        out = json.loads(self.run_provider(["upsert", "example.com"], stdin="{").stdout)
+        self.assertEqual(out["error"]["kind"], "invalid_record")
 
 
 if __name__ == "__main__":

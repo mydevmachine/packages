@@ -106,7 +106,7 @@ def records_path(zone, record_type=None, name=None):
 def get_records(zone, record_type=None, name=None):
     status, records = call("GET", records_path(zone, record_type, name))
     if status == 404:
-        fail("zone_not_found", "no zone named %r on this account, or the token cannot see it" % zone_name(zone))
+        zone_not_found(zone)
     return records or []
 
 
@@ -117,6 +117,31 @@ def cmd_list(zone):
         if r["type"] in ROUND_TRIP_TYPES
     ]
     print(json.dumps({"records": out}))
+
+
+def zone_not_found(zone):
+    fail("zone_not_found", "no zone named %r on this account, or the token cannot see it" % zone_name(zone))
+
+
+def put_set(zone, record_type, name, values):
+    status, _ = call("PUT", records_path(zone, record_type, name), values)
+    if status == 404:
+        zone_not_found(zone)
+
+
+def cmd_upsert(zone, record):
+    value = {"data": record["value"]}
+    if record.get("ttl"):
+        value["ttl"] = record["ttl"]
+    put_set(zone, record["type"], record["name"], [value])
+    print(json.dumps({}))
+
+
+def read_record():
+    try:
+        return json.loads(sys.stdin.read())
+    except json.JSONDecodeError:
+        fail("invalid_record", "stdin is not valid JSON")
 
 
 COMMANDS = [
@@ -156,6 +181,10 @@ def main(argv):
 
     if command == "list":
         cmd_list(zone)
+        return
+
+    if command == "upsert":
+        cmd_upsert(zone, read_record())
         return
 
     fail("invalid_record", "%s is not implemented yet" % command)
