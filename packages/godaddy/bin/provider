@@ -1,0 +1,132 @@
+#!/usr/bin/env python3
+import json
+import os
+import sys
+import urllib.error
+import urllib.parse
+import urllib.request
+
+DEFAULT_BASE = "https://api.godaddy.com"
+DEFAULT_PAGE_LIMIT = 1000
+
+ROUND_TRIP_TYPES = {"A", "AAAA", "CNAME", "TXT"}
+
+
+def fail(kind, message):
+    print(json.dumps({"error": {"kind": kind, "message": message}}))
+    sys.exit(1)
+
+
+def base_url():
+    return os.environ.get("DEVMACHINE_DNS_BASE", DEFAULT_BASE)
+
+
+def page_limit():
+    return int(os.environ.get("DEVMACHINE_DNS_PAGE_LIMIT", DEFAULT_PAGE_LIMIT))
+
+
+def token():
+    value = os.environ.get("GODADDY_API_TOKEN", "")
+    if not value:
+        fail("unauthenticated", "GODADDY_API_TOKEN is not set")
+    return value
+
+
+def message_from(body, fallback):
+    if not isinstance(body, dict):
+        return fallback
+    parts = [body.get("code", ""), body.get("message", "")]
+    head = ": ".join(p for p in parts if p) or fallback
+    details = [f["message"] for f in body.get("fields") or [] if f.get("message")]
+    return "; ".join([head] + details)
+
+
+def call(method, path, body=None):
+    data = json.dumps(body).encode() if body is not None else None
+    request = urllib.request.Request(base_url() + path, data=data, method=method)
+    request.add_header("Authorization", "Bearer " + token())
+    request.add_header("Accept", "application/json")
+    if data is not None:
+        request.add_header("Content-Type", "application/json")
+    try:
+        with urllib.request.urlopen(request) as response:
+            status = response.status
+            raw = response.read()
+    except urllib.error.HTTPError as error:
+        status = error.code
+        raw = error.read()
+
+    try:
+        parsed = json.loads(raw) if raw else None
+    except json.JSONDecodeError:
+        parsed = None
+
+    if status == 401:
+        fail("unauthenticated", message_from(parsed, "the token was rejected"))
+    if status == 403:
+        fail("forbidden", message_from(parsed, "the token cannot change this zone"))
+    if status == 429:
+        fail("rate_limited", "godaddy is throttling this token")
+    if status in (400, 422):
+        fail("invalid_record", message_from(parsed, "the record was rejected"))
+    if status >= 400 and status != 404:
+        fail("invalid_record", message_from(parsed, "godaddy answered %d" % status))
+
+    return status, parsed
+
+
+def cmd_zones():
+    limit = page_limit()
+    zones = []
+    marker = None
+    while True:
+        params = {"statuses": "ACTIVE", "limit": limit}
+        if marker:
+            params["marker"] = marker
+        _, page = call("GET", "/v1/domains?" + urllib.parse.urlencode(params))
+        page = page or []
+        zones.extend(d["domain"] for d in page)
+        if len(page) < limit:
+            break
+        marker = page[-1]["domain"]
+    print(json.dumps({"zones": zones}))
+
+
+COMMANDS = [
+    {"name": "zones", "summary": "The zones this token can see."},
+    {"name": "list", "summary": "Every record in a zone.", "args": "<zone>"},
+    {"name": "upsert", "summary": "Make a name hold exactly one value.", "args": "<zone>"},
+    {"name": "delete", "summary": "Remove one value from a name.", "args": "<zone>"},
+    {"name": "help", "summary": "This list."},
+]
+
+
+def cmd_help():
+    print(json.dumps({"commands": COMMANDS}))
+
+
+def main(argv):
+    if len(argv) < 2:
+        fail("invalid_record", "usage: provider zones|list|upsert|delete|help [<zone>]")
+
+    command = argv[1]
+
+    if command == "zones":
+        cmd_zones()
+        return
+
+    if command == "help":
+        cmd_help()
+        return
+
+    if command not in ("list", "upsert", "delete"):
+        fail("invalid_record", "unknown command " + repr(command))
+
+    if len(argv) < 3:
+        fail("invalid_record", "usage: provider %s <zone>" % command)
+
+    fail("invalid_record", "%s is not implemented yet" % command)
+
+
+if __name__ == "__main__":
+    main(sys.argv)
