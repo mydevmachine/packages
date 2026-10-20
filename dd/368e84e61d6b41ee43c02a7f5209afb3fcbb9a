@@ -1,0 +1,21 @@
+packages/godaddy/bin/provider
+  s_08256a181d4c43::t_94c91bdbce2840 10,69,78,82,84
+packages/godaddy/test/test_provider.py
+  s_08256a181d4c43::t_a4adf460483258 145,151,180-187
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "dd368e84e61d6b41ee43c02a7f5209afb3fcbb9a",
+  "prompts": {},
+  "sessions": {
+    "s_08256a181d4c43": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "0abb1ab7-5e13-4a53-ba0a-2b4348618d74",
+        "model": "claude-fable-5-1"
+      },
+      "human_author": "Djalma Araujo <djalma@nossomos.cc>"
+    }
+  }
+}
