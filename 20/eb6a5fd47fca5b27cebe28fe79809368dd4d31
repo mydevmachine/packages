@@ -1,0 +1,21 @@
+README.md
+  s_08256a181d4c43::t_eacddcf1a8615a 111
+packages/godaddy/README.md
+  s_08256a181d4c43::t_b9ba32e30bba11 1-47
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "20eb6a5fd47fca5b27cebe28fe79809368dd4d31",
+  "prompts": {},
+  "sessions": {
+    "s_08256a181d4c43": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "0abb1ab7-5e13-4a53-ba0a-2b4348618d74",
+        "model": "claude-fable-5-1"
+      },
+      "human_author": "Djalma Araujo <djalma@nossomos.cc>"
+    }
+  }
+}
