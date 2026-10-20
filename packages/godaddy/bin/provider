@@ -45,7 +45,7 @@ def call(method, path, body=None):
     if data is not None:
         request.add_header("Content-Type", "application/json")
     try:
-        with urllib.request.urlopen(request) as response:
+        with urllib.request.urlopen(request, timeout=30) as response:
             status = response.status
             raw = response.read()
     except urllib.error.HTTPError as error:
@@ -79,6 +79,8 @@ def cmd_zones():
         if marker:
             params["marker"] = marker
         _, page = call("GET", "/v1/domains?" + urllib.parse.urlencode(params))
+        if not isinstance(page, list):
+            fail("zone_not_found", message_from(page, "godaddy did not answer with a list of domains"))
         if not page:
             break
         zones.extend(d["domain"] for d in page)
@@ -132,10 +134,7 @@ def cmd_upsert(zone, record):
 
 
 def delete_set(zone, record_type, name):
-    status, _ = call("DELETE", records_path(zone, record_type, name))
-    if status == 404:
-        # The set is already gone, which is what the caller asked for.
-        return
+    call("DELETE", records_path(zone, record_type, name))
 
 
 def cmd_delete(zone, record):
@@ -156,11 +155,17 @@ def cmd_delete(zone, record):
     print(json.dumps({}))
 
 
-def read_record():
+def read_record(required):
     try:
-        return json.loads(sys.stdin.read())
+        record = json.loads(sys.stdin.read())
     except json.JSONDecodeError:
         fail("invalid_record", "stdin is not valid JSON")
+    if not isinstance(record, dict):
+        fail("invalid_record", "stdin must be one JSON object")
+    missing = [key for key in required if not isinstance(record.get(key), str)]
+    if missing:
+        fail("invalid_record", "the record needs " + ", ".join(missing))
+    return record
 
 
 COMMANDS = [
@@ -203,10 +208,10 @@ def main(argv):
         return
 
     if command == "upsert":
-        cmd_upsert(zone, read_record())
+        cmd_upsert(zone, read_record(("name", "type", "value")))
         return
 
-    cmd_delete(zone, read_record())
+    cmd_delete(zone, read_record(("name", "type")))
 
 
 if __name__ == "__main__":

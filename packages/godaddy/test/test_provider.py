@@ -163,7 +163,7 @@ class ProviderTest(unittest.TestCase):
         self.assertEqual(self.server.requests, [])
 
     def test_each_status_maps_to_its_kind(self):
-        for status, kind in ((401, "unauthenticated"), (403, "forbidden"), (429, "rate_limited"), (422, "invalid_record")):
+        for status, kind in ((400, "invalid_record"), (401, "unauthenticated"), (403, "forbidden"), (429, "rate_limited"), (422, "invalid_record")):
             with self.subTest(status=status):
                 self.server.force_status = status
                 result = self.run_provider(["zones"])
@@ -184,6 +184,28 @@ class ProviderTest(unittest.TestCase):
         self.assertEqual(out["kind"], "invalid_record")
         self.assertIn("HTTP 500", out["message"])
         self.assertIn("something broke upstream", out["message"])
+
+    def test_zones_with_an_error_object_page_is_an_error(self):
+        self.server.force_status = 404
+        self.server.force_body = {"code": "NOT_FOUND", "message": "no such listing"}
+        result = self.run_provider(["zones"])
+        self.assertNotEqual(result.returncode, 0)
+        out = json.loads(result.stdout)["error"]
+        self.assertEqual(out["kind"], "zone_not_found")
+        self.assertIn("no such listing", out["message"])
+
+    def test_a_record_that_is_not_an_object_is_invalid(self):
+        result = self.run_provider(["upsert", "example.com"], stdin="[]")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(json.loads(result.stdout)["error"]["kind"], "invalid_record")
+
+    def test_a_record_missing_its_type_is_invalid(self):
+        record = json.dumps({"name": "www", "value": "203.0.113.1"})
+        for command in ("upsert", "delete"):
+            with self.subTest(command=command):
+                result = self.run_provider([command, "example.com"], stdin=record)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(json.loads(result.stdout)["error"]["kind"], "invalid_record")
 
     def test_a_429_is_never_retried(self):
         self.server.force_status = 429
