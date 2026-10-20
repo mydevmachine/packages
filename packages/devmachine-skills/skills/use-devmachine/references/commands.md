@@ -84,6 +84,14 @@ networks](https://mydevmachine.sh/concepts/private-networks/)). A Mac is not ask
 Tailscale, since the `tailscale` package runs only on Linux, and
 `machines add --tailscale` says so and adds nothing.
 
+It writes `config.yml` once the key logs in, before it changes anything
+on the server. A run that stops earlier — the key refused and no password,
+the proof failed, nothing answered, the fingerprint declined — writes no
+`config.yml`, and with `--force` leaves the old one as it was. A run that
+stops later, at root or Ansible, keeps the machine, and running `setup`
+again finishes the job. See [nothing is written before the key logs
+in](https://mydevmachine.sh/how-it-works/trust-bootstrap/#nothing-is-written-before-the-key-logs-in).
+
 With no `config.yml` yet, it also writes `AGENTS.md` if none exists, telling
 a coding agent how to work in this folder — it never overwrites one already
 there.
@@ -1142,7 +1150,9 @@ reads, and its shape is stable:
   ran out), `host-key-rejected` (the machine's key is not the one pinned),
   `login-refused` (the machine answered but refused the workspace's login,
   most often because the workspace is not synced yet, so its account does not
-  exist), `tmux-missing` (tmux is not installed there), `not-configured` (the name
+  exist), `login-waiting` (the machine accepted the key and the SSH agent has
+  not approved it yet, as 1Password asks after a wake; the login stays open
+  until you approve), `tmux-missing` (tmux is not installed there), `not-configured` (the name
   given to `--workspace` is not in the configuration) or `other`.
 - The table shows `busy`, `attention` or nothing under `STATE`, and the
   folder's name when a session has no branch.
@@ -2314,6 +2324,23 @@ a terminal, or when nothing is pinned. It reads the same daily answer as
 devmachine version
 devmachine help [command] [--json]
 ```
+
+## logs
+
+```
+devmachine logs path [--format json]
+```
+
+Prints where the CLI writes its log: `<config>/logs/devmachine.log`, as
+an absolute path. With `--format json`: `{"path": "…"}`. The path does
+not change: the macOS app relies on it.
+
+A command that changes a machine (`setup`, `machines add`, `sync`,
+`update`, `doctor`, `packages add`, `run`, `login`, `credentials push`
+and the like) writes its whole output there, with secrets taken out, and
+when it fails its last line on stderr is `log: <path>`. Any other command
+writes one line there when it fails, and nothing when it works. See
+[the CLI's log](https://mydevmachine.sh/how-it-works/the-cli-log/).
 
 ## The command log
 
