@@ -34,7 +34,7 @@ class FakeGoDaddy(BaseHTTPRequestHandler):
         parsed = urlparse(self.path)
         query = parse_qs(parsed.query)
         body = self._body()
-        self.server.requests.append((method, parsed.path, query, body))
+        self.server.requests.append((method, parsed.path, query, body, dict(self.headers)))
 
         if self.server.force_status:
             default = {"code": "FORCED", "message": "forced failure"}
@@ -84,7 +84,7 @@ class FakeGoDaddy(BaseHTTPRequestHandler):
         marker = query.get("marker", [None])[0]
         if marker:
             names = [d["domain"] for d in active]
-            active = active[names.index(marker) + 1:]
+            active = active[names.index(marker) + (0 if self.server.marker_inclusive else 1):]
         self._reply(200, active[:limit])
 
     def do_GET(self):
@@ -104,6 +104,7 @@ class FakeServer(HTTPServer):
         self.records = {}
         self.requests = []
         self.page_size = 1000
+        self.marker_inclusive = False
         self.force_status = None
         self.force_body = None
 
@@ -176,6 +177,7 @@ class ProviderTest(unittest.TestCase):
         message = json.loads(result.stdout)["error"]["message"]
         self.assertIn("ACCESS_DENIED", message)
         self.assertIn("not allowed access", message)
+        self.assertIn("Domains API", message)
 
     def test_an_unmapped_status_names_the_http_status_and_godaddys_message(self):
         self.server.force_status = 500
@@ -206,6 +208,46 @@ class ProviderTest(unittest.TestCase):
                 result = self.run_provider([command, "example.com"], stdin=record)
                 self.assertNotEqual(result.returncode, 0)
                 self.assertEqual(json.loads(result.stdout)["error"]["kind"], "invalid_record")
+
+    def test_zones_stops_when_the_marker_does_not_move(self):
+        self.server.page_size = 2
+        self.server.marker_inclusive = True
+        self.server.domains = [{"domain": d, "status": "ACTIVE"} for d in ("a.example", "b.example", "c.example")]
+        result = self.run_provider(["zones"])
+        self.assertEqual(json.loads(result.stdout), {"zones": ["a.example", "b.example", "c.example"]})
+        self.assertLessEqual(len(self.server.requests), 4)
+
+    def test_an_empty_name_or_type_is_invalid(self):
+        for record in ({"name": "", "type": "A", "value": "203.0.113.1"}, {"name": "www", "type": "", "value": "203.0.113.1"}):
+            for command in ("upsert", "delete"):
+                with self.subTest(command=command, record=record):
+                    result = self.run_provider([command, "example.com"], stdin=json.dumps(record))
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertEqual(json.loads(result.stdout)["error"]["kind"], "invalid_record")
+        self.assertEqual(self.server.requests, [])
+
+    def test_upsert_does_nothing_when_already_right(self):
+        self.server.records["example.com"] = [{"type": "A", "name": "www", "data": "203.0.113.20", "ttl": 300}]
+        record = json.dumps({"name": "www", "type": "A", "value": "203.0.113.20", "ttl": 300})
+        result = self.run_provider(["upsert", "example.com"], stdin=record)
+        self.assertEqual(json.loads(result.stdout), {})
+        self.assertNotIn("PUT", [r[0] for r in self.server.requests])
+
+    def test_list_with_a_non_list_body_is_an_error(self):
+        self.server.force_status = 200
+        self.server.force_body = {"code": "ODD", "message": "not a list"}
+        out = json.loads(self.run_provider(["list", "example.com"]).stdout)["error"]
+        self.assertEqual(out["kind"], "invalid_record")
+        self.assertIn("not a list", out["message"])
+
+    def test_every_request_carries_the_bearer_token(self):
+        self.run_provider(["zones"])
+        self.assertEqual(self.server.requests[0][4]["Authorization"], "Bearer gd_pat_test")
+
+    def test_upsert_against_an_unknown_zone_is_zone_not_found(self):
+        record = json.dumps({"name": "www", "type": "A", "value": "203.0.113.20", "ttl": 300})
+        out = json.loads(self.run_provider(["upsert", "example.net"], stdin=record).stdout)
+        self.assertEqual(out["error"]["kind"], "zone_not_found")
 
     def test_a_429_is_never_retried(self):
         self.server.force_status = 429

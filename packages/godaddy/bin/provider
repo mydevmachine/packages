@@ -60,7 +60,13 @@ def call(method, path, body=None):
     if status == 401:
         fail("unauthenticated", message_from(parsed, "the token was rejected"))
     if status == 403:
-        fail("forbidden", message_from(parsed, "the token cannot change this zone"))
+        message = message_from(parsed, "the token cannot change this zone")
+        if isinstance(parsed, dict) and parsed.get("code") == "ACCESS_DENIED":
+            message += (
+                ". GoDaddy only lets accounts that hold a domain, or a plan with management access,"
+                " use the Domains API; see troubleshooting."
+            )
+        fail("forbidden", message)
     if status == 429:
         fail("rate_limited", "godaddy is throttling this token")
     if status in (400, 422):
@@ -73,6 +79,7 @@ def call(method, path, body=None):
 
 def cmd_zones():
     zones = []
+    seen = set()
     marker = None
     while True:
         params = {"statuses": "ACTIVE", "limit": PAGE_LIMIT}
@@ -83,7 +90,11 @@ def cmd_zones():
             fail("zone_not_found", message_from(page, "godaddy did not answer with a list of domains"))
         if not page:
             break
-        zones.extend(d["domain"] for d in page)
+        fresh = [d["domain"] for d in page if d["domain"] not in seen]
+        seen.update(fresh)
+        zones.extend(fresh)
+        if not fresh or page[-1]["domain"] == marker:
+            break
         marker = page[-1]["domain"]
     print(json.dumps({"zones": zones}))
 
@@ -103,7 +114,9 @@ def get_records(zone, record_type=None, name=None):
     status, records = call("GET", records_path(zone, record_type, name))
     if status == 404:
         zone_not_found(zone)
-    return records or []
+    if not isinstance(records, list):
+        fail("invalid_record", message_from(records, "godaddy did not answer with a list of records"))
+    return records
 
 
 def cmd_list(zone):
@@ -129,6 +142,10 @@ def cmd_upsert(zone, record):
     value = {"data": record["value"]}
     if record.get("ttl"):
         value["ttl"] = record["ttl"]
+    current = get_records(zone, record["type"], record["name"])
+    if len(current) == 1 and current[0]["data"] == value["data"] and value.get("ttl", current[0]["ttl"]) == current[0]["ttl"]:
+        print(json.dumps({}))
+        return
     put_set(zone, record["type"], record["name"], [value])
     print(json.dumps({}))
 
@@ -165,6 +182,9 @@ def read_record(required):
     missing = [key for key in required if not isinstance(record.get(key), str)]
     if missing:
         fail("invalid_record", "the record needs " + ", ".join(missing))
+    empty = [key for key in ("name", "type") if not record[key]]
+    if empty:
+        fail("invalid_record", "the record's " + ", ".join(empty) + " cannot be empty")
     return record
 
 
