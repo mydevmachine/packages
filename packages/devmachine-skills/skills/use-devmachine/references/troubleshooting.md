@@ -1,5 +1,43 @@
 # Troubleshooting
 
+## Where the logs are
+
+When something went wrong and you want help, these files say what
+happened. Find the folder with `devmachine config path`.
+
+- **`<config>/logs/devmachine.log`** — the CLI's own log. A command that
+  changes a machine (`setup`, `machines add`, `sync`, `update`, `doctor`,
+  `packages add`, `run`, `login`, `credentials push` and the like) writes
+  a start line with the version, system and command line, every line it
+  printed, Ansible's output included, and an end line with how it ended
+  and how long it took. Any other command writes one line when it fails.
+  `devmachine logs path` prints where it is, and a failed command prints
+  it as its last line: `log: <path>`.
+- **`devmachine.log.1`, `.2`, `.3`**, in the same folder — older runs.
+  At 5 MB the log moves to `.1` and a new one starts; only three old
+  ones are kept.
+- **`<config>/history.log`** — one line per command that reached a
+  machine: when, which machine or workspace, ok or failed, and the
+  command. No output.
+- **`~/Library/Logs/Devmachine/app.log`** — written by the macOS app, not
+  the CLI: what the app did and the errors it met.
+
+**What is taken out:** before a line reaches `devmachine.log`, passwords,
+tokens, API keys, `Authorization` and `Bearer` headers, GitHub and
+Tailscale keys, private keys, `.env` values, values given to `secrets
+set` and any `NAME=value` whose name says token, secret, password, key or
+auth become `***`. A password you type or pipe in is never written: the
+log copies what the CLI prints, not what it reads. Addresses, host names
+and machine, workspace and user names stay, because without them the log
+says nothing. The full list is in [the CLI's
+log](https://mydevmachine.sh/how-it-works/the-cli-log/#what-is-taken-out).
+
+**How to send them:** read the file first, then attach
+`devmachine.log` (and `.1` if the run you mean is older) to the issue or
+message. To send only the run that failed, copy from its `start` line to
+its `end` line; the number in brackets is the same on each line of one
+run.
+
 ## `ssh <workspace>-devmachine`: "Could not resolve hostname"
 
 **What it means:** That name only exists as a Host entry in
@@ -32,6 +70,15 @@ the file as `ssh_aliases_path`, empties the block it had left in
 `~/.ssh/config`, and every later change — a new workspace, a new machine —
 is written there.
 
+## "workspace X lives on Y, not Z"
+
+**What it means:** `sync --workspace X --machine Z` names two things that
+do not match: the configuration puts workspace X on machine Y. The sync
+stops before it connects, so nothing changed on either machine.
+
+**What to do:** Drop `--machine`. `sync --workspace` finds the machine
+the workspace lives on by itself.
+
 ## "several machines are configured: say which one with --machine"
 
 **What it means:** You have more than one server configured, and this command
@@ -54,6 +101,18 @@ after that.
 seconds and logs in again. See
 [Session indicators](https://mydevmachine.sh/how-it-works/session-indicators/#after-the-computer-sleeps).
 
+## `login-waiting` from `sessions`
+
+**What it means:** The machine is fine and accepted your key. Your SSH agent
+has not signed with it yet: 1Password waits for Touch ID or to be unlocked,
+as it does after a wake. The login stays open, so nothing is asked of the
+machine again while it waits.
+
+**What to do:** Approve the prompt in 1Password (or unlock your agent). The
+next `sessions` lists the sessions. If no prompt shows, open 1Password: a
+locked app may be waiting behind other windows. See
+[Session indicators](https://mydevmachine.sh/how-it-works/session-indicators/#a-login-waiting-for-your-approval).
+
 ## "no address answered"
 
 **What it means:** Nothing answered at the address devmachine tried. The error
@@ -65,6 +124,43 @@ lists every address it tried and what happened for each.
   configuration.
 - Check for a second address — see
   [Addresses and fallback](https://mydevmachine.sh/how-it-works/addresses-and-fallback/).
+
+## "connection refused" on a machine that answered before
+
+The error ends with:
+
+```
+machine "main": no address answered: 203.0.113.10 (dial tcp 203.0.113.10:22: connect: connection refused); this machine answered SSH before, so the server may be blocking this address after failed logins (fail2ban, for example): …
+```
+
+**What it means:** devmachine has talked to this server before — its host
+key is trusted — and now the server turns the connection away before any
+login: refused, or closed during the handshake. SSH is most likely still
+running. The usual cause is fail2ban, or another firewall rule, that banned
+your address after several failed logins in a short time. A key the server
+refuses, tried again and again by `doctor`, `sessions` or the macOS app, is
+enough. The port can still look open from another network, because the ban
+is for your address only.
+
+devmachine adds this sentence only for a server it has reached before. For
+an address it has never seen, "connection refused" means the usual: wrong
+address or port, or SSH not running.
+
+**What to do:**
+
+- Stop whatever keeps logging in with the wrong key — a machine left in
+  `config.yml` with a key that does not work, or the macOS app polling it.
+- Wait about 10 minutes: fail2ban lifts a ban on its own (`bantime`, 10
+  minutes by default).
+- Or open the provider's web console, which does not go through SSH, and
+  run `sudo fail2ban-client status sshd` to see the banned addresses, then
+  `sudo fail2ban-client set sshd unbanip <your address>`.
+- Then fix the key — see ["answered on … but refused the
+  login"](#answered-on--but-refused-the-login).
+
+`setup` and `machines add` never write a machine whose key has not logged
+in, so they do not start this loop — see [nothing is written before the key
+logs in](https://mydevmachine.sh/how-it-works/trust-bootstrap/#nothing-is-written-before-the-key-logs-in).
 
 ## "answered on … but refused the login"
 
@@ -104,7 +200,8 @@ SSH agent and load one.
 **What it means:** `machines add --address …` asks nothing, so it had no
 way to get the server's password, and the key it chose is not in the
 admin's `authorized_keys` yet. A server just bought usually takes only a
-password. Nothing was changed, and nothing was written to `config.yml`.
+password. Nothing was changed, and nothing was written to `config.yml`, so
+nothing keeps retrying the key until the server bans your address.
 
 **What to do:** Give the password on stdin, so it never appears in the
 command line or the shell history:
@@ -2788,6 +2885,42 @@ and syncs the machine first. Or do it by hand:
 `devmachine packages add scheduled --workspace <w> --yes`, then
 `devmachine sync --machine <m> --tags scheduled --yes`. See
 [scheduled tasks](https://mydevmachine.sh/how-it-works/scheduled-tasks/).
+
+## "scheduled's setup on … did not finish"
+
+**What it means:** The `scheduled` package is in the workspace's
+configuration, but the devmachine it installs is not at
+`~/.devmachine/scheduled/devmachine`. The sync that set it up failed or was
+stopped. The error kind is `setup-incomplete`, and the app offers "Finish
+setup".
+
+**What to do:** `devmachine sync --machine <m> --tags scheduled`. Or add the
+task again: `scheduled add` runs that sync first, after asking, or at once
+with `--yes`. If the sync fails again, the error names the task that failed.
+See [a setup that did not finish](https://mydevmachine.sh/how-it-works/scheduled-tasks/#a-setup-that-did-not-finish).
+
+## "setting up scheduled on … failed"
+
+**What it means:** The sync that sets up the `scheduled` package failed. The
+error names the first Ansible task that failed and what it said, such as
+`"scheduled : Unpack the release": Failed to find handler`. The package stays
+on the workspace, so fixing the cause and syncing again finishes it.
+
+**What to do:** Fix what the task says, then run
+`devmachine sync --machine <m> --tags scheduled`.
+
+## A Mac: "Unpack the release" fails with "GNU tar required"
+
+**What it means:** Packages releases before the fix unpacked the devmachine
+release with Ansible's `unarchive`, which needs GNU tar. macOS ships bsdtar,
+so `unarchive` falls back to unzip, which cannot read a `.tar.gz`:
+`Command "/usr/bin/tar" detected as tar type bsd. GNU tar required.` and
+`Command "/usr/bin/unzip" could not handle archive`. Linux has GNU tar, so it
+only fails on a Mac. The `session-share` package had the same step.
+
+**What to do:** `devmachine update` to a packages release with the fix, then
+`devmachine sync --machine <m> --tags scheduled`. Installing GNU tar is not
+needed.
 
 ## "the scheduled package is not in packages release …"
 
