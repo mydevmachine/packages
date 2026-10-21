@@ -1,0 +1,238 @@
+#!/usr/bin/env python3
+import json
+import os
+import sys
+import urllib.error
+import urllib.parse
+import urllib.request
+
+DEFAULT_BASE = "https://api.godaddy.com"
+PAGE_LIMIT = 1000
+
+ROUND_TRIP_TYPES = {"A", "AAAA", "CNAME", "TXT"}
+
+
+def fail(kind, message):
+    print(json.dumps({"error": {"kind": kind, "message": message}}))
+    sys.exit(1)
+
+
+def base_url():
+    return os.environ.get("DEVMACHINE_DNS_BASE", DEFAULT_BASE)
+
+
+def token():
+    value = os.environ.get("GODADDY_API_TOKEN", "")
+    if not value:
+        fail("unauthenticated", "GODADDY_API_TOKEN is not set")
+    return value
+
+
+def message_from(body, fallback):
+    if not isinstance(body, dict):
+        return fallback
+    parts = [body.get("code", ""), body.get("message", "")]
+    head = ": ".join(p for p in parts if p) or fallback
+    details = [f["message"] for f in body.get("fields") or [] if f.get("message")]
+    return "; ".join([head] + details)
+
+
+def call(method, path, body=None):
+    data = json.dumps(body).encode() if body is not None else None
+    request = urllib.request.Request(base_url() + path, data=data, method=method)
+    request.add_header("Authorization", "Bearer " + token())
+    request.add_header("Accept", "application/json")
+    if data is not None:
+        request.add_header("Content-Type", "application/json")
+    try:
+        with urllib.request.urlopen(request, timeout=30) as response:
+            status = response.status
+            raw = response.read()
+    except urllib.error.HTTPError as error:
+        status = error.code
+        raw = error.read()
+
+    try:
+        parsed = json.loads(raw) if raw else None
+    except json.JSONDecodeError:
+        parsed = None
+
+    if status == 401:
+        fail("unauthenticated", message_from(parsed, "the token was rejected"))
+    if status == 403:
+        message = message_from(parsed, "the token cannot change this zone")
+        if isinstance(parsed, dict) and parsed.get("code") == "ACCESS_DENIED":
+            message += (
+                ". GoDaddy only lets accounts that hold a domain, or a plan with management access,"
+                " use the Domains API; see troubleshooting."
+            )
+        fail("forbidden", message)
+    if status == 429:
+        fail("rate_limited", "godaddy is throttling this token")
+    if status in (400, 422):
+        fail("invalid_record", message_from(parsed, "the record was rejected"))
+    if status >= 400 and status != 404:
+        fail("invalid_record", "HTTP %d: %s" % (status, message_from(parsed, "no details")))
+
+    return status, parsed
+
+
+def cmd_zones():
+    zones = []
+    seen = set()
+    marker = None
+    while True:
+        params = {"statuses": "ACTIVE", "limit": PAGE_LIMIT}
+        if marker:
+            params["marker"] = marker
+        _, page = call("GET", "/v1/domains?" + urllib.parse.urlencode(params))
+        if not isinstance(page, list):
+            fail("zone_not_found", message_from(page, "godaddy did not answer with a list of domains"))
+        if not page:
+            break
+        fresh = [d["domain"] for d in page if d["domain"] not in seen]
+        seen.update(fresh)
+        zones.extend(fresh)
+        if not fresh or page[-1]["domain"] == marker:
+            break
+        marker = page[-1]["domain"]
+    print(json.dumps({"zones": zones}))
+
+
+def zone_name(zone):
+    return zone.lower().rstrip(".")
+
+
+def records_path(zone, record_type=None, name=None):
+    path = "/v1/domains/%s/records" % urllib.parse.quote(zone_name(zone), safe="")
+    if record_type:
+        path += "/%s/%s" % (urllib.parse.quote(record_type, safe=""), urllib.parse.quote(name, safe="@"))
+    return path
+
+
+def get_records(zone, record_type=None, name=None):
+    status, records = call("GET", records_path(zone, record_type, name))
+    if status == 404:
+        zone_not_found(zone)
+    if not isinstance(records, list):
+        fail("invalid_record", message_from(records, "godaddy did not answer with a list of records"))
+    return records
+
+
+def cmd_list(zone):
+    out = [
+        {"name": r["name"], "type": r["type"], "value": r["data"], "ttl": r["ttl"]}
+        for r in get_records(zone)
+        if r["type"] in ROUND_TRIP_TYPES
+    ]
+    print(json.dumps({"records": out}))
+
+
+def zone_not_found(zone):
+    fail("zone_not_found", "no zone named %r on this account, or the token cannot see it" % zone_name(zone))
+
+
+def put_set(zone, record_type, name, values):
+    status, _ = call("PUT", records_path(zone, record_type, name), values)
+    if status == 404:
+        zone_not_found(zone)
+
+
+def cmd_upsert(zone, record):
+    value = {"data": record["value"]}
+    if record.get("ttl"):
+        value["ttl"] = record["ttl"]
+    current = get_records(zone, record["type"], record["name"])
+    if len(current) == 1 and current[0]["data"] == value["data"] and value.get("ttl", current[0]["ttl"]) == current[0]["ttl"]:
+        print(json.dumps({}))
+        return
+    put_set(zone, record["type"], record["name"], [value])
+    print(json.dumps({}))
+
+
+def delete_set(zone, record_type, name):
+    call("DELETE", records_path(zone, record_type, name))
+
+
+def cmd_delete(zone, record):
+    record_type = record["type"]
+    name = record["name"]
+    value = record.get("value", "")
+    current = get_records(zone, record_type, name)
+    rest = [r for r in current if r["data"] != value]
+
+    if value and len(rest) == len(current):
+        print(json.dumps({}))
+        return
+
+    if value and rest:
+        put_set(zone, record_type, name, [{"data": r["data"], "ttl": r["ttl"]} for r in rest])
+    else:
+        delete_set(zone, record_type, name)
+    print(json.dumps({}))
+
+
+def read_record(required):
+    try:
+        record = json.loads(sys.stdin.read())
+    except json.JSONDecodeError:
+        fail("invalid_record", "stdin is not valid JSON")
+    if not isinstance(record, dict):
+        fail("invalid_record", "stdin must be one JSON object")
+    missing = [key for key in required if not isinstance(record.get(key), str)]
+    if missing:
+        fail("invalid_record", "the record needs " + ", ".join(missing))
+    empty = [key for key in ("name", "type") if not record[key]]
+    if empty:
+        fail("invalid_record", "the record's " + ", ".join(empty) + " cannot be empty")
+    return record
+
+
+COMMANDS = [
+    {"name": "zones", "summary": "The zones this token can see."},
+    {"name": "list", "summary": "Every record in a zone.", "args": "<zone>"},
+    {"name": "upsert", "summary": "Make a name hold exactly one value.", "args": "<zone>"},
+    {"name": "delete", "summary": "Remove one value from a name.", "args": "<zone>"},
+    {"name": "help", "summary": "This list."},
+]
+
+
+def cmd_help():
+    print(json.dumps({"commands": COMMANDS}))
+
+
+def main(argv):
+    if len(argv) < 2:
+        fail("invalid_record", "usage: provider zones|list|upsert|delete|help [<zone>]")
+
+    command = argv[1]
+
+    if command == "zones":
+        cmd_zones()
+        return
+
+    if command == "help":
+        cmd_help()
+        return
+
+    if command not in ("list", "upsert", "delete"):
+        fail("invalid_record", "unknown command " + repr(command))
+
+    if len(argv) < 3:
+        fail("invalid_record", "usage: provider %s <zone>" % command)
+
+    zone = argv[2]
+
+    if command == "list":
+        cmd_list(zone)
+        return
+
+    if command == "upsert":
+        cmd_upsert(zone, read_record(("name", "type", "value")))
+        return
+
+    cmd_delete(zone, read_record(("name", "type")))
+
+
+if __name__ == "__main__":
+    main(sys.argv)

@@ -108,6 +108,7 @@ What works on each system is on the
 | [`tailscale`](packages/tailscale/README.md) | machine | Joins the machine to a tailnet, and resolves `tailscale:<name>` addresses. |
 | [`cloudflare`](packages/cloudflare/README.md) | machine | DNS zones on Cloudflare. |
 | [`hostinger`](packages/hostinger/README.md) | machine | DNS zones on Hostinger. |
+| [`godaddy`](packages/godaddy/README.md) | machine | DNS zones on GoDaddy. |
 
 ### macOS
 
