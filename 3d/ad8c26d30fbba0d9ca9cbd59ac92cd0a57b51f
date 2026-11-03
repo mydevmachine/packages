@@ -1,0 +1,41 @@
+packages/godaddy/test/test_provider.py
+  s_e0ef29f97b1588::t_e658ab95993dd4 260,277,280-407
+packages/godaddy/README.md
+  s_e0ef29f97b1588::t_62708e9d0626a4 35-43
+packages/godaddy/bin/provider
+  s_e0ef29f97b1588::t_eece189c40a8fa 12-18,128-202,205,207,223-243,246-248,258,260,262-265,267,271-272,298,310,322,338-341
+packages/cloudflare/README.md
+  s_e0ef29f97b1588::t_f04111291d17eb 35-42
+packages/cloudflare/test/test_provider.py
+  s_e0ef29f97b1588::t_88d5641b9c27e0 141,151,155-246,359
+packages/cloudflare/bin/provider
+  s_e0ef29f97b1588::t_0486e1225edeb0 12-15,111-157,163,169,192,203,209-235,254,274,294,318-321
+packages/hostinger/test/test_provider.py
+  s_e0ef29f97b1588::t_50f74960d1f60c 128,130-135,139-231,431
+packages/godaddy/package.yml
+  s_e0ef29f97b1588::t_7bed8cef1b07f6 8
+packages/cloudflare/package.yml
+  s_e0ef29f97b1588::t_bb8580ccab5ea7 8
+packages/hostinger/README.md
+  s_e0ef29f97b1588::t_a413c4c7b69fa3 37-44
+packages/hostinger/package.yml
+  s_e0ef29f97b1588::t_fc1fa037b9b347 9
+packages/hostinger/bin/provider
+  s_e0ef29f97b1588::t_13e17c04c59b2f 18-24,100-103,107-114,129,136,196-220,280,300,324-327
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3dad8c26d30fbba0d9ca9cbd59ac92cd0a57b51f",
+  "prompts": {},
+  "sessions": {
+    "s_e0ef29f97b1588": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "1306a0c1-6a9e-4294-800b-62379d06ccf9",
+        "model": "claude-fable-5-1"
+      },
+      "human_author": "Djalma Araujo <djalma@nossomos.cc>"
+    }
+  }
+}
