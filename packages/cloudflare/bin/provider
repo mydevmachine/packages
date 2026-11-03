@@ -9,9 +9,10 @@ import urllib.request
 DEFAULT_BASE = "https://api.cloudflare.com/client/v4"
 PER_PAGE = "100"
 
-# Types whose content cannot round-trip through a single Value string: MX and
-# SRV carry a numeric priority in its own field, not inside "content".
-ROUND_TRIP_TYPES = {"A", "AAAA", "CNAME", "TXT"}
+# Cloudflare keeps an MX priority in its own field and SRV and CAA parts in a
+# "data" object; the contract writes all of them inside one value string, the
+# way a zone file does, so this file joins and splits them.
+SUPPORTED_TYPES = {"A", "AAAA", "CNAME", "TXT", "MX", "SRV", "NS", "CAA"}
 
 
 def fail(kind, message):
@@ -107,18 +108,65 @@ def label_from_full(zone, full):
     return full
 
 
+def host(name):
+    return str(name).rstrip(".").lower()
+
+
+def value_of(record):
+    record_type = record["type"]
+    data = record.get("data") or {}
+    if record_type == "MX":
+        return "%s %s" % (record.get("priority", 0), host(record.get("content", "")))
+    if record_type == "SRV" and data:
+        return "%s %s %s %s" % (data.get("priority", 0), data.get("weight", 0), data.get("port", 0), host(data.get("target", "")))
+    if record_type == "CAA" and data:
+        return '%s %s "%s"' % (data.get("flags", 0), data.get("tag", ""), data.get("value", ""))
+    if record_type in ("CNAME", "NS"):
+        return host(record.get("content", ""))
+    return record.get("content", "")
+
+
+def number(field, value):
+    try:
+        return int(field)
+    except ValueError:
+        fail("invalid_record", "%r in %r is not a number" % (field, value))
+
+
+def fields_for(record_type, value):
+    parts = value.split()
+    if record_type == "MX":
+        if len(parts) != 2:
+            fail("invalid_record", "an MX value is '<priority> <host>', got %r" % value)
+        return {"content": host(parts[1]), "priority": number(parts[0], value)}
+    if record_type == "SRV":
+        if len(parts) != 4:
+            fail("invalid_record", "an SRV value is '<priority> <weight> <port> <target>', got %r" % value)
+        return {"data": {"priority": number(parts[0], value), "weight": number(parts[1], value),
+                         "port": number(parts[2], value), "target": host(parts[3])}}
+    if record_type == "CAA":
+        if len(parts) < 3:
+            fail("invalid_record", "a CAA value is '<flags> <tag> <value>', got %r" % value)
+        return {"data": {"flags": number(parts[0], value), "tag": parts[1].lower(), "value": " ".join(parts[2:]).strip('"')}}
+    return {"content": value}
+
+
+def same_value(record_type, record, value):
+    return value_of(record) == value_of(dict(fields_for(record_type, value), type=record_type))
+
+
 def cmd_list(zone):
     zid = zone_id(zone)
     records = list_records(zid)
     out = []
     for record in records:
-        if record["type"] not in ROUND_TRIP_TYPES:
+        if record["type"] not in SUPPORTED_TYPES:
             continue
         out.append(
             {
                 "name": label_from_full(zone, record["name"]),
                 "type": record["type"],
-                "value": record["content"],
+                "value": value_of(record),
                 "ttl": record["ttl"],
             }
         )
@@ -141,11 +189,7 @@ def cmd_upsert(zone, record):
     matches = list_records(zid, record_type=record_type, name=full)
 
     if not matches:
-        call(
-            "POST",
-            "/zones/%s/dns_records" % zid,
-            {"type": record_type, "name": full, "content": value, "ttl": ttl, "proxied": False},
-        )
+        create(zid, record_type, full, value, ttl)
         print(json.dumps({}))
         return
 
@@ -156,13 +200,39 @@ def cmd_upsert(zone, record):
         )
 
     current = matches[0]
-    if current["content"] == value and current["ttl"] == ttl:
+    if same_value(record_type, current, value) and current["ttl"] == ttl:
         print(json.dumps({}))
         return
 
     # PATCH, never PUT: a PUT that omits proxied, ttl, comment or tags resets
     # them to defaults, so changing an address would silently clear the rest.
-    call("PATCH", "/zones/%s/dns_records/%s" % (zid, current["id"]), {"content": value, "ttl": ttl})
+    call("PATCH", "/zones/%s/dns_records/%s" % (zid, current["id"]), dict(fields_for(record_type, value), ttl=ttl))
+    print(json.dumps({}))
+
+
+def create(zid, record_type, full, value, ttl):
+    body = {"type": record_type, "name": full, "ttl": ttl, "proxied": False}
+    body.update(fields_for(record_type, value))
+    call("POST", "/zones/%s/dns_records" % zid, body)
+
+
+def cmd_append(zone, record):
+    name = record["name"]
+    record_type = record["type"]
+    value = record["value"]
+    ttl = cloudflare_ttl(record.get("ttl") or 0)
+
+    full = full_name(zone, name)
+    zid = zone_id(zone)
+    matches = list_records(zid, record_type=record_type, name=full)
+
+    if any(same_value(record_type, m, value) for m in matches):
+        print(json.dumps({}))
+        return
+
+    # Every value at a Cloudflare name is its own record, so adding one is a
+    # create, and the others are never touched.
+    create(zid, record_type, full, value, ttl)
     print(json.dumps({}))
 
 
@@ -181,7 +251,7 @@ def cmd_delete(zone, record):
         print(json.dumps({}))
         return
 
-    target = next((m for m in matches if m["content"] == value), None)
+    target = next((m for m in matches if same_value(record_type, m, value)), None)
     if target is None:
         print(json.dumps({}))
         return
@@ -201,6 +271,7 @@ COMMANDS = [
     {"name": "zones", "summary": "The zones this token can see."},
     {"name": "list", "summary": "Every record in a zone.", "args": "<zone>"},
     {"name": "upsert", "summary": "Make a name hold exactly one value.", "args": "<zone>"},
+    {"name": "append", "summary": "Add one value next to the ones a name holds.", "args": "<zone>"},
     {"name": "delete", "summary": "Remove one value from a name.", "args": "<zone>"},
     {"name": "help", "summary": "This list."},
 ]
@@ -220,7 +291,7 @@ def read_record():
 
 def main(argv):
     if len(argv) < 2:
-        fail("invalid_record", "usage: provider zones|list|upsert|delete|help [<zone>]")
+        fail("invalid_record", "usage: provider zones|list|upsert|append|delete|help [<zone>]")
 
     command = argv[1]
 
@@ -242,6 +313,10 @@ def main(argv):
 
     if command == "upsert":
         cmd_upsert(zone, read_record())
+        return
+
+    if command == "append":
+        cmd_append(zone, read_record())
         return
 
     if command == "delete":

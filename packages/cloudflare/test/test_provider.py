@@ -138,7 +138,7 @@ class ProviderTest(unittest.TestCase):
             env=env,
         )
 
-    def add_record(self, name, rtype, content, ttl=3600, proxied=False):
+    def add_record(self, name, rtype, content, ttl=3600, proxied=False, **extra):
         record = {
             "id": uuid.uuid4().hex,
             "zone_id": self.server.zones[0]["id"],
@@ -148,8 +148,101 @@ class ProviderTest(unittest.TestCase):
             "ttl": ttl,
             "proxied": proxied,
         }
+        record.update(extra)
         self.server.records.append(record)
         return record
+
+    def writes(self):
+        return [r for r in self.server.requests if r[0] in ("POST", "PATCH", "PUT", "DELETE")]
+
+    def test_list_writes_an_mx_priority_into_the_value(self):
+        self.add_record("example.com", "MX", "mail.example.com", priority=10)
+        out = json.loads(self.run_provider(["list", "example.com"]).stdout)
+        self.assertEqual(out["records"], [{"name": "@", "type": "MX", "value": "10 mail.example.com", "ttl": 3600}])
+
+    def test_list_builds_srv_and_caa_from_their_data_objects(self):
+        self.add_record("_sip._tcp.example.com", "SRV", "10 5 5060 sip.example.com",
+                        data={"priority": 10, "weight": 5, "port": 5060, "target": "sip.example.com"})
+        self.add_record("example.com", "CAA", '0 issue "ca.example.net"',
+                        data={"flags": 0, "tag": "issue", "value": "ca.example.net"})
+        self.add_record("example.com", "NS", "ns1.example.net")
+        out = json.loads(self.run_provider(["list", "example.com"]).stdout)
+        self.assertEqual(
+            [(r["name"], r["type"], r["value"]) for r in out["records"]],
+            [
+                ("_sip._tcp", "SRV", "10 5 5060 sip.example.com"),
+                ("@", "CAA", '0 issue "ca.example.net"'),
+                ("@", "NS", "ns1.example.net"),
+            ],
+        )
+
+    def test_upsert_mx_sends_the_priority_in_its_own_field(self):
+        record = {"name": "@", "type": "MX", "value": "10 mail.example.com", "ttl": 300}
+        result = self.run_provider(["upsert", "example.com"], stdin=json.dumps(record))
+        self.assertEqual(result.returncode, 0, result.stdout)
+        posts = [r for r in self.server.requests if r[0] == "POST"]
+        self.assertEqual(posts[0][3]["content"], "mail.example.com")
+        self.assertEqual(posts[0][3]["priority"], 10)
+
+    def test_upsert_srv_and_caa_send_data_objects(self):
+        record = {"name": "_sip._tcp", "type": "SRV", "value": "10 5 5060 sip.example.com", "ttl": 300}
+        self.run_provider(["upsert", "example.com"], stdin=json.dumps(record))
+        record = {"name": "@", "type": "CAA", "value": '0 issue "ca.example.net"', "ttl": 300}
+        self.run_provider(["upsert", "example.com"], stdin=json.dumps(record))
+        posts = [r[3] for r in self.server.requests if r[0] == "POST"]
+        self.assertEqual(posts[0]["name"], "_sip._tcp.example.com")
+        self.assertEqual(posts[0]["data"], {"priority": 10, "weight": 5, "port": 5060, "target": "sip.example.com"})
+        self.assertNotIn("content", posts[0])
+        # The quotes belong to the zone-file spelling, not to the value.
+        self.assertEqual(posts[1]["data"], {"flags": 0, "tag": "issue", "value": "ca.example.net"})
+
+    def test_upsert_sees_an_mx_already_right(self):
+        self.add_record("example.com", "MX", "mail.example.com", ttl=300, priority=10)
+        record = {"name": "@", "type": "MX", "value": "10 mail.example.com", "ttl": 300}
+        result = self.run_provider(["upsert", "example.com"], stdin=json.dumps(record))
+        self.assertEqual(result.returncode, 0)
+        self.assertEqual(self.writes(), [])
+
+    def test_upsert_patches_an_mx_with_its_fields(self):
+        self.add_record("example.com", "MX", "mail.example.com", ttl=300, priority=10)
+        record = {"name": "@", "type": "MX", "value": "20 mail2.example.com", "ttl": 300}
+        self.run_provider(["upsert", "example.com"], stdin=json.dumps(record))
+        patches = [r for r in self.server.requests if r[0] == "PATCH"]
+        self.assertEqual(patches[0][3], {"content": "mail2.example.com", "priority": 20, "ttl": 300})
+
+    def test_append_creates_a_second_record_and_leaves_the_first(self):
+        first = self.add_record("example.com", "MX", "mail.example.com", priority=10)
+        record = {"name": "@", "type": "MX", "value": "20 mail2.example.com", "ttl": 0}
+        result = self.run_provider(["append", "example.com"], stdin=json.dumps(record))
+        self.assertEqual(result.returncode, 0, result.stdout)
+        self.assertEqual(json.loads(result.stdout), {})
+        self.assertEqual([w[0] for w in self.writes()], ["POST"])
+        self.assertIn(first, self.server.records)
+        added = [r for r in self.server.records if r is not first][0]
+        self.assertEqual((added["content"], added["priority"], added["ttl"]), ("mail2.example.com", 20, 1))
+
+    def test_append_does_nothing_when_the_value_is_already_there(self):
+        self.add_record("example.com", "MX", "mail.example.com", priority=10)
+        record = {"name": "@", "type": "MX", "value": "10 Mail.Example.com.", "ttl": 0}
+        result = self.run_provider(["append", "example.com"], stdin=json.dumps(record))
+        self.assertEqual(result.returncode, 0)
+        self.assertEqual(self.writes(), [])
+
+    def test_a_priority_that_is_not_a_number_is_an_invalid_record_not_a_crash(self):
+        for record_type, value in (("MX", "ten mail.example.com"), ("SRV", "10 5 sip sip.example.com"), ("CAA", "x issue ca.example.net")):
+            record = {"name": "@", "type": record_type, "value": value, "ttl": 0}
+            result = self.run_provider(["upsert", "example.com"], stdin=json.dumps(record))
+            self.assertNotEqual(result.returncode, 0)
+            self.assertEqual(json.loads(result.stdout)["error"]["kind"], "invalid_record", result.stdout + result.stderr)
+        self.assertEqual(self.writes(), [])
+
+    def test_delete_an_mx_matches_on_priority_and_host(self):
+        self.add_record("example.com", "MX", "mail.example.com", priority=10)
+        self.add_record("example.com", "MX", "mail2.example.com", priority=20)
+        record = {"name": "@", "type": "MX", "value": "10 mail.example.com", "ttl": 0}
+        result = self.run_provider(["delete", "example.com"], stdin=json.dumps(record))
+        self.assertEqual(result.returncode, 0)
+        self.assertEqual([(r["priority"], r["content"]) for r in self.server.records], [(20, "mail2.example.com")])
 
     def test_the_zone_id_is_looked_up_once(self):
         self.add_record("www.example.com", "A", "198.51.100.10")
@@ -263,7 +356,7 @@ class ProviderTest(unittest.TestCase):
         result = self.run_provider(["help"])
         self.assertEqual(result.returncode, 0)
         names = [c["name"] for c in json.loads(result.stdout)["commands"]]
-        self.assertEqual(sorted(names), ["delete", "help", "list", "upsert", "zones"])
+        self.assertEqual(sorted(names), ["append", "delete", "help", "list", "upsert", "zones"])
 
     def test_a_command_that_needs_a_zone_says_so(self):
         result = self.run_provider(["list"])

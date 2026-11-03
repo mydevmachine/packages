@@ -5,7 +5,7 @@ category: DNS
 kind: dns
 summary: DNS zones on Cloudflare.
 entrypoint: bin/provider
-commands: [zones, list, upsert, delete, help]
+commands: [zones, list, upsert, append, delete, help]
 credentials:
   - name: cloudflare
     kind: secret
