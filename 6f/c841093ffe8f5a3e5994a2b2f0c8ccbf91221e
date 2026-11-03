@@ -1,0 +1,22 @@
+packages/devmachine-skills/skills/create-devmachine-package/references/dns-provider-contract.md
+  h_0e71f0b33c1b87 14,44,57,66-86,93,135-139,142-144
+packages/devmachine-skills/skills/create-devmachine-package/references/package-format.md
+  h_0e71f0b33c1b87 278,287-289
+packages/devmachine-skills/skills/use-devmachine/references/commands.md
+  h_0e71f0b33c1b87 1655,1676-1684
+packages/devmachine-skills/skills/use-devmachine/references/concepts/dns.md
+  h_0e71f0b33c1b87 16-27,43-57
+packages/devmachine-skills/skills/use-devmachine/references/troubleshooting.md
+  h_0e71f0b33c1b87 993-995
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "6fc841093ffe8f5a3e5994a2b2f0c8ccbf91221e",
+  "prompts": {},
+  "humans": {
+    "h_0e71f0b33c1b87": {
+      "author": "Djalma Araujo <djalma@nossomos.cc>"
+    }
+  }
+}
