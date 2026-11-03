@@ -257,7 +257,7 @@ class ProviderTest(unittest.TestCase):
     def test_help_lists_every_command_the_manifest_declares(self):
         result = self.run_provider(["help"])
         names = [c["name"] for c in json.loads(result.stdout)["commands"]]
-        self.assertEqual(names, ["zones", "list", "upsert", "delete", "help"])
+        self.assertEqual(names, ["zones", "list", "upsert", "append", "delete", "help"])
 
     def test_a_command_that_needs_a_zone_says_so(self):
         result = self.run_provider(["list"])
@@ -274,7 +274,136 @@ class ProviderTest(unittest.TestCase):
         self.assertEqual(out, {"records": [
             {"name": "@", "type": "A", "value": "203.0.113.10", "ttl": 600},
             {"name": "www", "type": "CNAME", "value": "example.com", "ttl": 3600},
+            {"name": "@", "type": "MX", "value": "10 mail.example.com", "ttl": 3600},
         ]})
+
+    def test_list_joins_an_srv_owner_and_value_out_of_godaddys_fields(self):
+        self.server.records["example.com"] = [
+            {"type": "SRV", "name": "@", "data": "sip.example.com", "ttl": 3600,
+             "priority": 10, "weight": 5, "port": 5060, "service": "_sip", "protocol": "_tcp"},
+            {"type": "SRV", "name": "voice", "data": "sip2.example.com", "ttl": 3600,
+             "priority": 20, "weight": 0, "port": 5061, "service": "_sips", "protocol": "_tcp"},
+            {"type": "SOA", "name": "@", "data": "ns1.example.net", "ttl": 3600},
+        ]
+        out = json.loads(self.run_provider(["list", "example.com"]).stdout)
+        self.assertEqual(out["records"], [
+            {"name": "_sip._tcp", "type": "SRV", "value": "10 5 5060 sip.example.com", "ttl": 3600},
+            {"name": "_sips._tcp.voice", "type": "SRV", "value": "20 0 5061 sip2.example.com", "ttl": 3600},
+        ])
+
+    def test_upsert_mx_puts_the_priority_in_its_own_field(self):
+        self.server.records["example.com"] = []
+        record = json.dumps({"name": "@", "type": "MX", "value": "10 mail.example.com", "ttl": 3600})
+        result = self.run_provider(["upsert", "example.com"], stdin=record)
+        self.assertEqual(result.returncode, 0, result.stdout)
+        puts = [r for r in self.server.requests if r[0] == "PUT"]
+        self.assertEqual(puts[-1][1], "/v1/domains/example.com/records/MX/@")
+        self.assertEqual(puts[-1][3], [{"data": "mail.example.com", "priority": 10, "ttl": 3600}])
+
+    def test_upsert_srv_splits_the_owner_and_keeps_the_other_services_at_it(self):
+        self.server.records["example.com"] = [
+            {"type": "SRV", "name": "@", "data": "sip.example.com", "ttl": 3600,
+             "priority": 10, "weight": 5, "port": 5060, "service": "_sip", "protocol": "_tcp"},
+            {"type": "SRV", "name": "@", "data": "xmpp.example.com", "ttl": 3600,
+             "priority": 5, "weight": 0, "port": 5222, "service": "_xmpp-client", "protocol": "_tcp"},
+        ]
+        record = json.dumps({"name": "_sip._tcp", "type": "SRV", "value": "20 10 5061 sip2.example.com", "ttl": 0})
+        result = self.run_provider(["upsert", "example.com"], stdin=record)
+        self.assertEqual(result.returncode, 0, result.stdout)
+        puts = [r for r in self.server.requests if r[0] == "PUT"]
+        self.assertEqual(puts[-1][1], "/v1/domains/example.com/records/SRV/@")
+        # The PUT swaps every SRV at "@", so the xmpp one goes back unchanged.
+        self.assertEqual(puts[-1][3], [
+            {"data": "xmpp.example.com", "ttl": 3600, "priority": 5, "weight": 0, "port": 5222,
+             "service": "_xmpp-client", "protocol": "_tcp"},
+            {"data": "sip2.example.com", "priority": 20, "weight": 10, "port": 5061, "service": "_sip", "protocol": "_tcp"},
+        ])
+
+    def test_upsert_srv_under_a_subdomain_uses_that_name(self):
+        self.server.records["example.com"] = []
+        record = json.dumps({"name": "_sip._tcp.voice", "type": "SRV", "value": "10 5 5060 sip.example.com", "ttl": 0})
+        self.run_provider(["upsert", "example.com"], stdin=record)
+        puts = [r for r in self.server.requests if r[0] == "PUT"]
+        self.assertEqual(puts[-1][1], "/v1/domains/example.com/records/SRV/voice")
+
+    def test_upsert_srv_refuses_a_name_without_service_and_protocol(self):
+        record = json.dumps({"name": "sip", "type": "SRV", "value": "10 5 5060 sip.example.com", "ttl": 0})
+        out = json.loads(self.run_provider(["upsert", "example.com"], stdin=record).stdout)
+        self.assertEqual(out["error"]["kind"], "invalid_record")
+        self.assertNotIn("PUT", [r[0] for r in self.server.requests])
+
+    def test_upsert_sees_an_mx_already_right(self):
+        self.server.records["example.com"] = [
+            {"type": "MX", "name": "@", "data": "mail.example.com", "ttl": 3600, "priority": 10},
+        ]
+        record = json.dumps({"name": "@", "type": "MX", "value": "10 Mail.Example.com.", "ttl": 0})
+        self.run_provider(["upsert", "example.com"], stdin=record)
+        self.assertNotIn("PUT", [r[0] for r in self.server.requests])
+
+    def test_append_writes_the_set_back_with_the_new_value(self):
+        self.server.records["example.com"] = [
+            {"type": "MX", "name": "@", "data": "mail.example.com", "ttl": 3600, "priority": 10},
+        ]
+        record = json.dumps({"name": "@", "type": "MX", "value": "20 mail2.example.com", "ttl": 0})
+        result = self.run_provider(["append", "example.com"], stdin=record)
+        self.assertEqual(result.returncode, 0, result.stdout)
+        self.assertEqual(json.loads(result.stdout), {})
+        puts = [r for r in self.server.requests if r[0] == "PUT"]
+        # The first value keeps its priority: a set written back without it
+        # would turn one mail server into an unreachable one.
+        self.assertEqual(puts[-1][3], [
+            {"data": "mail.example.com", "ttl": 3600, "priority": 10},
+            {"data": "mail2.example.com", "priority": 20},
+        ])
+
+    def test_append_does_nothing_when_the_value_is_already_there(self):
+        self.server.records["example.com"] = [
+            {"type": "MX", "name": "@", "data": "mail.example.com", "ttl": 3600, "priority": 10},
+        ]
+        record = json.dumps({"name": "@", "type": "MX", "value": "10 mail.example.com", "ttl": 0})
+        self.run_provider(["append", "example.com"], stdin=record)
+        self.assertNotIn("PUT", [r[0] for r in self.server.requests])
+
+    def test_delete_one_mx_among_several_keeps_the_others_priority(self):
+        self.server.records["example.com"] = [
+            {"type": "MX", "name": "@", "data": "mail.example.com", "ttl": 3600, "priority": 10},
+            {"type": "MX", "name": "@", "data": "mail2.example.com", "ttl": 3600, "priority": 20},
+        ]
+        record = json.dumps({"name": "@", "type": "MX", "value": "10 mail.example.com"})
+        self.run_provider(["delete", "example.com"], stdin=record)
+        self.assertEqual(self.server.records["example.com"],
+                         [{"type": "MX", "name": "@", "data": "mail2.example.com", "ttl": 3600, "priority": 20}])
+
+    def test_a_priority_that_is_not_a_number_is_an_invalid_record_not_a_crash(self):
+        self.server.records["example.com"] = []
+        for label, record_type, value in (("@", "MX", "ten mail.example.com"), ("_sip._tcp", "SRV", "10 5 sip sip.example.com")):
+            record = json.dumps({"name": label, "type": record_type, "value": value, "ttl": 0})
+            result = self.run_provider(["upsert", "example.com"], stdin=record)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertEqual(json.loads(result.stdout)["error"]["kind"], "invalid_record", result.stdout + result.stderr)
+        self.assertNotIn("PUT", [r[0] for r in self.server.requests])
+
+    def test_delete_of_an_srv_owner_that_is_not_there_writes_nothing(self):
+        self.server.records["example.com"] = [
+            {"type": "SRV", "name": "@", "data": "xmpp.example.com", "ttl": 3600,
+             "priority": 5, "weight": 0, "port": 5222, "service": "_xmpp-client", "protocol": "_tcp"},
+        ]
+        record = json.dumps({"name": "_sip._tcp", "type": "SRV", "value": ""})
+        result = self.run_provider(["delete", "example.com"], stdin=record)
+        self.assertEqual(json.loads(result.stdout), {})
+        self.assertEqual([r[0] for r in self.server.requests], ["GET"])
+
+    def test_delete_an_srv_leaves_the_other_services_at_the_owner(self):
+        self.server.records["example.com"] = [
+            {"type": "SRV", "name": "@", "data": "sip.example.com", "ttl": 3600,
+             "priority": 10, "weight": 5, "port": 5060, "service": "_sip", "protocol": "_tcp"},
+            {"type": "SRV", "name": "@", "data": "xmpp.example.com", "ttl": 3600,
+             "priority": 5, "weight": 0, "port": 5222, "service": "_xmpp-client", "protocol": "_tcp"},
+        ]
+        record = json.dumps({"name": "_sip._tcp", "type": "SRV", "value": ""})
+        result = self.run_provider(["delete", "example.com"], stdin=record)
+        self.assertEqual(result.returncode, 0, result.stdout)
+        self.assertEqual([r["service"] for r in self.server.records["example.com"]], ["_xmpp-client"])
 
     def test_list_of_an_empty_zone_is_empty_not_missing(self):
         self.server.records["example.com"] = []

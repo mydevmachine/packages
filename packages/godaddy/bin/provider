@@ -9,7 +9,13 @@ import urllib.request
 DEFAULT_BASE = "https://api.godaddy.com"
 PAGE_LIMIT = 1000
 
-ROUND_TRIP_TYPES = {"A", "AAAA", "CNAME", "TXT"}
+# GoDaddy keeps an MX priority, and an SRV's priority, weight, port, service
+# and protocol, in fields of their own; the contract writes all of them inside
+# one value string, the way a zone file does, so this file joins and splits
+# them. An SRV owner name is `_service._protocol[.name]`, which GoDaddy
+# stores as three fields.
+SUPPORTED_TYPES = {"A", "AAAA", "CNAME", "TXT", "MX", "SRV", "NS", "CAA"}
+SET_FIELDS = ("data", "ttl", "priority", "weight", "port", "service", "protocol")
 
 
 def fail(kind, message):
@@ -119,11 +125,86 @@ def get_records(zone, record_type=None, name=None):
     return records
 
 
+def host(name):
+    return str(name).rstrip(".").lower()
+
+
+def owner_of(record):
+    if record["type"] != "SRV":
+        return record["name"]
+    service, protocol = record.get("service", ""), record.get("protocol", "")
+    if record["name"] in ("", "@"):
+        return "%s.%s" % (service, protocol)
+    return "%s.%s.%s" % (service, protocol, record["name"])
+
+
+def value_of(record):
+    record_type = record["type"]
+    if record_type == "MX":
+        return "%s %s" % (record.get("priority", 0), host(record["data"]))
+    if record_type == "SRV":
+        return "%s %s %s %s" % (record.get("priority", 0), record.get("weight", 0), record.get("port", 0), host(record["data"]))
+    if record_type in ("CNAME", "NS"):
+        return host(record["data"])
+    return record["data"]
+
+
+def srv_owner(label):
+    parts = label.split(".")
+    if len(parts) < 2 or not parts[0].startswith("_") or not parts[1].startswith("_"):
+        fail("invalid_record", "an SRV name is '_service._protocol' or '_service._protocol.<name>', got %r" % label)
+    return parts[0], parts[1], ".".join(parts[2:]) or "@"
+
+
+def set_name(record_type, label):
+    if record_type == "SRV":
+        return srv_owner(label)[2]
+    return label
+
+
+def number(field, value):
+    try:
+        return int(field)
+    except ValueError:
+        fail("invalid_record", "%r in %r is not a number" % (field, value))
+
+
+def fields_for(record_type, label, value):
+    parts = value.split()
+    if record_type == "MX":
+        if len(parts) != 2:
+            fail("invalid_record", "an MX value is '<priority> <host>', got %r" % value)
+        return {"data": host(parts[1]), "priority": number(parts[0], value)}
+    if record_type == "SRV":
+        if len(parts) != 4:
+            fail("invalid_record", "an SRV value is '<priority> <weight> <port> <target>', got %r" % value)
+        service, protocol, _ = srv_owner(label)
+        return {"data": host(parts[3]), "priority": number(parts[0], value), "weight": number(parts[1], value),
+                "port": number(parts[2], value), "service": service, "protocol": protocol}
+    return {"data": value}
+
+
+def entry_for(record_type, label, value, ttl):
+    entry = fields_for(record_type, label, value)
+    if ttl:
+        entry["ttl"] = ttl
+    return entry
+
+
+def same_value(record_type, label, record, value):
+    probe = dict(fields_for(record_type, label, value), type=record_type, name=set_name(record_type, label))
+    return owner_of(record) == owner_of(probe) and value_of(record) == value_of(probe)
+
+
+def kept(record):
+    return {key: record[key] for key in SET_FIELDS if key in record}
+
+
 def cmd_list(zone):
     out = [
-        {"name": r["name"], "type": r["type"], "value": r["data"], "ttl": r["ttl"]}
+        {"name": owner_of(r), "type": r["type"], "value": value_of(r), "ttl": r["ttl"]}
         for r in get_records(zone)
-        if r["type"] in ROUND_TRIP_TYPES
+        if r["type"] in SUPPORTED_TYPES
     ]
     print(json.dumps({"records": out}))
 
@@ -139,14 +220,32 @@ def put_set(zone, record_type, name, values):
 
 
 def cmd_upsert(zone, record):
-    value = {"data": record["value"]}
-    if record.get("ttl"):
-        value["ttl"] = record["ttl"]
-    current = get_records(zone, record["type"], record["name"])
-    if len(current) == 1 and current[0]["data"] == value["data"] and value.get("ttl", current[0]["ttl"]) == current[0]["ttl"]:
+    record_type, label, value = record["type"], record["name"], record["value"]
+    entry = entry_for(record_type, label, value, record.get("ttl"))
+    name = set_name(record_type, label)
+    current = get_records(zone, record_type, name)
+    # The PUT swaps the whole set at (type, name). For an SRV that set holds
+    # every service at the owner, so the other services go back in unchanged.
+    mine = [r for r in current if owner_of(r) == owner_of(dict(entry, type=record_type, name=name))]
+    others = [kept(r) for r in current if r not in mine]
+    if len(mine) == 1 and same_value(record_type, label, mine[0], value) and entry.get("ttl", mine[0]["ttl"]) == mine[0]["ttl"]:
         print(json.dumps({}))
         return
-    put_set(zone, record["type"], record["name"], [value])
+    put_set(zone, record_type, name, others + [entry])
+    print(json.dumps({}))
+
+
+def cmd_append(zone, record):
+    record_type, label, value = record["type"], record["name"], record["value"]
+    entry = entry_for(record_type, label, value, record.get("ttl"))
+    name = set_name(record_type, label)
+    current = get_records(zone, record_type, name)
+    if any(same_value(record_type, label, r, value) for r in current):
+        print(json.dumps({}))
+        return
+    # GoDaddy has no "add one": the set is written whole, with every value it
+    # already holds and the new one.
+    put_set(zone, record_type, name, [kept(r) for r in current] + [entry])
     print(json.dumps({}))
 
 
@@ -156,17 +255,21 @@ def delete_set(zone, record_type, name):
 
 def cmd_delete(zone, record):
     record_type = record["type"]
-    name = record["name"]
+    label = record["name"]
     value = record.get("value", "")
+    name = set_name(record_type, label)
     current = get_records(zone, record_type, name)
-    rest = [r for r in current if r["data"] != value]
+    if value:
+        rest = [r for r in current if not same_value(record_type, label, r, value)]
+    else:
+        rest = [r for r in current if record_type == "SRV" and owner_of(r) != label]
 
-    if value and len(rest) == len(current):
+    if len(rest) == len(current):
         print(json.dumps({}))
         return
 
-    if value and rest:
-        put_set(zone, record_type, name, [{"data": r["data"], "ttl": r["ttl"]} for r in rest])
+    if rest:
+        put_set(zone, record_type, name, [kept(r) for r in rest])
     else:
         delete_set(zone, record_type, name)
     print(json.dumps({}))
@@ -192,6 +295,7 @@ COMMANDS = [
     {"name": "zones", "summary": "The zones this token can see."},
     {"name": "list", "summary": "Every record in a zone.", "args": "<zone>"},
     {"name": "upsert", "summary": "Make a name hold exactly one value.", "args": "<zone>"},
+    {"name": "append", "summary": "Add one value next to the ones a name holds.", "args": "<zone>"},
     {"name": "delete", "summary": "Remove one value from a name.", "args": "<zone>"},
     {"name": "help", "summary": "This list."},
 ]
@@ -203,7 +307,7 @@ def cmd_help():
 
 def main(argv):
     if len(argv) < 2:
-        fail("invalid_record", "usage: provider zones|list|upsert|delete|help [<zone>]")
+        fail("invalid_record", "usage: provider zones|list|upsert|append|delete|help [<zone>]")
 
     command = argv[1]
 
@@ -215,7 +319,7 @@ def main(argv):
         cmd_help()
         return
 
-    if command not in ("list", "upsert", "delete"):
+    if command not in ("list", "upsert", "append", "delete"):
         fail("invalid_record", "unknown command " + repr(command))
 
     if len(argv) < 3:
@@ -229,6 +333,10 @@ def main(argv):
 
     if command == "upsert":
         cmd_upsert(zone, read_record(("name", "type", "value")))
+        return
+
+    if command == "append":
+        cmd_append(zone, read_record(("name", "type", "value")))
         return
 
     cmd_delete(zone, read_record(("name", "type")))

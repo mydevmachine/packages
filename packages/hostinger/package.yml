@@ -6,7 +6,7 @@ category: DNS
 kind: dns
 summary: DNS zones on Hostinger.
 entrypoint: bin/provider
-commands: [zones, list, upsert, delete, help]
+commands: [zones, list, upsert, append, delete, help]
 credentials:
   - name: hostinger
     kind: secret

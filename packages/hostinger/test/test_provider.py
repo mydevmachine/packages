@@ -125,15 +125,110 @@ class ProviderTest(unittest.TestCase):
             {"records": [{"name": "www", "type": "A", "value": "198.51.100.10", "ttl": 300}]},
         )
 
-    def test_list_leaves_out_a_type_that_cannot_round_trip(self):
+    def test_list_writes_every_type_the_way_a_zone_file_does(self):
         self.server.zone = [
-            {"name": "@", "type": "MX", "ttl": 300, "records": [{"content": "10 example.com."}]},
-            {"name": "www", "type": "A", "ttl": 300, "records": [{"content": "198.51.100.10"}]},
+            {"name": "@", "type": "MX", "ttl": 300, "records": [{"content": "10 Mail.Example.com."}]},
+            {"name": "_sip._tcp", "type": "SRV", "ttl": 300, "records": [{"content": "10 5 5060 sip.example.com."}]},
+            {"name": "@", "type": "NS", "ttl": 300, "records": [{"content": "ns1.example.net."}]},
+            {"name": "@", "type": "CAA", "ttl": 300, "records": [{"content": '0 issue "ca.example.net"'}]},
+            {"name": "www", "type": "CNAME", "ttl": 300, "records": [{"content": "example.com."}]},
+            {"name": "@", "type": "SOA", "ttl": 300, "records": [{"content": "ns1.example.net. hostmaster.example.net. 1 2 3 4 5"}]},
         ]
         result = self.run_provider(["list", "example.com"])
         out = json.loads(result.stdout)
-        self.assertEqual(len(out["records"]), 1)
-        self.assertEqual(out["records"][0]["type"], "A")
+        # Hostinger adds a trailing dot to every host it stores; the value
+        # the CLI compares against never has one.
+        self.assertEqual(
+            [(r["type"], r["value"]) for r in out["records"]],
+            [
+                ("MX", "10 mail.example.com"),
+                ("SRV", "10 5 5060 sip.example.com"),
+                ("NS", "ns1.example.net"),
+                ("CAA", '0 issue "ca.example.net"'),
+                ("CNAME", "example.com"),
+            ],
+        )
+
+    def test_upsert_sends_an_mx_as_one_content_string(self):
+        self.server.zone = []
+        record = {"name": "@", "type": "MX", "value": "10 mail.example.com", "ttl": 0}
+        result = self.run_provider(["upsert", "example.com"], stdin=json.dumps(record))
+        self.assertEqual(result.returncode, 0, result.stdout)
+        puts = [r for r in self.server.requests if r[0] == "PUT"]
+        self.assertEqual(puts[0][2]["zone"][0]["type"], "MX")
+        self.assertEqual(puts[0][2]["zone"][0]["records"], [{"content": "10 mail.example.com"}])
+
+    def test_upsert_sees_an_mx_already_right_despite_hostingers_trailing_dot(self):
+        self.server.zone = [
+            {"name": "@", "type": "MX", "ttl": 300, "records": [{"content": "10 mail.example.com."}]},
+        ]
+        record = {"name": "@", "type": "MX", "value": "10 mail.example.com", "ttl": 0}
+        result = self.run_provider(["upsert", "example.com"], stdin=json.dumps(record))
+        self.assertEqual(result.returncode, 0)
+        writes = [r for r in self.server.requests if r[0] in ("PUT", "DELETE")]
+        self.assertEqual(writes, [])
+
+    def test_append_adds_a_value_next_to_the_existing_ones(self):
+        self.server.zone = [
+            {"name": "@", "type": "MX", "ttl": 300, "records": [{"content": "10 mail.example.com."}]},
+        ]
+        record = {"name": "@", "type": "MX", "value": "20 mail2.example.com", "ttl": 0}
+        result = self.run_provider(["append", "example.com"], stdin=json.dumps(record))
+        self.assertEqual(result.returncode, 0, result.stdout)
+        self.assertEqual(json.loads(result.stdout), {})
+        writes = [r for r in self.server.requests if r[0] in ("PUT", "DELETE")]
+        # One PUT with overwrite: false, which is Hostinger's append. No
+        # DELETE: the value already there is the point of this command.
+        self.assertEqual([w[0] for w in writes], ["PUT"])
+        self.assertFalse(writes[0][2]["overwrite"])
+        self.assertEqual(writes[0][2]["zone"][0]["records"], [{"content": "20 mail2.example.com"}])
+        self.assertEqual(writes[0][2]["zone"][0]["ttl"], 300)
+        contents = [e["content"] for e in self.server.zone[0]["records"]]
+        self.assertEqual(contents, ["10 mail.example.com.", "20 mail2.example.com"])
+
+    def test_append_does_nothing_when_the_value_is_already_there(self):
+        self.server.zone = [
+            {"name": "@", "type": "MX", "ttl": 300, "records": [{"content": "10 mail.example.com."}]},
+        ]
+        record = {"name": "@", "type": "MX", "value": "10 mail.example.com", "ttl": 0}
+        result = self.run_provider(["append", "example.com"], stdin=json.dumps(record))
+        self.assertEqual(result.returncode, 0)
+        writes = [r for r in self.server.requests if r[0] in ("PUT", "DELETE")]
+        self.assertEqual(writes, [])
+
+    def test_append_to_a_name_that_holds_nothing_creates_it(self):
+        self.server.zone = []
+        record = {"name": "@", "type": "MX", "value": "10 mail.example.com", "ttl": 0}
+        result = self.run_provider(["append", "example.com"], stdin=json.dumps(record))
+        self.assertEqual(result.returncode, 0)
+        puts = [r for r in self.server.requests if r[0] == "PUT"]
+        self.assertEqual(puts[0][2]["zone"][0]["ttl"], 3600)
+        self.assertFalse(puts[0][2]["overwrite"])
+
+    def test_append_with_a_ttl_sets_the_sets_ttl(self):
+        self.server.zone = [
+            {"name": "@", "type": "MX", "ttl": 300, "records": [{"content": "10 mail.example.com."}]},
+        ]
+        record = {"name": "@", "type": "MX", "value": "20 mail2.example.com", "ttl": 600}
+        self.run_provider(["append", "example.com"], stdin=json.dumps(record))
+        puts = [r for r in self.server.requests if r[0] == "PUT"]
+        self.assertEqual(puts[0][2]["zone"][0]["ttl"], 600)
+
+    def test_delete_one_mx_among_several_matches_despite_the_trailing_dot(self):
+        self.server.zone = [
+            {
+                "name": "@",
+                "type": "MX",
+                "ttl": 300,
+                "records": [{"content": "10 mail.example.com."}, {"content": "20 mail2.example.com."}],
+            },
+        ]
+        record = {"name": "@", "type": "MX", "value": "10 mail.example.com", "ttl": 0}
+        result = self.run_provider(["delete", "example.com"], stdin=json.dumps(record))
+        self.assertEqual(result.returncode, 0)
+        puts = [r for r in self.server.requests if r[0] == "PUT"]
+        kept = puts[0][2]["zone"][0]["records"]
+        self.assertEqual([r["content"] for r in kept], ["20 mail2.example.com."])
 
     def test_upsert_creates_by_appending_to_nothing(self):
         self.server.zone = []
@@ -333,7 +428,7 @@ class ProviderTest(unittest.TestCase):
         result = self.run_provider(["help"])
         self.assertEqual(result.returncode, 0)
         names = [c["name"] for c in json.loads(result.stdout)["commands"]]
-        self.assertEqual(sorted(names), ["delete", "help", "list", "upsert", "zones"])
+        self.assertEqual(sorted(names), ["append", "delete", "help", "list", "upsert", "zones"])
 
     def test_a_command_that_needs_a_zone_says_so(self):
         result = self.run_provider(["list"])

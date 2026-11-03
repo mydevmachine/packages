@@ -32,6 +32,14 @@ devmachine credentials push
 
 ## Notes
 
+- Record types: A, AAAA, CNAME, TXT, MX, SRV, NS and CAA. A value is written
+  the way a zone file writes it: `10 mail.example.com` for MX,
+  `10 5 5060 sip.example.com` for SRV, `0 issue "ca.example.net"` for CAA.
+  `devmachine dns add --append` adds a value next to the ones a name holds;
+  without it the name ends up holding only the new value.
+- Cloudflare keeps an MX priority in a field of its own and an SRV's or CAA's
+  parts in a `data` object. The provider joins them into the value `dns list`
+  shows and splits the value `dns add` gives it.
 - Once installed, use `devmachine dns list`, `devmachine dns add`, and
   `devmachine dns status` — not this package directly. `devmachine dns
   providers` shows which zones the token can see.

@@ -15,10 +15,13 @@ DEFAULT_ZONES_FILE = "/etc/devmachine/hostinger/zones.json"
 MIN_TTL = 60
 NEW_RECORD_TTL = 3600
 
-# Types whose content cannot round-trip through a single Value string: MX and
-# SRV carry structured data (a priority) that Hostinger folds into "content"
-# and this contract has no field for.
-ROUND_TRIP_TYPES = {"A", "AAAA", "CNAME", "TXT"}
+# Hostinger keeps every record as one content string, the way a zone file
+# writes it ("10 mail.example.com." for MX), which is also how the contract
+# writes a value. SOA and ALIAS stay out: the registrar owns the first, and
+# the second is Hostinger's own.
+SUPPORTED_TYPES = {"A", "AAAA", "CNAME", "TXT", "MX", "SRV", "NS", "CAA"}
+HOST_TYPES = {"CNAME", "NS", "ALIAS"}
+HOST_LAST_TYPES = {"MX", "SRV"}
 
 
 def fail(kind, message):
@@ -94,11 +97,21 @@ def normalize_txt(content):
     return content
 
 
+def normalize_host(host):
+    return host.rstrip(".").lower()
+
+
 def normalize_content(record_type, content):
     if record_type == "TXT":
         return normalize_txt(content)
-    if record_type in ("CNAME", "NS", "ALIAS"):
-        return content.rstrip(".").lower()
+    if record_type in HOST_TYPES:
+        return normalize_host(content.strip())
+    fields = content.split()
+    if record_type in HOST_LAST_TYPES and fields:
+        fields[-1] = normalize_host(fields[-1])
+        return " ".join(fields)
+    if record_type == "CAA" and len(fields) >= 3:
+        return '%s %s "%s"' % (fields[0], fields[1].lower(), " ".join(fields[2:]).strip('"'))
     return content
 
 
@@ -113,14 +126,14 @@ def cmd_list(zone):
     records = get_zone(zone)
     out = []
     for rrset in records:
-        if rrset["type"] not in ROUND_TRIP_TYPES:
+        if rrset["type"] not in SUPPORTED_TYPES:
             continue
         for entry in rrset["records"]:
             out.append(
                 {
                     "name": rrset["name"],
                     "type": rrset["type"],
-                    "value": entry["content"],
+                    "value": normalize_content(rrset["type"], entry["content"]),
                     "ttl": rrset["ttl"],
                 }
             )
@@ -176,6 +189,31 @@ def cmd_upsert(zone, record):
     # path is the one that ships until somebody has watched the other one on a
     # zone they can afford to lose.
     delete_rrset(zone, name, record_type)
+    put(zone, name, record_type, ttl or existing["ttl"], [value], overwrite=False)
+    print(json.dumps({}))
+
+
+def cmd_append(zone, record):
+    name = record["name"]
+    record_type = record["type"]
+    value = record["value"]
+    ttl = resolve_ttl(record.get("ttl") or 0)
+
+    existing = find_rrset(get_zone(zone), name, record_type)
+
+    if existing is None:
+        put(zone, name, record_type, ttl or NEW_RECORD_TTL, [value], overwrite=False)
+        print(json.dumps({}))
+        return
+
+    current = [normalize_content(record_type, e["content"]) for e in existing["records"]]
+    if normalize_content(record_type, value) in current:
+        print(json.dumps({}))
+        return
+
+    # overwrite: false is Hostinger's append: the value joins the RRset and
+    # its TTL becomes the one sent, so the set's own TTL is sent back when
+    # none was asked for.
     put(zone, name, record_type, ttl or existing["ttl"], [value], overwrite=False)
     print(json.dumps({}))
 
@@ -239,6 +277,7 @@ COMMANDS = [
     {"name": "zones", "summary": "The zones this token can see."},
     {"name": "list", "summary": "Every record in a zone.", "args": "<zone>"},
     {"name": "upsert", "summary": "Make a name hold exactly one value.", "args": "<zone>"},
+    {"name": "append", "summary": "Add one value next to the ones a name holds.", "args": "<zone>"},
     {"name": "delete", "summary": "Remove one value from a name.", "args": "<zone>"},
     {"name": "help", "summary": "This list."},
 ]
@@ -258,7 +297,7 @@ def read_record():
 
 def main(argv):
     if len(argv) < 2:
-        fail("invalid_record", "usage: provider zones|list|upsert|delete|help [<zone>]")
+        fail("invalid_record", "usage: provider zones|list|upsert|append|delete|help [<zone>]")
 
     command = argv[1]
 
@@ -280,6 +319,10 @@ def main(argv):
 
     if command == "upsert":
         cmd_upsert(zone, read_record())
+        return
+
+    if command == "append":
+        cmd_append(zone, read_record())
         return
 
     if command == "delete":

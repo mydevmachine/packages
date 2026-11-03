@@ -32,6 +32,15 @@ devmachine credentials push
 
 ## Notes
 
+- Record types: A, AAAA, CNAME, TXT, MX, SRV, NS and CAA. A value is written
+  the way a zone file writes it: `10 mail.example.com` for MX,
+  `10 5 5060 sip.example.com` for SRV, `0 issue "ca.example.net"` for CAA.
+  `devmachine dns add --append` adds a value next to the ones a name holds;
+  without it the name ends up holding only the new value.
+- GoDaddy keeps an SRV's service, protocol, priority, weight and port in
+  fields of their own. The provider joins them: `_sip._tcp.voice` with
+  `10 5 5060 sip.example.com`. A `PUT` replaces every SRV at the same host, so
+  the provider writes the other services back untouched.
 - A Personal Access Token from developer.godaddy.com with the DNS scopes. The
   classic key and secret pair is not supported.
 - Once installed, use `devmachine dns list`, `devmachine dns add`, and
